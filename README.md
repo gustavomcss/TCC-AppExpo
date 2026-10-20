@@ -53,7 +53,7 @@ frontend/                App React Native + Expo
   src/services           acesso ao PocketBase e configuração (env)
   src/components         componentes de UI reutilizáveis
   src/schemas            esquemas Zod dos formulários
-backend/                 PocketBase
+backend/                 PocketBase (instância e operação em backend/README.md)
   pb_migrations/         migrações (coleções, campos, API Rules)
   pb_hooks/              hooks JS (km do veículo, correção por denúncia)
 ```

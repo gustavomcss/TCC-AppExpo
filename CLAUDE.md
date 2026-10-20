@@ -8,7 +8,7 @@ Documentos de origem (fora do repositório, versão de 13/10/2026): **TRACE – 
 
 - **App:** React Native + Expo, TypeScript, uma única base de código (RNF01).
 - **Formulários:** React Hook Form + Zod; esquemas em `src/schemas` (RNF06).
-- **Backend:** PocketBase autogerenciado (Docker via Coolify, HTTPS via Cloudflare Tunnel) em `pb.wizecode.com.br` (RNF02).
+- **Backend:** PocketBase v0.40.5 autogerenciado (Docker via Coolify, HTTPS via Cloudflare Tunnel) em `pb.wizecode.com.br` (RNF02). Use a API de migrações e de hooks JS da v0.23+ (`_superusers`, `e.next()`, `$app.save`). Os detalhes da instância estão em `backend/README.md`.
 - **Regras de backend:** API Rules do PocketBase + hooks em JavaScript (`pb_hooks/`). Esquema e regras versionados em `pb_migrations/` (RNF07).
 
 ## Estrutura
@@ -24,7 +24,7 @@ backend/
   pb_hooks/              hooks JS do PocketBase (km do veículo, correção por denúncia)
 ```
 
-Em `backend/`, as pastas `pb_migrations` e `pb_hooks` são montadas (bind mount) no container do PocketBase em produção: tudo que estiver nelas roda no próximo restart. Não deixe migração incompleta ali.
+Em `backend/`, as pastas `pb_migrations` e `pb_hooks` deste checkout (`/home/gustavo/TCC-AppExpo/backend`) são montadas (bind mount) em `/app/pb_migrations` e `/app/pb_hooks` no container do PocketBase em produção. Tudo que estiver em `pb_migrations` roda no próximo restart, e os hooks recarregam assim que um arquivo muda. Trocar de branch muda o que a produção carrega. Não deixe migração incompleta ali.
 
 ## Princípios que valem para todo o código
 
@@ -146,7 +146,7 @@ As regras abaixo são as que mais afetam o código. A redação completa está n
 
 ## Estado atual (20/10/2026)
 
-- O repositório tem só o `README.md` e a `LICENSE`. Nenhuma issue foi concluída.
+- #1 (projeto Expo e estrutura) concluída. #2 (provisionar o PocketBase) verificada: HTTPS, superadmin, persistência após restart e bind mounts de `pb_hooks`/`pb_migrations` ok.
 - As 6 milestones e as 43 issues (#1 a #43) estão criadas no GitHub, cada uma na sua milestone.
 - Não usamos labels nas issues. A prioridade e o tamanho ficam só no plano.
 - A M1 já passou do prazo (16/10).
