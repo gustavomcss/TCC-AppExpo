@@ -61,7 +61,11 @@ Todos os `id` são `CHAR(15)` (padrão do PocketBase). Nenhuma relação tem exc
 
 - `VEHICLE.odometer` é o "km atual" do veículo.
 - COMPLAINT não tem campo de autor: o denunciante é o `user` da `route_current`.
-- Os nomes exatos das coleções no PocketBase (a auth padrão é `users`) são definidos na I-03. Depois disso, atualize esta seção.
+- Nomes no PocketBase (I-03, migração `backend/pb_migrations/1792539204_create_trace_collections.js`): `users` (auth padrão, com `avatar` renomeado para `photo`), `vehicles`, `routes`, `complaints`, `fuels`, `oils`, `repairs`. Os nomes dos campos são os do DER.
+- `routes.date_departure` é autodate (data de criação da rota); `routes.date_return` é preenchida pelo servidor ao finalizar (I-19). `complaints.reviewed` é a data e hora da revisão.
+- `number` obrigatório rejeita 0 no PocketBase, por isso `vehicles.odometer` e `routes.km_departure` não são `required`. `users.active` ausente vale `false`: quem cria o usuário envia `active = true`.
+- As duas casas decimais (RB16) são validadas em `backend/pb_hooks/decimal_fields.pb.js`; o intervalo 0 a 999.999,99 é do próprio campo.
+- As coleções novas e `users` têm todas as API Rules em `null` (só superuser) até a I-05. As regras padrão de `users` permitiam auto-cadastro e a troca do próprio cargo.
 
 ## Regras de negócio essenciais
 
