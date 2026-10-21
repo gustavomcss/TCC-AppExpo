@@ -36,6 +36,44 @@ A resposta esperada é `200` com `{"message":"API is healthy."}`.
 
 Persistência: depois de reiniciar o contêiner pelo Coolify, o login do superadmin no `/_/` precisa continuar funcionando. Se o painel pedir para criar o primeiro superuser, o `pb_data` não foi persistido.
 
+## Migrações
+
+O esquema (coleções, campos, índices) e as API Rules são versionados como arquivos em `backend/pb_migrations/`, commitados no repositório (RNF07). Qualquer mudança de esquema ou de regra entra como uma nova migração na mesma PR da issue. Uma instância vazia reproduz o esquema inteiro aplicando esses arquivos em ordem; hoje o arquivo inicial é `1792539204_create_trace_collections.js` (I-03).
+
+Cada arquivo tem uma função de subida e uma de descida (`migrate((app) => {...}, (app) => {...})`). Nunca edite uma migração já aplicada na produção: crie outra.
+
+### Gerar uma migração
+
+Como `pb_migrations/` deste checkout é a pasta que a produção carrega (veja [Instância](#instância)), **escreva e teste a migração numa cópia** e só depois copie o arquivo completo para o repositório. O binário baixado pelos testes serve para isso (rode `npm test` uma vez para baixá-lo). Os comandos abaixo partem de `backend/`:
+
+```bash
+SCRATCH=$(mktemp -d) && cp -r pb_migrations pb_hooks "$SCRATCH" && echo "$SCRATCH"
+```
+
+```bash
+.pocketbase/0.40.5/pocketbase migrate create nome_da_mudanca --dir="$SCRATCH/pb_data" --migrationsDir="$SCRATCH/pb_migrations"
+```
+
+O comando pede confirmação e cria `<timestamp>_nome_da_mudanca.js` na cópia. O modelo gerado usa `//` e 2 espaços: reescreva com os padrões do projeto (4 espaços, comentários `/* */` em inglês, `/** */` para documentar). Use a API de migrações da v0.23+ (`app.findCollectionByNameOrId`, `app.save`, `Collection`, `fields.add`).
+
+Também é possível alterar o esquema pelo painel `/_/` de uma instância **local** (nunca da produção) e usar o arquivo que o PocketBase grava sozinho (`--automigrate`, ligado por padrão) como ponto de partida, ou `migrate collections` para um retrato do esquema atual. Revise o arquivo antes de commitar, porque ele precisa funcionar também em uma instância vazia.
+
+### Aplicar e reverter
+
+```bash
+.pocketbase/0.40.5/pocketbase migrate up --dir="$SCRATCH/pb_data" --migrationsDir="$SCRATCH/pb_migrations"
+```
+
+- `migrate up` aplica só as migrações novas; rodar de novo responde "No new migrations to apply". O `serve` já aplica as pendentes ao iniciar.
+- `migrate down 1` reverte a última migração aplicada (pede confirmação). A reversão falha se houver registros nas coleções que seriam apagadas.
+- Na produção não há comando manual: copie o arquivo para `backend/pb_migrations/` neste checkout, faça merge e reinicie o contêiner pelo Coolify. A migração roda no restart.
+
+Alterar coleções pelo painel da **produção** grava um arquivo novo direto em `backend/pb_migrations/` por causa do bind mount, fora de qualquer branch. Evite; se acontecer, revise e commite o arquivo, ou apague-o.
+
+### Testar em uma instância vazia
+
+`tests/migrations.test.js` (parte do `npm test`) cria uma pasta de dados vazia, aplica todas as migrações versionadas, confirma que uma segunda aplicação não faz nada e que a última migração pode ser revertida e reaplicada. `tests/collections.test.js` confere o esquema resultante (campos, enums, relações). Para ver à mão, use os comandos acima numa cópia nova.
+
 ## Atualizar a versão
 
 Antes de subir a versão do PocketBase, leia as notas de release (<https://github.com/pocketbase/pocketbase/releases>). Mudanças na API de migrações ou de hooks quebram o que está em `pb_migrations` e `pb_hooks`. Depois de atualizar, atualize também a versão neste arquivo e no `CLAUDE.md`.
