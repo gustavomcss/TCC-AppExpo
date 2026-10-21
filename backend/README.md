@@ -74,6 +74,22 @@ Alterar coleções pelo painel da **produção** grava um arquivo novo direto em
 
 `tests/migrations.test.js` (parte do `npm test`) cria uma pasta de dados vazia, aplica todas as migrações versionadas, confirma que uma segunda aplicação não faz nada e que a última migração pode ser revertida e reaplicada. `tests/collections.test.js` confere o esquema resultante (campos, enums, relações). Para ver à mão, use os comandos acima numa cópia nova.
 
+## API Rules
+
+A migração `1792601121_set_base_api_rules.js` (I-05) é a linha de base de acesso por perfil. Uma regra `null` significa "só superuser".
+
+| Coleção                                | Listar e ver                      | Criar                                    | Editar                                    | Excluir     |
+| -------------------------------------- | --------------------------------- | ---------------------------------------- | ----------------------------------------- | ----------- |
+| `users`                                | o próprio usuário; supervisor: todos | `null` (I-11)                         | `null` (I-11)                             | `null`      |
+| `vehicles`                             | qualquer usuário autenticado      | supervisor                               | supervisor, sem alterar o `odometer` (RB09) | supervisor |
+| `routes`, `fuels`, `oils`, `repairs`   | o autor; supervisor: todos        | autenticado, autor definido pelo servidor | `null` (I-18, I-31)                      | `null` (RB17) |
+| `complaints`                           | o autor da `route_current`; supervisor: todos | só quem é o usuário da `route_current` | `null` (I-27)                      | `null` (RB17) |
+
+- O autor de `routes`, `fuels`, `oils` e `repairs` é gravado por `pb_hooks/author.pb.js` a partir do usuário autenticado. O `user` enviado no corpo é descartado.
+- Uma listagem sem permissão responde `200` com a lista vazia, e uma visualização, `404`. Regra `null` responde `403`.
+- Um motorista só enxerga as próprias rotas, então a checagem de "veículo já em rota aberta" feita pelo app (RB01) não vê rotas de outros motoristas. Quem garante a regra é o servidor (I-18).
+- A condição de usuário ativo (RB18) entra em todas as regras na I-07.
+
 ## Atualizar a versão
 
 Antes de subir a versão do PocketBase, leia as notas de release (<https://github.com/pocketbase/pocketbase/releases>). Mudanças na API de migrações ou de hooks quebram o que está em `pb_migrations` e `pb_hooks`. Depois de atualizar, atualize também a versão neste arquivo e no `CLAUDE.md`.
