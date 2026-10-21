@@ -22,6 +22,7 @@ frontend/                App Expo (package.json, .env e comandos npm ficam aqui)
 backend/
   pb_migrations/         migrações do PocketBase (coleções, campos, API Rules)
   pb_hooks/              hooks JS do PocketBase (km do veículo, correção por denúncia)
+  tests/                 testes de API do backend (Node, sem dependências); `npm test` em backend/
 ```
 
 Em `backend/`, as pastas `pb_migrations` e `pb_hooks` deste checkout (`/home/gustavo/TCC-AppExpo/backend`) são montadas (bind mount) em `/app/pb_migrations` e `/app/pb_hooks` no container do PocketBase em produção. Tudo que estiver em `pb_migrations` roda no próximo restart, e os hooks recarregam assim que um arquivo muda. Trocar de branch muda o que a produção carrega. Não deixe migração incompleta ali.
@@ -35,6 +36,7 @@ Em `backend/`, as pastas `pb_migrations` e `pb_hooks` deste checkout (`/home/gus
 - **Km e valores:** decimais 8,2 (até 999.999,99), duas casas, não negativos, validados no app e no servidor (RB16).
 - **Erros do servidor** são traduzidos em mensagens no formulário, não em erro genérico (I-08). Em 401/403, o app encerra a sessão e avisa (I-07).
 - **Interface simples:** poucas telas e poucos campos por registro (RNF08). Textos da UI em português.
+- **Comentários no código:** só blocos `/* */`, em inglês, em JS, TS e demais código (app, hooks, migrações e testes). Use `/** */` para documentar, em uma ou duas linhas, o que cada arquivo, função, componente ou constante exportada faz, e `/* */` para notas dentro do código. Não use `//` (a diretiva `/// <reference ...>` é exceção). Todo o código é em inglês: nomes, comentários, nomes de teste e mensagens de erro internas. Tudo que o usuário final vê é em português e vive no app: textos da UI e a tradução dos erros do servidor. O servidor responde com `code` e mensagem em inglês; o app nunca exibe o texto em inglês, e sim a tradução pelo `code`, com uma mensagem genérica em português quando o código não for conhecido (I-08). Valores de enum do modelo (`motorista`, `aberta`...) são dados e ficam em português. A documentação em Markdown (README, CLAUDE.md) é em português.
 - Qualquer mudança de esquema ou de regra gera migração commitada na mesma PR.
 
 ## Perfis e navegação
@@ -111,7 +113,7 @@ As regras abaixo são as que mais afetam o código. A redação completa está n
   - sem erros de lint e de tipos;
   - testado em emulador, dispositivo ou Expo Go;
   - migrações commitadas quando houver mudança de esquema ou de regras.
-- **Testes de backend:** valide cada regra também com requisições diretas à API, sem passar pelo app, para provar que o backend sustenta a regra sozinho.
+- **Testes de backend:** valide cada regra também com requisições diretas à API, sem passar pelo app, para provar que o backend sustenta a regra sozinho. Isso é automatizado em `backend/tests` (`node --test` contra um PocketBase descartável, nunca contra a produção; veja `backend/README.md`). Cada issue de backend traz os testes dos seus critérios de aceite e RBs, e `npm test` em `backend/` precisa estar verde antes da PR.
 - **Título das issues:** `[RFxx] Resumo`. As de infraestrutura usam o RNF; as de teste e de TCC usam `[Testes]` e `[TCC]`.
 - **Corpo das issues:** um parágrafo de descrição, depois **Tarefas** (lista de bullets) e **Critérios de aceite** (checklist `- [ ]`). Não usamos labels.
 - **Tamanho das issues:** P até 3 h, M de 3 a 6 h, G acima de 6 h.
@@ -151,6 +153,8 @@ As regras abaixo são as que mais afetam o código. A redação completa está n
 ## Estado atual (20/10/2026)
 
 - #1 (projeto Expo e estrutura) concluída. #2 (provisionar o PocketBase) verificada: HTTPS, superadmin, persistência após restart e bind mounts de `pb_hooks`/`pb_migrations` ok.
+- #3 (coleções do DER) concluída e aplicada na produção; o critério dos decimais segue aberto até existir a validação com Zod no app. As API Rules estão fechadas até a #5.
+- #47 (infraestrutura de testes do backend) foi criada fora do plano. Issues e PRs dividem a numeração no GitHub (#44 a #46 foram PRs), então a partir daqui "I-nn = #nn" só vale até a #43.
 - As 6 milestones e as 43 issues (#1 a #43) estão criadas no GitHub, cada uma na sua milestone.
 - Não usamos labels nas issues. A prioridade e o tamanho ficam só no plano.
 - A M1 já passou do prazo (16/10).

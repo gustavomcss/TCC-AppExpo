@@ -39,3 +39,24 @@ Persistência: depois de reiniciar o contêiner pelo Coolify, o login do superad
 ## Atualizar a versão
 
 Antes de subir a versão do PocketBase, leia as notas de release (<https://github.com/pocketbase/pocketbase/releases>). Mudanças na API de migrações ou de hooks quebram o que está em `pb_migrations` e `pb_hooks`. Depois de atualizar, atualize também a versão neste arquivo e no `CLAUDE.md`.
+
+## Testes
+
+Os testes de API ficam em `backend/tests` e rodam com Node (22 ou superior), sem instalar dependências:
+
+```bash
+cd backend && npm test
+```
+
+A cada execução, cada arquivo de teste sobe um PocketBase descartável (pasta temporária, porta livre, superadmin próprio) com cópias de `pb_migrations` e `pb_hooks`, faz requisições HTTP como um cliente qualquer e desliga tudo no fim. Os testes só falam com `127.0.0.1`, nunca com a produção, e não escrevem nada em `pb_migrations` nem em `pb_hooks`.
+
+Na primeira execução o binário do PocketBase (a mesma versão da produção) é baixado para `backend/.pocketbase/`, ignorado pelo git, com conferência do SHA-256. Isso exige `unzip` e acesso à internet.
+
+Para testar uma feature nova:
+
+1. Crie `tests/<assunto>.test.js` e copie o começo de `tests/collections.test.js` (sobe a instância no `before` e a desliga no `after`).
+2. Escreva um `test` por critério de aceite e por RB da issue, com o RB no nome.
+3. Rode `npm test` e confira que o teste falha antes da implementação.
+4. Implemente a migração ou o hook e rode de novo até passar.
+
+Os helpers em `tests/helpers` cobrem o cliente HTTP, o login por coleção e as fábricas de dados (`createFactories`). Ao atualizar a versão do PocketBase, atualize também `POCKETBASE_VERSION` em `tests/helpers/binary.js`.
