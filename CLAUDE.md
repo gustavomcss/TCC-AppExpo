@@ -106,7 +106,8 @@ As regras abaixo são as que mais afetam o código. A redação completa está n
 - **Branches e PRs:**
   - um branch por issue (ex.: `issue-6-autenticacao`);
   - PR com `Closes #n` e merge na `main`;
-  - commit e push só quando o usuário pedir.
+  - commit e push só quando o usuário pedir;
+  - a seção "Estado atual" deste arquivo é atualizada a cada merge (data e uma linha por issue), de preferência na própria PR da issue, antes do merge.
 - **Definição de pronto:**
   - todos os critérios de aceite marcados;
   - as RBs citadas na issue verificadas no app **e** no backend;
@@ -144,16 +145,18 @@ As regras abaixo são as que mais afetam o código. A redação completa está n
 - **Expo SDK 57:** é o SDK do Expo Go instalado no iPhone de teste (a App Store só abre o SDK que o Expo Go dela suporta). Ao subir de SDK, confira antes a versão do Expo Go no iPhone e no Android; se faltar, use build de desenvolvimento (exige conta Apple no iOS).
 - **iOS:** os testes são feitos pelo Expo Go (SDK 57). O instalável para iOS segue em aberto (exige conta Apple).
 - **Indentação:** 4 espaços em todos os arquivos (`.editorconfig` e `frontend/.prettierrc`).
+- **Migrações:** o arquivo se chama `<timestamp Unix>_<nome>.js`, gerado por `migrate create`. Uma migração já aplicada na produção nunca é renomeada nem editada: o PocketBase registra o nome do arquivo, e um nome novo roda de novo e quebra o restart. Cada mudança é uma migração nova, de preferência uma por issue.
 - **Relatório financeiro (I-36):** ainda não está decidido onde agregar. A recomendação é agregar no app, mas precisa ser confirmada.
 - **Riscos técnicos:**
   - hooks JS do PocketBase (começar pelo da I-18 antes do da I-30);
   - upload da foto da denúncia (testar cedo em aparelho real);
   - PDF em Android e iOS (fazer uma prova rápida antes da M5).
 
-## Estado atual (20/10/2026)
+## Estado atual (21/10/2026)
 
 - #1 (projeto Expo e estrutura) concluída. #2 (provisionar o PocketBase) verificada: HTTPS, superadmin, persistência após restart e bind mounts de `pb_hooks`/`pb_migrations` ok.
 - #3 (coleções do DER) concluída e aplicada na produção; o critério dos decimais segue aberto até existir a validação com Zod no app. As API Rules estão fechadas até a #5.
+- #4 (migrações) concluída (PR #49): o fluxo de gerar, aplicar e reverter está no `backend/README.md` e `backend/tests/migrations.test.js` prova que uma instância vazia reproduz o esquema. Não houve mudança de esquema.
 - #47 (infraestrutura de testes do backend) foi criada fora do plano. Issues e PRs dividem a numeração no GitHub (#44 a #46 foram PRs), então a partir daqui "I-nn = #nn" só vale até a #43.
 - As 6 milestones e as 43 issues (#1 a #43) estão criadas no GitHub, cada uma na sua milestone.
 - Não usamos labels nas issues. A prioridade e o tamanho ficam só no plano.

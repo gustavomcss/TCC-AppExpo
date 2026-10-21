@@ -40,7 +40,7 @@ Persistência: depois de reiniciar o contêiner pelo Coolify, o login do superad
 
 O esquema (coleções, campos, índices) e as API Rules são versionados como arquivos em `backend/pb_migrations/`, commitados no repositório (RNF07). Qualquer mudança de esquema ou de regra entra como uma nova migração na mesma PR da issue. Uma instância vazia reproduz o esquema inteiro aplicando esses arquivos em ordem; hoje o arquivo inicial é `1792539204_create_trace_collections.js` (I-03).
 
-Cada arquivo tem uma função de subida e uma de descida (`migrate((app) => {...}, (app) => {...})`). Nunca edite uma migração já aplicada na produção: crie outra.
+Cada arquivo tem uma função de subida e uma de descida (`migrate((app) => {...}, (app) => {...})`). Nunca edite nem renomeie uma migração já aplicada na produção: o PocketBase registra o nome do arquivo, então um arquivo renomeado roda de novo e falha (por exemplo, "Collection name must be unique"). Crie outra.
 
 ### Gerar uma migração
 
@@ -54,7 +54,7 @@ SCRATCH=$(mktemp -d) && cp -r pb_migrations pb_hooks "$SCRATCH" && echo "$SCRATC
 .pocketbase/0.40.5/pocketbase migrate create nome_da_mudanca --dir="$SCRATCH/pb_data" --migrationsDir="$SCRATCH/pb_migrations"
 ```
 
-O comando pede confirmação e cria `<timestamp>_nome_da_mudanca.js` na cópia. O modelo gerado usa `//` e 2 espaços: reescreva com os padrões do projeto (4 espaços, comentários `/* */` em inglês, `/** */` para documentar). Use a API de migrações da v0.23+ (`app.findCollectionByNameOrId`, `app.save`, `Collection`, `fields.add`).
+O comando mostra o caminho do arquivo e pergunta `(y/N)`: digite `y` e Enter. Em caso de êxito, aparece `Successfully created file ".../pb_migrations/<timestamp>_nome_da_mudanca.js"`, e o arquivo novo está na cópia, ao lado do inicial. O prefixo é o horário Unix em segundos; ele define a ordem de aplicação. O modelo gerado usa `//` e 2 espaços: reescreva com os padrões do projeto (4 espaços, comentários `/* */` em inglês, `/** */` para documentar). Use a API de migrações da v0.23+ (`app.findCollectionByNameOrId`, `app.save`, `Collection`, `fields.add`).
 
 Também é possível alterar o esquema pelo painel `/_/` de uma instância **local** (nunca da produção) e usar o arquivo que o PocketBase grava sozinho (`--automigrate`, ligado por padrão) como ponto de partida, ou `migrate collections` para um retrato do esquema atual. Revise o arquivo antes de commitar, porque ele precisa funcionar também em uma instância vazia.
 
