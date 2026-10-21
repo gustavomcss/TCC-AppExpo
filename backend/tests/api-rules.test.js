@@ -148,7 +148,7 @@ describe("the app deletes no route, complaint, fuel, oil or repair record (RB17)
 describe("vehicle management belongs to the supervisor", () => {
     test("the supervisor registers a vehicle with its initial odometer (RB03)", async () => {
         const response = await asSupervisor.post("/api/collections/vehicles/records", {
-            plate: "NEW0001",
+            plate: "NEW-0001",
             type: "van",
             model: "Sprinter",
             odometer: 500,
@@ -160,7 +160,7 @@ describe("vehicle management belongs to the supervisor", () => {
 
     test("a driver cannot register, edit or delete a vehicle", async () => {
         const total = await count("vehicles");
-        const create = await asA.post("/api/collections/vehicles/records", { plate: "DRV0001", type: "carro", model: "Gol", odometer: 1 });
+        const create = await asA.post("/api/collections/vehicles/records", { plate: "DRV-0001", type: "carro", model: "Gol", odometer: 1 });
         assert.ok([400, 403].includes(create.status), `create status ${create.status}`);
         assert.equal(await count("vehicles"), total);
 
@@ -250,7 +250,7 @@ describe("requests without authentication are rejected on every collection", () 
     /** Creation bodies for each collection; complaints go as multipart because of the photo. */
     const CREATE = {
         users: () => ({ email: "anon@test.local", password: "senha12345", passwordConfirm: "senha12345", name: "Anon", role: "motorista", active: true }),
-        vehicles: () => ({ plate: "ANON001", type: "carro", model: "Gol", odometer: 1 }),
+        vehicles: () => ({ plate: "ANO-0001", type: "carro", model: "Gol", odometer: 1 }),
         routes: () => ({ user: driverA.id, ...PAYLOADS.routes(vehicleA) }),
         complaints: () => complaintForm({ route_current: owned.routes.a.id }),
         fuels: () => ({ user: driverA.id, ...PAYLOADS.fuels(vehicleA) }),

@@ -1,6 +1,7 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
-import { colors, fontFamily, fontSize, spacing } from '../theme';
+import { spacing } from '../theme';
+import { FieldError } from './FieldError';
 import { Input } from './Input';
 import type { InputProps } from './Input';
 import { Label } from './Label';
@@ -17,7 +18,7 @@ export function TextField({ label, error, ...props }: TextFieldProps) {
         <View style={styles.field}>
             <Label>{label}</Label>
             <Input invalid={Boolean(error)} accessibilityLabel={label} {...props} />
-            {error && <Text style={styles.error}>{error}</Text>}
+            <FieldError message={error} />
         </View>
     );
 }
@@ -26,10 +27,5 @@ export function TextField({ label, error, ...props }: TextFieldProps) {
 const styles = StyleSheet.create({
     field: {
         gap: spacing.sm,
-    },
-    error: {
-        color: colors.destructive,
-        fontFamily: fontFamily.normal,
-        fontSize: fontSize.sm,
     },
 });

@@ -86,6 +86,8 @@ A migração `1792601121_set_base_api_rules.js` (I-05) é a linha de base de ace
 | `complaints`                           | o autor da `route_current`; supervisor: todos | só quem é o usuário da `route_current` | `null` (I-27)                      | `null` (RB17) |
 
 - O autor de `routes`, `fuels`, `oils` e `repairs` é gravado por `pb_hooks/author.pb.js` a partir do usuário autenticado. O `user` enviado no corpo é descartado.
+- A placa de `vehicles` segue `AAA-0A00` (maiúsculas, 8 caracteres com o hífen), por `pattern` na migração `1792617392_restrict_vehicle_plate_format.js`. Placas já salvas só são conferidas quando o veículo é salvo de novo. `pb_hooks/vehicles.pb.js` recusa a criação sem `odometer` numérico (o campo não é `required` porque o PocketBase rejeitaria o 0) e grava como ativo o veículo criado por um usuário; o superusuário mantém o `active` que enviar.
+- Placa antiga e Mercosul equivalente são a mesma placa (RB20): o 5º caractere é dígito no formato antigo e a letra de A a J no Mercosul (`ABC-1323` = `ABC-1D23`). `pb_hooks/vehicle_plate.pb.js` recusa a placa equivalente à de outro veículo com `validation_not_unique`, e o índice único `idx_vehicles_plate_canonical` (migração `1792622079_restrict_plate_equivalence.js`) garante no banco. A migração falha se já houver veículos com placas equivalentes: remova-os antes. Mudar a placa do próprio veículo para a equivalente é permitido (é a conversão).
 - Uma listagem sem permissão responde `200` com a lista vazia, e uma visualização, `404`. Regra `null` responde `403`.
 - Um motorista só enxerga as próprias rotas, então a checagem de "veículo já em rota aberta" feita pelo app (RB01) não vê rotas de outros motoristas. Quem garante a regra é o servidor (I-18).
 

@@ -16,7 +16,8 @@ export const palette = {
 
 /**
  * Design tokens of the app. Colors follow the ShadCN theme roles (background, primary, muted...)
- * but are taken from the gray scale above, with a single red for errors. Components read colors
+ * but are taken from the gray scale above, with a color for each kind of notice: red for errors,
+ * green for success and blue for warnings. Components read colors
  * and sizes from here and never hard-code them.
  */
 export const colors = {
@@ -31,6 +32,8 @@ export const colors = {
     mutedForeground: palette.g60,
     destructive: '#dc2626',
     destructiveForeground: palette.white,
+    success: '#16a34a',
+    warning: '#2563eb',
     border: palette.gC0,
     ring: palette.gA0,
 } as const;
