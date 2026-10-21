@@ -1,6 +1,7 @@
 import { ClientResponseError } from 'pocketbase';
 
 import { pb } from './pocketbase';
+import type { RejectionStatus } from './pocketbase';
 
 /** Signs in with e-mail and password. The session token is persisted by the PocketBase client. */
 export async function signIn(email: string, password: string): Promise<void> {
@@ -32,10 +33,22 @@ export function describeLoginError(error: unknown): string {
         if (error.status === 400) {
             return 'E-mail ou senha incorretos.';
         }
+        if (error.status === 403) {
+            return 'Sua conta está desativada.\nFale com o supervisor.';
+        }
         if (error.status === 0) {
             return 'Não foi possível conectar ao servidor. Verifique sua conexão.';
         }
     }
 
     return 'Não foi possível entrar. Tente novamente.';
+}
+
+/** Notice shown on the login screen when the server ends the session (I-07). */
+export function describeSessionEnd(status: RejectionStatus): string {
+    if (status === 403) {
+        return 'Sua conta foi desativada ou perdeu o acesso.\nFale com o supervisor.';
+    }
+
+    return 'Sua sessão expirou. Entre novamente.';
 }

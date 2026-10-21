@@ -1,12 +1,14 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
+import { AppState } from 'react-native';
 
 import {
+    describeSessionEnd,
     refreshSession,
     signIn as signInRequest,
     signOut as signOutRequest,
 } from '../services/auth';
-import { pb, restoreStoredSession } from '../services/pocketbase';
+import { onSessionRejected, pb, restoreStoredSession } from '../services/pocketbase';
 
 /** Fields of the signed-in user that the app reads. */
 export type SessionUser = {
@@ -21,6 +23,8 @@ type AuthContextValue = {
     loading: boolean;
     /** The signed-in user, or null when signed out. */
     user: SessionUser | null;
+    /** Why the server ended the last session, or null. Shown on the login screen. */
+    notice: string | null;
     signIn: (email: string, password: string) => Promise<void>;
     signOut: () => void;
 };
@@ -45,14 +49,20 @@ function currentUser(): SessionUser | null {
 /**
  * Keeps the session state for the whole app. It restores the saved session on start and follows
  * every change of the PocketBase auth store, so a login, a logout or a session cleared elsewhere
- * (such as the 401/403 handling of I-07) all end up here.
+ * all end up here. When the server refuses the session (401/403, I-07) it keeps the notice for
+ * the login screen, and each time the app returns to the foreground it checks the session
+ * again, because a deactivated user's ordinary requests do not always answer 401/403.
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [loading, setLoading] = useState(true);
     const [user, setUser] = useState<SessionUser | null>(null);
+    const [notice, setNotice] = useState<string | null>(null);
 
     useEffect(() => {
         const unsubscribe = pb.authStore.onChange(() => setUser(currentUser()));
+        const unsubscribeRejection = onSessionRejected((status) => {
+            setNotice(describeSessionEnd(status));
+        });
 
         async function restore() {
             await restoreStoredSession();
@@ -64,16 +74,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         restore();
 
-        return unsubscribe;
+        return () => {
+            unsubscribe();
+            unsubscribeRejection();
+        };
     }, []);
 
-    const signIn = useCallback((email: string, password: string) => {
-        return signInRequest(email, password);
+    const signedIn = user !== null;
+    useEffect(() => {
+        if (!signedIn) {
+            return;
+        }
+
+        const subscription = AppState.addEventListener('change', async (state) => {
+            if (state === 'active' && !(await refreshSession())) {
+                pb.authStore.clear();
+            }
+        });
+
+        return () => subscription.remove();
+    }, [signedIn]);
+
+    const signIn = useCallback(async (email: string, password: string) => {
+        await signInRequest(email, password);
+        setNotice(null);
     }, []);
 
     const value = useMemo(
-        () => ({ loading, user, signIn, signOut: signOutRequest }),
-        [loading, user, signIn],
+        () => ({ loading, user, notice, signIn, signOut: signOutRequest }),
+        [loading, user, notice, signIn],
     );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
