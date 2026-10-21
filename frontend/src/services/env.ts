@@ -1,11 +1,14 @@
-// Expo troca process.env.EXPO_PUBLIC_* pelo valor do .env no build, então o acesso
-// precisa ser literal (sem process.env[chave]).
+/*
+ * Expo replaces process.env.EXPO_PUBLIC_* with the .env value at build time, so the access
+ * must be literal (no process.env[key]).
+ */
 const pocketbaseUrl = process.env.EXPO_PUBLIC_POCKETBASE_URL;
 
 if (!pocketbaseUrl) {
-    throw new Error('EXPO_PUBLIC_POCKETBASE_URL não definida. Copie .env.example para .env.');
+    throw new Error('EXPO_PUBLIC_POCKETBASE_URL is not set. Copy .env.example to .env.');
 }
 
+/** Validated runtime configuration. pocketbaseUrl has no trailing slash. */
 export const env = {
     pocketbaseUrl: pocketbaseUrl.replace(/\/+$/, ''),
 };
