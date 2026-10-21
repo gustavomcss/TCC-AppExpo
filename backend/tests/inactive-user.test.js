@@ -145,7 +145,7 @@ describe("a session opened before the deactivation loses access (RB18)", () => {
         const session = await signIn(supervisor);
         await setActive(supervisor, false);
 
-        const create = await session.post("/api/collections/vehicles/records", { plate: "INA0001", type: "carro", model: "Gol", odometer: 1, active: true });
+        const create = await session.post("/api/collections/vehicles/records", { plate: "INA-0001", type: "carro", model: "Gol", odometer: 1, active: true });
         assert.ok([400, 403].includes(create.status), `create: ${create.status}`);
 
         const edit = await session.patch(`/api/collections/vehicles/records/${target.id}`, { model: "Hacked" });
@@ -203,7 +203,7 @@ describe("active users are not affected", () => {
     test("a supervisor still manages vehicles", async () => {
         const supervisor = await make.user({ role: "supervisor" });
         const session = await signIn(supervisor);
-        const created = await session.post("/api/collections/vehicles/records", { plate: "ACT0001", type: "van", model: "Sprinter", odometer: 500, active: true });
+        const created = await session.post("/api/collections/vehicles/records", { plate: "ACT-0001", type: "van", model: "Sprinter", odometer: 500, active: true });
         assert.equal(created.status, 200);
         assert.equal((await session.patch(`/api/collections/vehicles/records/${created.body.id}`, { model: "Updated" })).status, 200);
     });

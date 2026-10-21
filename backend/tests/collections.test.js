@@ -64,7 +64,7 @@ describe("the 7 collections exist with the fields, enums and relations of the ER
         const route = await make.route({ user: motorista, vehicle });
         const cases = [
             ["users", "role", { email: "enum@test.local", password: "senha12345", passwordConfirm: "senha12345", name: "E", role: "admin" }],
-            ["vehicles", "type", { plate: "ENUM001", type: "trator", model: "M", odometer: 1 }],
+            ["vehicles", "type", { plate: "ENU-0001", type: "trator", model: "M", odometer: 1 }],
             ["routes", "status", { user: motorista.id, vehicle: vehicle.id, status: "pausada", itinerary: "i", km_departure: 1 }],
             ["fuels", "type", { user: motorista.id, vehicle: vehicle.id, km_fuel: 1, type: "alcool", liters: 1, cost: 1 }],
         ];
@@ -96,12 +96,12 @@ describe("the 7 collections exist with the fields, enums and relations of the ER
         }
     });
 
-    test("plate is unique, ignoring letter case", async () => {
-        const created = await make.vehicle({ plate: "ABC1D23" });
-        const duplicate = await admin.post("/api/collections/vehicles/records", { plate: "abc1d23", type: "moto", model: "X", odometer: 1 });
-        assert.equal(created.plate, "ABC1D23");
+    test("plate is unique", async () => {
+        const created = await make.vehicle({ plate: "ABC-1D23" });
+        const duplicate = await admin.post("/api/collections/vehicles/records", { plate: "ABC-1D23", type: "moto", model: "X", odometer: 1 });
+        assert.equal(created.plate, "ABC-1D23");
         assert.equal(duplicate.status, 400);
-        assert.ok(duplicate.body.data.plate);
+        assert.equal(duplicate.body.data.plate.code, "validation_not_unique");
     });
 
     test("route_current is unique in complaints", async () => {
@@ -160,7 +160,7 @@ describe("no relation has cascade delete (RB12, RB18)", () => {
 describe("decimal fields follow the 8,2 pattern (RB16)", () => {
     test("rejects more than two decimal places", async () => {
         const cases = [
-            ["vehicles", "odometer", { plate: "DEC0001", type: "carro", model: "M", odometer: 10.123 }],
+            ["vehicles", "odometer", { plate: "DEC-0001", type: "carro", model: "M", odometer: 10.123 }],
             ["routes", "km_departure", { user: motorista.id, vehicle: vehicle.id, status: "aberta", itinerary: "i", km_departure: 5.001 }],
             ["fuels", "liters", { user: motorista.id, vehicle: vehicle.id, km_fuel: 1, type: "etanol", liters: 1.005, cost: 1 }],
             ["repairs", "cost", { user: motorista.id, vehicle: vehicle.id, km_repair: 1, description: "d", cost: 0.999 }],

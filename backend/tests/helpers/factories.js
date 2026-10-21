@@ -29,6 +29,12 @@ export function complaintForm(fields) {
 export function createFactories(admin) {
     let counter = 0;
 
+    /** A plate in the AAA-0A00 format, different on every call (the server refuses any other format). */
+    const nextPlate = () => {
+        const n = ++counter;
+        return `TS${String.fromCharCode(65 + (Math.floor(n / 10000) % 26))}-${String(n % 10000).padStart(4, "0")}`;
+    };
+
     /** Creates a record as superuser and returns it, or throws with the server response. */
     async function create(collection, data) {
         const response = await admin.post(`/api/collections/${collection}/records`, data);
@@ -49,7 +55,7 @@ export function createFactories(admin) {
         },
 
         vehicle: (overrides = {}) =>
-            create("vehicles", { plate: `TS${String(++counter).padStart(5, "0")}`, type: "carro", model: "Gol", odometer: 1000, active: true, ...overrides }),
+            create("vehicles", { plate: nextPlate(), type: "carro", model: "Gol", odometer: 1000, active: true, ...overrides }),
 
         route: ({ user, vehicle, ...overrides }) =>
             create("routes", { user: user.id, vehicle: vehicle.id, status: "aberta", itinerary: "Downtown", km_departure: 1000, ...overrides }),
