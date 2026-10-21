@@ -17,8 +17,10 @@ Documentos de origem (fora do repositório, versão de 13/10/2026): **TRACE – 
 frontend/                App Expo (package.json, .env e comandos npm ficam aqui)
   src/screens            telas
   src/services           acesso ao PocketBase (cliente único em src/services/pocketbase)
-  src/components         componentes de UI reutilizáveis (I-09)
+  src/components         componentes de UI reutilizáveis, no estilo ShadCN (I-09)
+  src/contexts           estado global (sessão: AuthContext)
   src/schemas            esquemas Zod
+  src/theme              tokens de design: paleta de cinzas, raios, espaçamentos, fontes
 backend/
   pb_migrations/         migrações do PocketBase (coleções, campos, API Rules)
   pb_hooks/              hooks JS do PocketBase (autor, decimais, km do veículo, correção por denúncia)
@@ -155,6 +157,8 @@ As regras abaixo são as que mais afetam o código. A redação completa está n
 
 ## Estado atual (21/10/2026)
 
+- #6 (autenticação no app) concluída: login com e-mail e senha (React Hook Form + Zod), sessão no `expo-secure-store` (só token e registro do usuário, nunca a senha), renovação da sessão ao abrir o app, logout e troca de tela por sessão (`AuthContext`, sem biblioteca de navegação até a #10). O e-mail é convertido para minúsculas no login, porque o PocketBase o compara com diferenciação de maiúsculas: os formulários que criam usuários (#14) devem fazer o mesmo. Fonte Geom e tema em escala de cinzas de passo 0x20 em `src/theme`; componentes base (Button, Input, Label, TextField, Card, Alert, Badge) já existem, faltam o diálogo de aviso de regra, o seletor e os estados de vazio e erro (#9). O cliente em `src/services/pocketbase` já existe; o mapeamento de erros do servidor e o formulário de exemplo seguem na #8. Testes do contrato de login em `backend/tests/auth.test.js`. O bloqueio de usuário inativo continua na #7.
+- Contas de teste na produção (senha só com o Gustavo): `motorista.a@trace.com.br`, `motorista.b@trace.com.br`, `supervisor.a@trace.com.br` e `supervisor.b@trace.com.br`.
 - #1 (projeto Expo e estrutura) concluída. #2 (provisionar o PocketBase) verificada: HTTPS, superadmin, persistência após restart e bind mounts de `pb_hooks`/`pb_migrations` ok.
 - #3 (coleções do DER) concluída e aplicada na produção; o critério dos decimais segue aberto até existir a validação com Zod no app. As API Rules estavam fechadas até a #5.
 - #4 (migrações) concluída (PR #49): o fluxo de gerar, aplicar e reverter está no `backend/README.md` e `backend/tests/migrations.test.js` prova que uma instância vazia reproduz o esquema. Não houve mudança de esquema.
