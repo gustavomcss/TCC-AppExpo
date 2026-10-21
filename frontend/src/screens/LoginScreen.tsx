@@ -16,10 +16,11 @@ import { colors, fontFamily, fontSize, spacing } from '../theme';
 /**
  * Login screen (RF01). There is no sign-up link: users are created by the supervisor or by the
  * superadmin. The app name sits above the card, which holds only the form. Field errors show
- * under the field; a refused login shows as an alert above the button.
+ * under the field; a refused login shows as an alert above the button. A session ended by the
+ * server (I-07) shows its notice above the card.
  */
 export default function LoginScreen() {
-    const { signIn } = useAuth();
+    const { signIn, notice } = useAuth();
     const [serverError, setServerError] = useState<string | null>(null);
     const {
         control,
@@ -46,6 +47,8 @@ export default function LoginScreen() {
         >
             <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
                 <Text style={styles.brand}>TRACE</Text>
+
+                {notice && <Alert variant="destructive" title={notice} />}
 
                 <Card>
                     <CardContent>

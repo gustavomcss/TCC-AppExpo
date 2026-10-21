@@ -88,7 +88,17 @@ A migração `1792601121_set_base_api_rules.js` (I-05) é a linha de base de ace
 - O autor de `routes`, `fuels`, `oils` e `repairs` é gravado por `pb_hooks/author.pb.js` a partir do usuário autenticado. O `user` enviado no corpo é descartado.
 - Uma listagem sem permissão responde `200` com a lista vazia, e uma visualização, `404`. Regra `null` responde `403`.
 - Um motorista só enxerga as próprias rotas, então a checagem de "veículo já em rota aberta" feita pelo app (RB01) não vê rotas de outros motoristas. Quem garante a regra é o servidor (I-18).
-- A condição de usuário ativo (RB18) entra em todas as regras na I-07.
+
+### Usuário inativo (RB18)
+
+A migração `1792611533_block_inactive_users.js` (I-07) bloqueia o usuário desativado em duas frentes:
+
+- A `authRule` de `users` é `active = true`: o login de quem está inativo responde `403`, e só depois de a senha estar correta (com senha errada continua `400`, igual a um e-mail desconhecido). O `auth-refresh` também responde `403`.
+- Toda regra não nula das tabelas acima ganha o prefixo `@request.auth.active = true && (...)`. É isso que corta uma sessão aberta antes da desativação: o token continua válido, mas nenhuma regra o aceita mais.
+
+Com a regra falhando, a resposta depende da operação: listagem `200` com a lista vazia, visualização `404`, criação `400` e edição ou exclusão `403` ou `404`. Só o login e o `auth-refresh` respondem `403` de forma confiável, por isso o app confere a sessão com `auth-refresh` quando volta ao primeiro plano. Reativar o usuário devolve o acesso com o mesmo token. Testes em `tests/inactive-user.test.js`.
+
+Antes de aplicar na produção, confira que os usuários existentes têm `active = true`: a migração tranca quem estiver como `false`.
 
 ## Atualizar a versão
 
