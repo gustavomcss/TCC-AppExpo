@@ -21,7 +21,7 @@ frontend/                App Expo (package.json, .env e comandos npm ficam aqui)
   src/schemas            esquemas Zod
 backend/
   pb_migrations/         migrações do PocketBase (coleções, campos, API Rules)
-  pb_hooks/              hooks JS do PocketBase (km do veículo, correção por denúncia)
+  pb_hooks/              hooks JS do PocketBase (autor, decimais, km do veículo, correção por denúncia)
   tests/                 testes de API do backend (Node, sem dependências); `npm test` em backend/
 ```
 
@@ -67,7 +67,8 @@ Todos os `id` são `CHAR(15)` (padrão do PocketBase). Nenhuma relação tem exc
 - `routes.date_departure` é autodate (data de criação da rota); `routes.date_return` é preenchida pelo servidor ao finalizar (I-19). `complaints.reviewed` é a data e hora da revisão.
 - `number` obrigatório rejeita 0 no PocketBase, por isso `vehicles.odometer` e `routes.km_departure` não são `required`. `users.active` ausente vale `false`: quem cria o usuário envia `active = true`.
 - As duas casas decimais (RB16) são validadas em `backend/pb_hooks/decimal_fields.pb.js`; o intervalo 0 a 999.999,99 é do próprio campo.
-- As coleções novas e `users` têm todas as API Rules em `null` (só superuser) até a I-05. As regras padrão de `users` permitiam auto-cadastro e a troca do próprio cargo.
+- As API Rules base (I-05, migração `1792601121_set_base_api_rules.js`) abrem só listagem e visualização por perfil, a criação e, em `vehicles`, a edição e a exclusão do supervisor. Update e delete de `routes`, `complaints`, `fuels`, `oils` e `repairs`, e create, update e delete de `users`, seguem em `null` (só superuser) até as issues que os definem (I-11, I-18, I-27, I-31). As regras padrão de `users` permitiam auto-cadastro e a troca do próprio cargo.
+- O autor (`user`) de rota, abastecimento, óleo e manutenção é gravado por `backend/pb_hooks/author.pb.js` a partir do usuário autenticado; o app não precisa enviar o campo. A denúncia não tem autor: a regra de criação exige que a `route_current` seja do usuário autenticado.
 
 ## Regras de negócio essenciais
 
@@ -155,8 +156,9 @@ As regras abaixo são as que mais afetam o código. A redação completa está n
 ## Estado atual (21/10/2026)
 
 - #1 (projeto Expo e estrutura) concluída. #2 (provisionar o PocketBase) verificada: HTTPS, superadmin, persistência após restart e bind mounts de `pb_hooks`/`pb_migrations` ok.
-- #3 (coleções do DER) concluída e aplicada na produção; o critério dos decimais segue aberto até existir a validação com Zod no app. As API Rules estão fechadas até a #5.
+- #3 (coleções do DER) concluída e aplicada na produção; o critério dos decimais segue aberto até existir a validação com Zod no app. As API Rules estavam fechadas até a #5.
 - #4 (migrações) concluída (PR #49): o fluxo de gerar, aplicar e reverter está no `backend/README.md` e `backend/tests/migrations.test.js` prova que uma instância vazia reproduz o esquema. Não houve mudança de esquema.
+- #5 (API Rules base por perfil) concluída: migração `1792601121_set_base_api_rules.js` e hook `author.pb.js`, com os testes em `backend/tests/api-rules.test.js`. Na produção a migração roda no próximo restart. O `@request.auth.active` de todas as regras fica para a #7.
 - #47 (infraestrutura de testes do backend) foi criada fora do plano. Issues e PRs dividem a numeração no GitHub (#44 a #46 foram PRs), então a partir daqui "I-nn = #nn" só vale até a #43.
 - As 6 milestones e as 43 issues (#1 a #43) estão criadas no GitHub, cada uma na sua milestone.
 - Não usamos labels nas issues. A prioridade e o tamanho ficam só no plano.
