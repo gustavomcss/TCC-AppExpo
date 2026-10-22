@@ -1,3 +1,4 @@
+import { Check, ChevronDown } from 'lucide-react-native';
 import { useState } from 'react';
 import {
     Animated,
@@ -11,7 +12,7 @@ import {
     View,
 } from 'react-native';
 
-import { colors, fontFamily, fontSize, radius, spacing } from '../theme';
+import { colors, fontFamily, fontSize, radius, sizes, spacing } from '../theme';
 import { FieldError } from './FieldError';
 import { Label } from './Label';
 
@@ -100,7 +101,7 @@ export function Select<T extends string>({
                 <Text style={[styles.value, !selected && styles.placeholder]} numberOfLines={1}>
                     {selected?.label ?? placeholder}
                 </Text>
-                <Text style={styles.chevron}>▾</Text>
+                <ChevronDown color={colors.mutedForeground} size={20} />
             </Pressable>
             <FieldError message={error} />
 
@@ -128,6 +129,7 @@ export function Select<T extends string>({
                             },
                         ]}
                     >
+                        <View style={styles.grab} />
                         <Text accessibilityRole="header" style={styles.title}>
                             {label}
                         </Text>
@@ -152,7 +154,9 @@ export function Select<T extends string>({
                                     >
                                         {item.label}
                                     </Text>
-                                    {item.value === value && <Text style={styles.check}>✓</Text>}
+                                    {item.value === value && (
+                                        <Check color={colors.foreground} size={20} />
+                                    )}
                                 </Pressable>
                             )}
                         />
@@ -169,7 +173,7 @@ const styles = StyleSheet.create({
         gap: spacing.sm,
     },
     trigger: {
-        height: 40,
+        height: sizes.control,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -190,14 +194,10 @@ const styles = StyleSheet.create({
         flex: 1,
         color: colors.foreground,
         fontFamily: fontFamily.normal,
-        fontSize: fontSize.sm,
+        fontSize: fontSize.base,
     },
     placeholder: {
         color: colors.mutedForeground,
-    },
-    chevron: {
-        color: colors.mutedForeground,
-        fontSize: fontSize.sm,
     },
     overlay: {
         flex: 1,
@@ -205,30 +205,39 @@ const styles = StyleSheet.create({
     },
     backdrop: {
         ...StyleSheet.absoluteFill,
-        backgroundColor: 'rgba(0, 0, 0, 0.4)',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
     },
     sheet: {
-        maxHeight: '60%',
-        gap: spacing.sm,
+        maxHeight: '70%',
         borderTopLeftRadius: radius.xl,
         borderTopRightRadius: radius.xl,
         backgroundColor: colors.card,
-        paddingHorizontal: spacing.xl,
-        paddingTop: spacing.xl,
-        paddingBottom: spacing.xxl,
+        paddingTop: spacing.sm,
+        paddingBottom: spacing.xl,
+    },
+    grab: {
+        width: 32,
+        height: 4,
+        alignSelf: 'center',
+        marginBottom: spacing.sm,
+        borderRadius: radius.full,
+        backgroundColor: colors.border,
     },
     title: {
         color: colors.foreground,
         fontFamily: fontFamily.semibold,
         fontSize: fontSize.lg,
+        lineHeight: 24,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.sm,
     },
     option: {
+        minHeight: 48,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        borderRadius: radius.md,
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.md,
+        gap: spacing.md,
+        paddingHorizontal: spacing.lg,
     },
     pressed: {
         backgroundColor: colors.muted,
@@ -240,9 +249,5 @@ const styles = StyleSheet.create({
     },
     optionSelected: {
         fontFamily: fontFamily.semibold,
-    },
-    check: {
-        color: colors.foreground,
-        fontSize: fontSize.base,
     },
 });

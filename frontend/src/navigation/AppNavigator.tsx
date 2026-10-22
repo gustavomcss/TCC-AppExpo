@@ -1,0 +1,145 @@
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
+import type { Theme } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { History, LayoutGrid, User } from 'lucide-react-native';
+import { StyleSheet, Text } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { useAuth } from '../contexts/AuthContext';
+import ExampleFormScreen from '../screens/ExampleFormScreen';
+import HistoryScreen from '../screens/HistoryScreen';
+import ModuleScreen from '../screens/ModuleScreen';
+import ServicesScreen from '../screens/ServicesScreen';
+import UserScreen from '../screens/UserScreen';
+import { colors, fontFamily, fontSize, palette, sizes } from '../theme';
+import { modulesFor } from './modules';
+import type { RootStackParamList } from './types';
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
+const Tab = createBottomTabNavigator();
+
+/** Height of the tab bar above the bottom safe area, in dp. */
+const TAB_BAR_HEIGHT = 56;
+
+/** Navigation theme taken from the app tokens, so headers and the tab bar match the screens. */
+const navigationTheme: Theme = {
+    ...DefaultTheme,
+    colors: {
+        ...DefaultTheme.colors,
+        primary: colors.primary,
+        background: colors.muted,
+        card: colors.card,
+        text: colors.foreground,
+        border: colors.border,
+    },
+    fonts: {
+        regular: { fontFamily: fontFamily.normal, fontWeight: 'normal' },
+        medium: { fontFamily: fontFamily.medium, fontWeight: 'normal' },
+        bold: { fontFamily: fontFamily.semibold, fontWeight: 'normal' },
+        heavy: { fontFamily: fontFamily.bold, fontWeight: 'normal' },
+    },
+};
+
+/** Options shared by the tab headers and the stack headers: centered text title, no icon. */
+const headerOptions = {
+    headerTitleAlign: 'center',
+    headerTitleStyle: { fontFamily: fontFamily.semibold, fontSize: fontSize.lg },
+} as const;
+
+/** The three tabs both roles see (RF20): History, Services and User. */
+function Tabs() {
+    const { bottom } = useSafeAreaInsets();
+
+    return (
+        <Tab.Navigator
+            screenOptions={{
+                ...headerOptions,
+                tabBarActiveTintColor: palette.g20,
+                tabBarInactiveTintColor: palette.g60,
+                tabBarStyle: {
+                    height: TAB_BAR_HEIGHT + bottom,
+                    paddingBottom: bottom,
+                    paddingTop: 0,
+                },
+                tabBarItemStyle: { justifyContent: 'center', gap: 4 },
+                tabBarLabel: ({ focused, color, children }) => (
+                    <Text style={[styles.tabLabel, { color }, focused && styles.tabLabelActive]}>
+                        {children}
+                    </Text>
+                ),
+            }}
+        >
+            <Tab.Screen
+                name="Histórico"
+                component={HistoryScreen}
+                options={{
+                    tabBarIcon: ({ color }) => <History color={color} size={sizes.tabIcon} />,
+                }}
+            />
+            <Tab.Screen
+                name="Serviços"
+                component={ServicesScreen}
+                options={{
+                    tabBarIcon: ({ color }) => <LayoutGrid color={color} size={sizes.tabIcon} />,
+                }}
+            />
+            <Tab.Screen
+                name="Usuário"
+                component={UserScreen}
+                options={{
+                    tabBarIcon: ({ color }) => <User color={color} size={sizes.tabIcon} />,
+                }}
+            />
+        </Tab.Navigator>
+    );
+}
+
+/**
+ * Navigation of the signed-in app: the tabs, with the service modules opened over them. Only the
+ * modules of the user's role are registered, so the admin screens do not exist for a driver. That
+ * is just the interface: the API rules are what refuse a driver's requests (RNF03).
+ */
+export default function AppNavigator() {
+    const { user } = useAuth();
+    const modules = user ? modulesFor(user.role) : [];
+
+    return (
+        <NavigationContainer theme={navigationTheme}>
+            <Stack.Navigator
+                screenOptions={{ ...headerOptions, headerBackButtonDisplayMode: 'minimal' }}
+            >
+                <Stack.Screen name="Tabs" component={Tabs} options={{ headerShown: false }} />
+
+                {modules.map((module) => (
+                    <Stack.Screen
+                        key={module.key}
+                        name={module.key}
+                        options={{ title: module.title }}
+                    >
+                        {() =>
+                            module.key === 'vehicles' ? (
+                                /* Stand-in until the vehicle management (I-16) exists. */
+                                <ExampleFormScreen />
+                            ) : (
+                                <ModuleScreen moduleKey={module.key} />
+                            )
+                        }
+                    </Stack.Screen>
+                ))}
+            </Stack.Navigator>
+        </NavigationContainer>
+    );
+}
+
+/** Styles of the tab labels: 12 dp, medium, and semibold on the tab in use. */
+const styles = StyleSheet.create({
+    tabLabel: {
+        fontFamily: fontFamily.medium,
+        fontSize: fontSize.xs,
+        lineHeight: 16,
+    },
+    tabLabelActive: {
+        fontFamily: fontFamily.semibold,
+    },
+});

@@ -35,12 +35,11 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: colors.border,
         borderRadius: radius.xl,
-        paddingVertical: spacing.xl,
-        gap: spacing.xl,
+        padding: spacing.lg,
+        gap: spacing.lg,
     },
     header: {
         gap: spacing.xs,
-        paddingHorizontal: spacing.xl,
     },
     title: {
         color: colors.foreground,
@@ -54,6 +53,5 @@ const styles = StyleSheet.create({
     },
     content: {
         gap: spacing.lg,
-        paddingHorizontal: spacing.xl,
     },
 });

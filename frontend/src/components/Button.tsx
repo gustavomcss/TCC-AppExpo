@@ -1,7 +1,7 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
 import type { PressableProps } from 'react-native';
 
-import { colors, fontFamily, fontSize, radius, spacing } from '../theme';
+import { colors, fontFamily, fontSize, radius, sizes, spacing } from '../theme';
 
 /** Visual variants of Button, named after the ShadCN ones. */
 export type ButtonVariant = 'default' | 'secondary' | 'outline' | 'destructive' | 'ghost';
@@ -30,7 +30,10 @@ const variants = {
     ghost: { background: 'transparent', border: 'transparent', text: colors.foreground },
 } as const;
 
-/** Full-width button. While `loading` or `disabled` it ignores presses. */
+/**
+ * Full-width button. While `loading` or `disabled` it ignores presses. It is 40 dp tall and the
+ * touch area is extended by 2 dp above and below, which gets it to the 44 dp minimum.
+ */
 export function Button({
     title,
     variant = 'default',
@@ -47,6 +50,7 @@ export function Button({
             accessibilityRole="button"
             accessibilityState={{ disabled: Boolean(inactive), busy: loading }}
             disabled={inactive}
+            hitSlop={{ top: 2, bottom: 2 }}
             style={(state) => [
                 styles.button,
                 { backgroundColor: palette.background, borderColor: palette.border },
@@ -68,7 +72,9 @@ export function Button({
 /** Styles of Button. */
 const styles = StyleSheet.create({
     button: {
-        height: 40,
+        height: sizes.button,
+        flexDirection: 'row',
+        gap: spacing.sm,
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: 1,
@@ -76,7 +82,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: spacing.lg,
     },
     text: {
-        fontSize: fontSize.sm,
+        fontSize: fontSize.base,
         fontFamily: fontFamily.medium,
     },
     pressed: {

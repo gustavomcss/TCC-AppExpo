@@ -1,6 +1,6 @@
 import { Modal, StyleSheet, Text, View } from 'react-native';
 
-import { colors, fontFamily, fontSize, radius, spacing } from '../theme';
+import { colors, fontFamily, fontSize, palette, radius, spacing } from '../theme';
 import { Button } from './Button';
 
 /**
@@ -31,10 +31,12 @@ export function NoticeDialog({
         <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
             <View style={styles.backdrop}>
                 <View accessibilityViewIsModal style={styles.dialog}>
-                    <Text accessibilityRole="header" style={styles.title}>
-                        {title}
-                    </Text>
-                    <Text style={styles.message}>{message}</Text>
+                    <View style={styles.header}>
+                        <Text accessibilityRole="header" style={styles.title}>
+                            {title}
+                        </Text>
+                        <Text style={styles.message}>{message}</Text>
+                    </View>
                     <Button title="Entendi" onPress={onClose} />
                 </View>
             </View>
@@ -48,18 +50,19 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.4)',
-        padding: spacing.xl,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        padding: spacing.xxl,
     },
     dialog: {
         width: '100%',
         maxWidth: 400,
         gap: spacing.lg,
-        borderWidth: 1,
-        borderColor: colors.border,
         borderRadius: radius.xl,
         backgroundColor: colors.card,
         padding: spacing.xl,
+    },
+    header: {
+        gap: spacing.sm,
     },
     title: {
         color: colors.destructive,
@@ -68,9 +71,10 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     message: {
-        color: colors.mutedForeground,
+        color: palette.g40,
         fontFamily: fontFamily.normal,
         fontSize: fontSize.sm,
+        lineHeight: 20,
         textAlign: 'center',
     },
 });

@@ -1,9 +1,10 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, fontFamily, fontSize, radius, spacing } from '../theme';
+import { colors, fontFamily, fontSize, palette, radius, spacing } from '../theme';
 
-/** Visual variants of Badge, named after the ShadCN ones. */
-export type BadgeVariant = 'default' | 'secondary' | 'outline' | 'destructive';
+/** Visual variants of Badge, named after the ShadCN ones, plus one for each notice color. */
+export type BadgeVariant =
+    'default' | 'secondary' | 'outline' | 'success' | 'destructive' | 'warning';
 
 /** Props of Badge. */
 export type BadgeProps = {
@@ -19,26 +20,25 @@ const variants = {
         border: colors.secondary,
         text: colors.secondaryForeground,
     },
-    outline: { background: 'transparent', border: colors.border, text: colors.foreground },
+    outline: { background: colors.background, border: colors.border, text: palette.g40 },
+    success: { background: colors.success, border: colors.success, text: palette.white },
     destructive: {
         background: colors.destructive,
         border: colors.destructive,
         text: colors.destructiveForeground,
     },
+    warning: { background: colors.warning, border: colors.warning, text: palette.white },
 } as const;
 
-/** Small pill that labels a status or a role. */
+/** Small 24 dp pill that labels a status or a role. */
 export function Badge({ label, variant = 'default' }: BadgeProps) {
-    const palette = variants[variant];
+    const tone = variants[variant];
 
     return (
         <View
-            style={[
-                styles.badge,
-                { backgroundColor: palette.background, borderColor: palette.border },
-            ]}
+            style={[styles.badge, { backgroundColor: tone.background, borderColor: tone.border }]}
         >
-            <Text style={[styles.text, { color: palette.text }]}>{label}</Text>
+            <Text style={[styles.text, { color: tone.text }]}>{label}</Text>
         </View>
     );
 }
@@ -47,13 +47,15 @@ export function Badge({ label, variant = 'default' }: BadgeProps) {
 const styles = StyleSheet.create({
     badge: {
         alignSelf: 'flex-start',
+        height: 24,
+        justifyContent: 'center',
         borderWidth: 1,
         borderRadius: radius.full,
         paddingHorizontal: spacing.sm,
-        paddingVertical: 2,
     },
     text: {
         fontSize: fontSize.xs,
-        fontFamily: fontFamily.medium,
+        lineHeight: 16,
+        fontFamily: fontFamily.semibold,
     },
 });
