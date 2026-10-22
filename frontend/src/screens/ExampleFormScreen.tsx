@@ -1,26 +1,18 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import {
-    Animated,
-    KeyboardAvoidingView,
-    LayoutAnimation,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    View,
-} from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
 
-import { Alert } from '../components/Alert';
 import { Button } from '../components/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/Card';
-import { FieldError } from '../components/FieldError';
-import { Label } from '../components/Label';
+import { NoticeDialog } from '../components/NoticeDialog';
+import { Select } from '../components/Select';
 import { TextField } from '../components/TextField';
+import { useToast } from '../contexts/ToastContext';
 import { capitalizeWords, formatDecimalInput, formatPlate } from '../schemas/masks';
 import { VEHICLE_TYPES, vehicleSchema } from '../schemas/vehicle';
 import type { VehicleInput, VehicleValues } from '../schemas/vehicle';
-import { applyServerError } from '../services/serverErrors';
+import { applyServerError, isRuleError } from '../services/serverErrors';
 import type { MessageOverrides } from '../services/serverErrors';
 import { createVehicle, findVehicleByPlate } from '../services/vehicles';
 import { colors, spacing } from '../theme';
@@ -37,63 +29,18 @@ const OVERRIDES: MessageOverrides = {
     },
 };
 
-/** How long a notice stays on screen, and how long its fade-out takes, in milliseconds. */
-const NOTICE_DURATION = 5000;
-const NOTICE_FADE = 400;
-
-/** The message shown above the buttons after a submit, in the color of its kind. */
-type Notice = { variant: 'success' | 'destructive'; title: string };
-
-/**
- * Alert that fades out by itself after NOTICE_DURATION, then calls `onDismiss`, and the layout
- * below it slides up instead of jumping. It owns its opacity, so each notice is mounted with a
- * fresh one (the screen gives it a new `key`): reusing one animated value across notices left the
- * next alert invisible.
- */
-function TransientAlert({ notice, onDismiss }: { notice: Notice; onDismiss: () => void }) {
-    const [opacity] = useState(() => new Animated.Value(1));
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            Animated.timing(opacity, {
-                toValue: 0,
-                duration: NOTICE_FADE,
-                useNativeDriver: true,
-            }).start(({ finished }) => {
-                if (finished) {
-                    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                    onDismiss();
-                }
-            });
-        }, NOTICE_DURATION);
-
-        return () => {
-            clearTimeout(timer);
-            opacity.stopAnimation();
-        };
-    }, [opacity, onDismiss]);
-
-    return (
-        <Animated.View style={{ opacity }}>
-            <Alert variant={notice.variant} title={notice.title} />
-        </Animated.View>
-    );
-}
-
 /**
  * Reference form for the other screens (I-08): React Hook Form with a Zod schema from
  * src/schemas validates before sending, and whatever the server still refuses (a duplicate
  * plate, a value out of range, an API rule) comes back as a message on the field or on the
- * form, never as a generic error. It creates a real vehicle, so only a supervisor succeeds; a
+ * form, never as a generic error: a failure of the whole action opens the NoticeDialog (a
+ * refused rule or a failed save, each with its title), and success is a toast. It creates a real vehicle, so only a supervisor succeeds; a
  * driver gets the API rule refusal. Reached from the home screen until the navigation (I-10)
  * and the vehicle management (I-16) replace it.
  */
 export default function ExampleFormScreen({ onClose }: { onClose: () => void }) {
-    /* `id` grows with every notice, so a new one is a new alert and not an update of the old. */
-    const [shown, setShown] = useState<{ id: number; notice: Notice | null }>({
-        id: 0,
-        notice: null,
-    });
+    const toast = useToast();
+    const [failure, setFailure] = useState({ visible: false, title: '', message: '' });
     const {
         control,
         handleSubmit,
@@ -105,42 +52,35 @@ export default function ExampleFormScreen({ onClose }: { onClose: () => void }) 
         defaultValues: { plate: '', model: '', odometer: '' },
     });
 
-    const showNotice = (variant: Notice['variant'], title: string) =>
-        setShown((previous) => ({ id: previous.id + 1, notice: { variant, title } }));
-    const dismissNotice = useCallback(
-        () => setShown((previous) => ({ ...previous, notice: null })),
-        [],
-    );
-
-    const submit = handleSubmit(
-        async (values) => {
-            dismissNotice();
-            try {
-                const taken = await findVehicleByPlate(values.plate);
-                if (taken) {
-                    setError('plate', {
-                        type: 'server',
-                        message:
-                            taken.plate === values.plate
-                                ? 'Esta placa pertence a um veículo já cadastrado.'
-                                : 'Esta placa equivale a um veículo já cadastrado.',
-                    });
-                    return;
-                }
-
-                await createVehicle(values);
-                reset();
-                showNotice('success', 'Veículo cadastrado.');
-            } catch (error) {
-                const message = applyServerError(error, setError, FIELDS, OVERRIDES);
-                if (message) {
-                    showNotice('destructive', message);
-                }
+    const submit = handleSubmit(async (values) => {
+        try {
+            const taken = await findVehicleByPlate(values.plate);
+            if (taken) {
+                setError('plate', {
+                    type: 'server',
+                    message:
+                        taken.plate === values.plate
+                            ? 'Esta placa pertence a um veículo já cadastrado.'
+                            : 'Esta placa equivale a um veículo já cadastrado.',
+                });
+                return;
             }
-        },
-        /* An invalid attempt also clears the notice left by the previous one. */
-        dismissNotice,
-    );
+
+            await createVehicle(values);
+            reset();
+            toast.show('success', 'Veículo cadastrado.');
+        } catch (error) {
+            const message = applyServerError(error, setError, FIELDS, OVERRIDES);
+            if (!message) {
+                return;
+            }
+            setFailure({
+                visible: true,
+                title: isRuleError(error) ? 'Ação não permitida' : 'Não foi possível salvar',
+                message,
+            });
+        }
+    });
 
     return (
         <KeyboardAvoidingView
@@ -173,34 +113,20 @@ export default function ExampleFormScreen({ onClose }: { onClose: () => void }) 
                             )}
                         />
 
-                        {/* Stand-in for the selector component planned in I-09. */}
-                        <View style={styles.choice}>
-                            <Label>Tipo</Label>
-                            <Controller
-                                control={control}
-                                name="type"
-                                render={({ field: { onChange, value } }) => (
-                                    <View style={styles.options}>
-                                        {VEHICLE_TYPES.map((type) => (
-                                            <Button
-                                                key={type.value}
-                                                title={type.label}
-                                                variant={
-                                                    value === type.value ? 'default' : 'outline'
-                                                }
-                                                onPress={() => onChange(type.value)}
-                                                disabled={isSubmitting}
-                                                style={[
-                                                    styles.option,
-                                                    errors.type && styles.optionInvalid,
-                                                ]}
-                                            />
-                                        ))}
-                                    </View>
-                                )}
-                            />
-                            <FieldError message={errors.type?.message} />
-                        </View>
+                        <Controller
+                            control={control}
+                            name="type"
+                            render={({ field: { onChange, value } }) => (
+                                <Select
+                                    label="Tipo"
+                                    options={VEHICLE_TYPES}
+                                    value={value}
+                                    onChange={onChange}
+                                    error={errors.type?.message}
+                                    disabled={isSubmitting}
+                                />
+                            )}
+                        />
 
                         <Controller
                             control={control}
@@ -239,14 +165,6 @@ export default function ExampleFormScreen({ onClose }: { onClose: () => void }) 
                             )}
                         />
 
-                        {shown.notice && (
-                            <TransientAlert
-                                key={shown.id}
-                                notice={shown.notice}
-                                onDismiss={dismissNotice}
-                            />
-                        )}
-
                         <Button title="Cadastrar" onPress={submit} loading={isSubmitting} />
                         <Button
                             variant="outline"
@@ -257,6 +175,13 @@ export default function ExampleFormScreen({ onClose }: { onClose: () => void }) 
                     </CardContent>
                 </Card>
             </ScrollView>
+
+            <NoticeDialog
+                visible={failure.visible}
+                title={failure.title}
+                message={failure.message}
+                onClose={() => setFailure((previous) => ({ ...previous, visible: false }))}
+            />
         </KeyboardAvoidingView>
     );
 }
@@ -271,20 +196,5 @@ const styles = StyleSheet.create({
         flexGrow: 1,
         justifyContent: 'center',
         padding: spacing.xl,
-    },
-    choice: {
-        gap: spacing.sm,
-    },
-    options: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: spacing.sm,
-    },
-    option: {
-        flexGrow: 1,
-        paddingHorizontal: spacing.md,
-    },
-    optionInvalid: {
-        borderColor: colors.destructive,
     },
 });

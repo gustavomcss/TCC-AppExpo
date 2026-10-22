@@ -104,6 +104,19 @@ export function parseServerError(
 }
 
 /**
+ * Tells a refused rule (an API rule or a hook that rejects the action as a whole, RNF03) from a
+ * failure of the connection or of the server. Screens give the first the title of a refused
+ * rule in the NoticeDialog and the second the title of a failed save. Same reading as describeFormError: a 400 or 403 that names no field.
+ */
+export function isRuleError(error: unknown): boolean {
+    return (
+        error instanceof ClientResponseError &&
+        (error.status === 400 || error.status === 403) &&
+        Object.keys(parseServerError(error).fields).length === 0
+    );
+}
+
+/**
  * Puts the server's field errors on the form and returns the message that belongs to the form
  * as a whole, or null. An error on a field the form does not have is returned as the form
  * message too, so that it is never lost.
