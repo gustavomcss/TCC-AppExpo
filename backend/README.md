@@ -80,7 +80,7 @@ A migração `1792601121_set_base_api_rules.js` (I-05) é a linha de base de ace
 
 | Coleção                                | Listar e ver                      | Criar                                    | Editar                                    | Excluir     |
 | -------------------------------------- | --------------------------------- | ---------------------------------------- | ----------------------------------------- | ----------- |
-| `users`                                | o próprio usuário; supervisor: todos | `null` (I-11)                         | `null` (I-11)                             | `null`      |
+| `users`                                | o próprio usuário; supervisor: todos | supervisor, só `motorista` (RB19)     | veja [Usuários](#usuários-rb19) (I-11)    | `null`      |
 | `vehicles`                             | qualquer usuário autenticado      | supervisor                               | supervisor, sem alterar o `odometer` (RB09) | supervisor |
 | `routes`, `fuels`, `oils`, `repairs`   | o autor; supervisor: todos        | autenticado, autor definido pelo servidor | `null` (I-18, I-31)                      | `null` (RB17) |
 | `complaints`                           | o autor da `route_current`; supervisor: todos | só quem é o usuário da `route_current` | `null` (I-27)                      | `null` (RB17) |
@@ -90,6 +90,25 @@ A migração `1792601121_set_base_api_rules.js` (I-05) é a linha de base de ace
 - Placa antiga e Mercosul equivalente são a mesma placa (RB20): o 5º caractere é dígito no formato antigo e a letra de A a J no Mercosul (`ABC-1323` = `ABC-1D23`). `pb_hooks/vehicle_plate.pb.js` recusa a placa equivalente à de outro veículo com `validation_not_unique`, e o índice único `idx_vehicles_plate_canonical` (migração `1792622079_restrict_plate_equivalence.js`) garante no banco. A migração falha se já houver veículos com placas equivalentes: remova-os antes. Mudar a placa do próprio veículo para a equivalente é permitido (é a conversão).
 - Uma listagem sem permissão responde `200` com a lista vazia, e uma visualização, `404`. Regra `null` responde `403`.
 - Um motorista só enxerga as próprias rotas, então a checagem de "veículo já em rota aberta" feita pelo app (RB01) não vê rotas de outros motoristas. Quem garante a regra é o servidor (I-18).
+
+### Usuários (RB19)
+
+A migração `1792705420_set_user_edit_rules.js` (I-11) define quem cria e quem edita `users`. Todas as regras começam com a condição de usuário ativo (RB18). Os campos são protegidos com `:changed`, então um formulário que devolve um valor igual ao salvo é aceito.
+
+| Quem                       | Em quem            | Pode alterar                                          | Não pode alterar                                  |
+| -------------------------- | ------------------ | ----------------------------------------------------- | ------------------------------------------------- |
+| Qualquer usuário           | ele mesmo          | `photo` e a senha (com a senha antiga)                | `name`, `email`, `role`, `active`, `emailVisibility`, `verified` |
+| Supervisor                 | motorista          | `name`, `photo`, `active` e a senha (sem a antiga)    | `email`, `role`, `emailVisibility`, `verified`    |
+| Supervisor                 | outro supervisor   | nada                                                  | tudo                                              |
+| Motorista                  | outro usuário      | nada                                                  | tudo                                              |
+
+- **Criar:** só o supervisor, com `role = "motorista"` e sem `verified` ligado. Supervisores nascem no painel `/_/`, pelo superadmin, que também é o único que muda o cargo de alguém. Auto-cadastro não existe.
+- **`manageRule`:** vale para o supervisor sobre um motorista que não seja ele mesmo. É ela que dispensa a senha antiga na redefinição. A senha do próprio supervisor continua pedindo a antiga. Trocar a senha invalida a sessão antiga do usuário.
+- **Excluir:** `null` (só superuser), como no resto do modelo (RB17).
+- **E-mail:** o fluxo de troca de e-mail por link do PocketBase (`request-email-change`) responde `403` para todos, em `pb_hooks/users.pb.js`, porque contornaria a regra de edição.
+- **Desativação com rota aberta (RB18):** o mesmo hook recusa `active` de `true` para `false` enquanto houver rota `aberta` do usuário, para qualquer requisição, superuser incluído. A resposta é `400` com `data.active.code = "user_has_open_route"`. Reativar não é afetado. O teste completo do fluxo, com a rota criada pelo app, é depois da I-21.
+
+Testes em `tests/user-rules.test.js`.
 
 ### Usuário inativo (RB18)
 
