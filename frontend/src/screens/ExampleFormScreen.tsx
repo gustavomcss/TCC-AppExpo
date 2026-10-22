@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
 
+import { ActionBar } from '../components/ActionBar';
 import { Button } from '../components/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/Card';
 import { NoticeDialog } from '../components/NoticeDialog';
@@ -34,11 +35,12 @@ const OVERRIDES: MessageOverrides = {
  * src/schemas validates before sending, and whatever the server still refuses (a duplicate
  * plate, a value out of range, an API rule) comes back as a message on the field or on the
  * form, never as a generic error: a failure of the whole action opens the NoticeDialog (a
- * refused rule or a failed save, each with its title), and success is a toast. It creates a real vehicle, so only a supervisor succeeds; a
- * driver gets the API rule refusal. Reached from the home screen until the navigation (I-10)
- * and the vehicle management (I-16) replace it.
+ * refused rule or a failed save, each with its title), and success is a toast. The main action
+ * sits in the ActionBar fixed at the bottom. It creates a real vehicle, so only a supervisor
+ * succeeds; a driver gets the API rule refusal. Opened by the vehicle management card of the Services tab
+ * until the vehicle management (I-16) replaces it; the way back is the arrow of the header.
  */
-export default function ExampleFormScreen({ onClose }: { onClose: () => void }) {
+export default function ExampleFormScreen() {
     const toast = useToast();
     const [failure, setFailure] = useState({ visible: false, title: '', message: '' });
     const {
@@ -164,17 +166,13 @@ export default function ExampleFormScreen({ onClose }: { onClose: () => void }) 
                                 />
                             )}
                         />
-
-                        <Button title="Cadastrar" onPress={submit} loading={isSubmitting} />
-                        <Button
-                            variant="outline"
-                            title="Voltar"
-                            onPress={onClose}
-                            disabled={isSubmitting}
-                        />
                     </CardContent>
                 </Card>
             </ScrollView>
+
+            <ActionBar>
+                <Button title="Cadastrar" onPress={submit} loading={isSubmitting} />
+            </ActionBar>
 
             <NoticeDialog
                 visible={failure.visible}
@@ -186,7 +184,7 @@ export default function ExampleFormScreen({ onClose }: { onClose: () => void }) 
     );
 }
 
-/** Styles of the example form: a card centered on the same gray background as the other screens. */
+/** Styles of the example form: a card on the same gray background as the other screens. */
 const styles = StyleSheet.create({
     screen: {
         flex: 1,
@@ -194,7 +192,6 @@ const styles = StyleSheet.create({
     },
     content: {
         flexGrow: 1,
-        justifyContent: 'center',
-        padding: spacing.xl,
+        padding: spacing.lg,
     },
 });

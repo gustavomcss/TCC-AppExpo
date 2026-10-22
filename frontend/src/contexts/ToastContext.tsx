@@ -1,6 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Animated, Platform, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { CircleAlert, CircleCheck, Info } from 'lucide-react-native';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, fontFamily, fontSize, radius, spacing } from '../theme';
 
@@ -8,8 +10,11 @@ import { colors, fontFamily, fontSize, radius, spacing } from '../theme';
 const TOAST_DURATION = 5000;
 const TOAST_FADE = 400;
 
-/** Distance from the top edge that clears the status bar or the notch. */
-const TOP_OFFSET = Platform.OS === 'ios' ? 56 : (StatusBar.currentHeight ?? 24) + spacing.md;
+/**
+ * Distance from the bottom safe area that clears the tab bar (56 dp) or the action bar of a form
+ * (64 dp) and leaves a gap above it.
+ */
+const BOTTOM_OFFSET = 80;
 
 /** The kinds of toast, each with a solid background and white text. */
 type ToastVariant = 'success' | 'destructive' | 'warning';
@@ -24,6 +29,9 @@ const backgrounds = {
     warning: colors.warning,
 } as const;
 
+/** Icon of each kind of toast. */
+const icons = { success: CircleCheck, destructive: CircleAlert, warning: Info } as const;
+
 /** What useToast gives: `show` replaces the toast on screen, if any, with a new one. */
 type ToastContextValue = { show: (variant: ToastVariant, title: string) => void };
 
@@ -37,6 +45,7 @@ const ToastContext = createContext<ToastContextValue | null>(null);
  */
 function ToastView({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }) {
     const [opacity] = useState(() => new Animated.Value(1));
+    const Icon = icons[toast.variant];
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -64,6 +73,7 @@ function ToastView({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
                 onPress={onDismiss}
                 style={[styles.toast, { backgroundColor: backgrounds[toast.variant] }]}
             >
+                <Icon color={colors.primaryForeground} size={16} />
                 <Text style={styles.text}>{toast.title}</Text>
             </Pressable>
         </Animated.View>
@@ -77,6 +87,7 @@ function ToastView({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
  */
 export function ToastProvider({ children }: { children: ReactNode }) {
     const [toast, setToast] = useState<Toast | null>(null);
+    const { bottom } = useSafeAreaInsets();
 
     /* `id` grows with every toast, so a new one is a new view and not an update of the old. */
     const show = useCallback<ToastContextValue['show']>(
@@ -91,7 +102,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         <ToastContext.Provider value={value}>
             {children}
             {toast && (
-                <View pointerEvents="box-none" style={styles.overlay}>
+                <View
+                    pointerEvents="box-none"
+                    style={[styles.overlay, { bottom: bottom + BOTTOM_OFFSET }]}
+                >
                     <ToastView key={toast.id} toast={toast} onDismiss={dismiss} />
                 </View>
             )}
@@ -109,15 +123,17 @@ export function useToast(): ToastContextValue {
     return context;
 }
 
-/** Styles of the toast: floating above the screen, with a shadow to set it apart. */
+/** Styles of the toast: floating above the tab bar, with a shadow to set it apart. */
 const styles = StyleSheet.create({
     overlay: {
         position: 'absolute',
-        top: TOP_OFFSET,
-        left: spacing.xl,
-        right: spacing.xl,
+        left: spacing.lg,
+        right: spacing.lg,
     },
     toast: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
         borderRadius: radius.lg,
         paddingHorizontal: spacing.lg,
         paddingVertical: spacing.md,
@@ -128,9 +144,10 @@ const styles = StyleSheet.create({
         elevation: 4,
     },
     text: {
+        flex: 1,
         color: colors.primaryForeground,
         fontFamily: fontFamily.medium,
         fontSize: fontSize.sm,
-        textAlign: 'center',
+        lineHeight: 20,
     },
 });

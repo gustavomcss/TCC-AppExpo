@@ -1,7 +1,8 @@
+import { CircleAlert, CircleCheck, Info } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
 import type { ViewProps } from 'react-native';
 
-import { colors, fontFamily, fontSize, radius, spacing } from '../theme';
+import { colors, fontFamily, fontSize, palette, radius, spacing } from '../theme';
 
 /**
  * Props of Alert. The destructive variant is red and for errors, success is green, warning is
@@ -13,25 +14,43 @@ export type AlertProps = ViewProps & {
     variant?: 'default' | 'destructive' | 'success' | 'warning';
 };
 
-/** Border and text color of the colored variants. */
+/** Border, icon and title color of the colored variants. */
 const tones = {
     destructive: colors.destructive,
     success: colors.success,
     warning: colors.warning,
 } as const;
 
-/** Inline notice with a title and an optional description, announced to screen readers. */
+/** Icon of each variant. */
+const icons = {
+    default: Info,
+    destructive: CircleAlert,
+    success: CircleCheck,
+    warning: Info,
+} as const;
+
+/**
+ * Inline notice with an icon, a title and an optional description, announced to screen readers.
+ * Only the border, the icon and the title take the color of the variant; the description stays
+ * dark gray.
+ */
 export function Alert({ title, description, variant = 'default', style, ...props }: AlertProps) {
-    const tone = variant === 'default' ? undefined : { color: tones[variant] };
+    const tone = variant === 'default' ? undefined : tones[variant];
+    const Icon = icons[variant];
 
     return (
         <View
             accessibilityRole="alert"
-            style={[styles.alert, tone && { borderColor: tone.color }, style]}
+            style={[styles.alert, tone && { borderColor: tone }, style]}
             {...props}
         >
-            <Text style={[styles.title, tone]}>{title}</Text>
-            {description && <Text style={[styles.description, tone]}>{description}</Text>}
+            <View style={styles.icon}>
+                <Icon color={tone ?? colors.foreground} size={16} />
+            </View>
+            <View style={styles.texts}>
+                <Text style={[styles.title, tone && { color: tone }]}>{title}</Text>
+                {description && <Text style={styles.description}>{description}</Text>}
+            </View>
         </View>
     );
 }
@@ -39,24 +58,32 @@ export function Alert({ title, description, variant = 'default', style, ...props
 /** Styles of Alert. */
 const styles = StyleSheet.create({
     alert: {
-        gap: spacing.xs,
+        flexDirection: 'row',
+        gap: spacing.md,
         borderWidth: 1,
         borderColor: colors.border,
         borderRadius: radius.lg,
         backgroundColor: colors.card,
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.md,
+        padding: spacing.md,
+    },
+    icon: {
+        height: 20,
+        justifyContent: 'center',
+    },
+    texts: {
+        flex: 1,
+        gap: spacing.xs,
     },
     title: {
         color: colors.foreground,
         fontSize: fontSize.sm,
-        fontFamily: fontFamily.medium,
-        textAlign: 'center',
+        lineHeight: 20,
+        fontFamily: fontFamily.semibold,
     },
     description: {
-        color: colors.mutedForeground,
+        color: palette.g40,
         fontFamily: fontFamily.normal,
         fontSize: fontSize.sm,
-        textAlign: 'center',
+        lineHeight: 20,
     },
 });
