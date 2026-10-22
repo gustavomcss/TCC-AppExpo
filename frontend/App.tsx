@@ -6,9 +6,11 @@ import {
     useFonts,
 } from '@expo-google-fonts/geom';
 import { StatusBar } from 'expo-status-bar';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
+import { LoadingState } from './src/components/LoadingState';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
+import { ToastProvider } from './src/contexts/ToastContext';
 import HomeScreen from './src/screens/HomeScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import { colors } from './src/theme';
@@ -29,7 +31,7 @@ function Routes() {
     if (loading || !(fontsLoaded || fontError)) {
         return (
             <View style={styles.loading}>
-                <ActivityIndicator size="large" color={colors.primary} />
+                <LoadingState />
             </View>
         );
     }
@@ -37,11 +39,13 @@ function Routes() {
     return user ? <HomeScreen /> : <LoginScreen />;
 }
 
-/** Root component. Every screen except login requires a signed-in user. */
+/** Root component. Every screen except login requires a signed-in user; toasts show over all. */
 export default function App() {
     return (
         <AuthProvider>
-            <Routes />
+            <ToastProvider>
+                <Routes />
+            </ToastProvider>
             <StatusBar style="auto" />
         </AuthProvider>
     );
