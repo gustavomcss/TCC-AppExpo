@@ -176,6 +176,17 @@ describe("a user edits only their own photo and password (RB19)", () => {
             assert.ok((await stored(user)).photo);
         });
 
+        test(`${label}: removes their own photo, back to the initials`, async () => {
+            const user = getUser();
+            const session = getSession();
+            assert.equal((await session.patch(`/api/collections/users/records/${user.id}`, photoBody())).status, 200);
+            assert.ok((await stored(user)).photo);
+
+            const response = await session.patch(`/api/collections/users/records/${user.id}`, { photo: null });
+            assert.equal(response.status, 200);
+            assert.equal((await stored(user)).photo, "");
+        });
+
         test(`${label}: sending the unchanged fields back along with the photo is accepted`, async () => {
             const user = getUser();
             const current = await stored(user);

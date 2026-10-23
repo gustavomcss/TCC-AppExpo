@@ -21,6 +21,15 @@
         "web": {
             "favicon": "./assets/favicon.png"
         },
-        "plugins": ["expo-status-bar"]
+        "plugins": [
+            "expo-status-bar",
+            [
+                "expo-image-picker",
+                {
+                    "photosPermission": "O TRACE acessa suas fotos para você escolher a foto do perfil.",
+                    "cameraPermission": "O TRACE usa a câmera para você tirar a foto do perfil."
+                }
+            ]
+        ]
     }
 }

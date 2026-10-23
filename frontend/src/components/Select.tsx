@@ -1,27 +1,18 @@
-import { Check, ChevronDown } from 'lucide-react-native';
+import { ChevronDown } from 'lucide-react-native';
+import type { LucideIcon } from 'lucide-react-native';
 import { useState } from 'react';
-import {
-    Animated,
-    Easing,
-    FlatList,
-    Modal,
-    Pressable,
-    StyleSheet,
-    Text,
-    useWindowDimensions,
-    View,
-} from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, fontFamily, fontSize, radius, sizes, spacing } from '../theme';
+import { BottomSheet, SheetOption } from './BottomSheet';
 import { FieldError } from './FieldError';
 import { Label } from './Label';
 
-/** One choice of a Select: the `value` the form stores and the `label` the user reads. */
-export type SelectOption<T extends string> = { value: T; label: string };
-
-/** How long the sheet takes to slide in and out, in milliseconds. */
-const SLIDE_IN = 350;
-const SLIDE_OUT = 280;
+/**
+ * One choice of a Select: the `value` the form stores and the `label` the user reads. An `icon`
+ * shows before the label in the sheet, for choices that a picture identifies, such as a vehicle type.
+ */
+export type SelectOption<T extends string> = { value: T; label: string; icon?: LucideIcon };
 
 /** Props of Select. The list is closed until the field is pressed. */
 export type SelectProps<T extends string> = {
@@ -37,10 +28,7 @@ export type SelectProps<T extends string> = {
 /**
  * Form field for choosing one option from a short list: label, a field that looks like an Input
  * and, when there is one, the validation error under it. Pressing it opens the options in a
- * bottom sheet, which also works for lists too long to show inline. The sheet slides up and
- * the dark backdrop fades on its own: the Modal's own slide animation would carry the backdrop
- * along with the sheet, like a pane of dark glass. The slide decelerates as it arrives and
- * accelerates as it leaves, which is what makes it look smooth.
+ * BottomSheet, which also works for lists too long to show inline.
  */
 export function Select<T extends string>({
     label,
@@ -52,35 +40,11 @@ export function Select<T extends string>({
     disabled = false,
 }: SelectProps<T>) {
     const [open, setOpen] = useState(false);
-    const [progress] = useState(() => new Animated.Value(0));
-    const { height } = useWindowDimensions();
     const selected = options.find((option) => option.value === value);
 
-    /* The Modal stays mounted until the slide-out ends. Starting either animation stops the other. */
-    const show = () => {
-        setOpen(true);
-        Animated.timing(progress, {
-            toValue: 1,
-            duration: SLIDE_IN,
-            easing: Easing.out(Easing.cubic),
-            useNativeDriver: true,
-        }).start();
-    };
-    const hide = () => {
-        Animated.timing(progress, {
-            toValue: 0,
-            duration: SLIDE_OUT,
-            easing: Easing.in(Easing.cubic),
-            useNativeDriver: true,
-        }).start(({ finished }) => {
-            if (finished) {
-                setOpen(false);
-            }
-        });
-    };
     const choose = (next: T) => {
         onChange(next);
-        hide();
+        setOpen(false);
     };
 
     return (
@@ -91,7 +55,7 @@ export function Select<T extends string>({
                 accessibilityLabel={label}
                 accessibilityState={{ disabled, expanded: open }}
                 disabled={disabled}
-                onPress={show}
+                onPress={() => setOpen(true)}
                 style={[
                     styles.trigger,
                     Boolean(error) && styles.invalid,
@@ -105,64 +69,24 @@ export function Select<T extends string>({
             </Pressable>
             <FieldError message={error} />
 
-            <Modal visible={open} transparent animationType="none" onRequestClose={hide}>
-                <View style={styles.overlay}>
-                    <Animated.View style={[styles.backdrop, { opacity: progress }]}>
-                        <Pressable
-                            accessibilityLabel="Fechar"
-                            style={StyleSheet.absoluteFill}
-                            onPress={hide}
+            <BottomSheet visible={open} title={label} onClose={() => setOpen(false)}>
+                <FlatList
+                    data={options}
+                    keyExtractor={(option) => option.value}
+                    renderItem={({ item }) => (
+                        <SheetOption
+                            label={item.label}
+                            icon={
+                                item.icon && (
+                                    <item.icon color={colors.foreground} size={sizes.icon} />
+                                )
+                            }
+                            selected={item.value === value}
+                            onPress={() => choose(item.value)}
                         />
-                    </Animated.View>
-                    <Animated.View
-                        style={[
-                            styles.sheet,
-                            {
-                                transform: [
-                                    {
-                                        translateY: progress.interpolate({
-                                            inputRange: [0, 1],
-                                            outputRange: [height, 0],
-                                        }),
-                                    },
-                                ],
-                            },
-                        ]}
-                    >
-                        <View style={styles.grab} />
-                        <Text accessibilityRole="header" style={styles.title}>
-                            {label}
-                        </Text>
-                        <FlatList
-                            data={options}
-                            keyExtractor={(option) => option.value}
-                            renderItem={({ item }) => (
-                                <Pressable
-                                    accessibilityRole="menuitem"
-                                    accessibilityState={{ selected: item.value === value }}
-                                    onPress={() => choose(item.value)}
-                                    style={({ pressed }) => [
-                                        styles.option,
-                                        pressed && styles.pressed,
-                                    ]}
-                                >
-                                    <Text
-                                        style={[
-                                            styles.optionText,
-                                            item.value === value && styles.optionSelected,
-                                        ]}
-                                    >
-                                        {item.label}
-                                    </Text>
-                                    {item.value === value && (
-                                        <Check color={colors.foreground} size={20} />
-                                    )}
-                                </Pressable>
-                            )}
-                        />
-                    </Animated.View>
-                </View>
-            </Modal>
+                    )}
+                />
+            </BottomSheet>
         </View>
     );
 }
@@ -198,56 +122,5 @@ const styles = StyleSheet.create({
     },
     placeholder: {
         color: colors.mutedForeground,
-    },
-    overlay: {
-        flex: 1,
-        justifyContent: 'flex-end',
-    },
-    backdrop: {
-        ...StyleSheet.absoluteFill,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    },
-    sheet: {
-        maxHeight: '70%',
-        borderTopLeftRadius: radius.xl,
-        borderTopRightRadius: radius.xl,
-        backgroundColor: colors.card,
-        paddingTop: spacing.sm,
-        paddingBottom: spacing.xl,
-    },
-    grab: {
-        width: 32,
-        height: 4,
-        alignSelf: 'center',
-        marginBottom: spacing.sm,
-        borderRadius: radius.full,
-        backgroundColor: colors.border,
-    },
-    title: {
-        color: colors.foreground,
-        fontFamily: fontFamily.semibold,
-        fontSize: fontSize.lg,
-        lineHeight: 24,
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.sm,
-    },
-    option: {
-        minHeight: 48,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: spacing.md,
-        paddingHorizontal: spacing.lg,
-    },
-    pressed: {
-        backgroundColor: colors.muted,
-    },
-    optionText: {
-        color: colors.foreground,
-        fontFamily: fontFamily.normal,
-        fontSize: fontSize.base,
-    },
-    optionSelected: {
-        fontFamily: fontFamily.semibold,
     },
 });

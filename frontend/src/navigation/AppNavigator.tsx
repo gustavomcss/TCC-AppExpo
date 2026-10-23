@@ -7,6 +7,7 @@ import { StyleSheet, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '../contexts/AuthContext';
+import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 import ExampleFormScreen from '../screens/ExampleFormScreen';
 import HistoryScreen from '../screens/HistoryScreen';
 import ModuleScreen from '../screens/ModuleScreen';
@@ -110,6 +111,11 @@ export default function AppNavigator() {
                 screenOptions={{ ...headerOptions, headerBackButtonDisplayMode: 'minimal' }}
             >
                 <Stack.Screen name="Tabs" component={Tabs} options={{ headerShown: false }} />
+                <Stack.Screen
+                    name="ChangePassword"
+                    component={ChangePasswordScreen}
+                    options={{ title: 'Trocar senha' }}
+                />
 
                 {modules.map((module) => (
                     <Stack.Screen

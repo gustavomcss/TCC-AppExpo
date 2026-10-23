@@ -39,6 +39,8 @@ const FIELD_MESSAGES: Record<string, (params: Record<string, unknown>) => string
         min === 0 ? 'O valor não pode ser negativo.' : `O valor mínimo é ${formatNumber(min)}.`,
     validation_max_number_constraint: ({ max }) => `O valor máximo é ${formatNumber(max)}.`,
     validation_too_many_decimals: () => 'Use no máximo duas casas decimais.',
+    validation_invalid_mime_type: () => 'Use uma imagem JPG, PNG ou WebP.',
+    validation_file_size_limit: () => 'A imagem é grande demais. O limite é 5 MB.',
 };
 
 /** Translates the error of one field, preferring the override for that field and code. */
