@@ -16,6 +16,8 @@ export type SessionUser = {
     email: string;
     name: string;
     role: 'motorista' | 'supervisor';
+    /** Address of the profile photo, or null when the user has none. */
+    photoUrl: string | null;
 };
 
 type AuthContextValue = {
@@ -43,6 +45,7 @@ function currentUser(): SessionUser | null {
         email: record.email,
         name: record.name,
         role: record.role,
+        photoUrl: record.photo ? pb.files.getURL(record, record.photo) : null,
     };
 }
 

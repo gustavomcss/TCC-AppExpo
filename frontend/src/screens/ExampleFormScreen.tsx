@@ -9,9 +9,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { NoticeDialog } from '../components/NoticeDialog';
 import { Select } from '../components/Select';
 import { TextField } from '../components/TextField';
+import { VEHICLE_TYPE_OPTIONS } from '../components/vehicleTypeOptions';
 import { useToast } from '../contexts/ToastContext';
 import { capitalizeWords, formatDecimalInput, formatPlate } from '../schemas/masks';
-import { VEHICLE_TYPES, vehicleSchema } from '../schemas/vehicle';
+import { vehicleSchema } from '../schemas/vehicle';
 import type { VehicleInput, VehicleValues } from '../schemas/vehicle';
 import { applyServerError, isRuleError } from '../services/serverErrors';
 import type { MessageOverrides } from '../services/serverErrors';
@@ -121,7 +122,7 @@ export default function ExampleFormScreen() {
                             render={({ field: { onChange, value } }) => (
                                 <Select
                                     label="Tipo"
-                                    options={VEHICLE_TYPES}
+                                    options={VEHICLE_TYPE_OPTIONS}
                                     value={value}
                                     onChange={onChange}
                                     error={errors.type?.message}
