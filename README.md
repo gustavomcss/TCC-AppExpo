@@ -7,9 +7,9 @@ Feito com React Native + Expo (TypeScript), uma única base de código para Andr
 ## Requisitos
 
 - Node.js 20.19.4 ou mais novo e npm
-- App **Expo Go** no celular, compatível com o **SDK 57** (o SDK do projeto):
+- App **Expo Go** no celular, compatível com o **SDK 58** (o SDK do projeto):
     - iOS: a versão atual da App Store.
-    - Android: a versão atual da Play Store; se ela estiver em outro SDK, baixe a do SDK 57 em [expo.dev/go](https://expo.dev/go).
+    - Android: a versão atual da Play Store; se ela estiver em outro SDK, baixe a do SDK 58 em [expo.dev/go](https://expo.dev/go).
 - Alternativa: emulador Android
 
 ## Como rodar

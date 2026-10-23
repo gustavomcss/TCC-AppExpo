@@ -89,7 +89,7 @@ export default function LoginScreen() {
                                     value={value}
                                     onChangeText={onChange}
                                     onBlur={onBlur}
-                                    onSubmitEditing={submit}
+                                    onSubmitEditing={() => submit()}
                                     error={errors.password?.message}
                                     secureTextEntry
                                     autoCapitalize="none"
@@ -100,7 +100,7 @@ export default function LoginScreen() {
                             )}
                         />
 
-                        <Button title="Entrar" onPress={submit} loading={isSubmitting} />
+                        <Button title="Entrar" onPress={() => submit()} loading={isSubmitting} />
                     </CardContent>
                 </Card>
 

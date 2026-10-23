@@ -139,7 +139,7 @@ export default function ChangePasswordScreen() {
                                     value={value}
                                     onChangeText={onChange}
                                     onBlur={onBlur}
-                                    onSubmitEditing={submit}
+                                    onSubmitEditing={() => submit()}
                                     error={errors.passwordConfirm?.message}
                                     secureTextEntry
                                     autoCapitalize="none"
@@ -154,7 +154,7 @@ export default function ChangePasswordScreen() {
             </ScrollView>
 
             <ActionBar>
-                <Button title="Alterar senha" onPress={submit} loading={isSubmitting} />
+                <Button title="Alterar senha" onPress={() => submit()} loading={isSubmitting} />
             </ActionBar>
 
             <NoticeDialog
