@@ -8,6 +8,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '../contexts/AuthContext';
 import ChangePasswordScreen from '../screens/ChangePasswordScreen';
+import DriverFormScreen from '../screens/DriverFormScreen';
+import DriversScreen from '../screens/DriversScreen';
 import ExampleFormScreen from '../screens/ExampleFormScreen';
 import HistoryScreen from '../screens/HistoryScreen';
 import ModuleScreen from '../screens/ModuleScreen';
@@ -123,16 +125,27 @@ export default function AppNavigator() {
                         name={module.key}
                         options={{ title: module.title }}
                     >
-                        {() =>
-                            module.key === 'vehicles' ? (
-                                /* Stand-in until the vehicle management (I-16) exists. */
-                                <ExampleFormScreen />
-                            ) : (
-                                <ModuleScreen moduleKey={module.key} />
-                            )
-                        }
+                        {() => {
+                            switch (module.key) {
+                                case 'drivers':
+                                    return <DriversScreen />;
+                                case 'vehicles':
+                                    /* Stand-in until the vehicle management (I-16) exists. */
+                                    return <ExampleFormScreen />;
+                                default:
+                                    return <ModuleScreen moduleKey={module.key} />;
+                            }
+                        }}
                     </Stack.Screen>
                 ))}
+
+                {user?.role === 'supervisor' && (
+                    <Stack.Screen
+                        name="DriverNew"
+                        component={DriverFormScreen}
+                        options={{ title: 'Novo motorista' }}
+                    />
+                )}
             </Stack.Navigator>
         </NavigationContainer>
     );
