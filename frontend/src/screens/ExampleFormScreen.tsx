@@ -160,7 +160,7 @@ export default function ExampleFormScreen() {
                                         onChange(formatDecimalInput(text, value))
                                     }
                                     onBlur={onBlur}
-                                    onSubmitEditing={submit}
+                                    onSubmitEditing={() => submit()}
                                     error={errors.odometer?.message}
                                     keyboardType="number-pad"
                                     editable={!isSubmitting}
@@ -172,7 +172,7 @@ export default function ExampleFormScreen() {
             </ScrollView>
 
             <ActionBar>
-                <Button title="Cadastrar" onPress={submit} loading={isSubmitting} />
+                <Button title="Cadastrar" onPress={() => submit()} loading={isSubmitting} />
             </ActionBar>
 
             <NoticeDialog

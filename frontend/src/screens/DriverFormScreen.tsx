@@ -133,7 +133,7 @@ export default function DriverFormScreen() {
                                     value={value}
                                     onChangeText={onChange}
                                     onBlur={onBlur}
-                                    onSubmitEditing={submit}
+                                    onSubmitEditing={() => submit()}
                                     error={errors.password?.message}
                                     secureTextEntry
                                     autoCapitalize="none"
@@ -148,7 +148,11 @@ export default function DriverFormScreen() {
             </ScrollView>
 
             <ActionBar>
-                <Button title="Cadastrar motorista" onPress={submit} loading={isSubmitting} />
+                <Button
+                    title="Cadastrar motorista"
+                    onPress={() => submit()}
+                    loading={isSubmitting}
+                />
             </ActionBar>
 
             <NoticeDialog
