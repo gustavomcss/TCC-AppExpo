@@ -7,20 +7,25 @@ import { pb } from './pocketbase';
 export type PickedPhoto = { uri: string };
 
 /**
+ * Request body that carries a picture to the `photo` field of a user.
+ *
+ * The fetch of Expo does not read the `{ uri, name, type }` object of React Native's FormData
+ * ("Unsupported FormDataPart implementation"); it reads a Blob or a File of expo-file-system,
+ * which brings its own name and type.
+ */
+export function photoBody(photo: PickedPhoto): FormData {
+    const body = new FormData();
+    body.append('photo', new File(photo.uri) as unknown as Blob);
+    return body;
+}
+
+/**
  * Sends a new photo for the signed-in user (RB19). The PocketBase client then refreshes the
  * stored user record, so the new picture reaches every screen that shows it. The server accepts
  * the change only for the user's own record and only for this field.
  */
 export async function updatePhoto(userId: string, photo: PickedPhoto): Promise<void> {
-    /*
-     * The fetch of Expo does not read the `{ uri, name, type }` object of React Native's
-     * FormData ("Unsupported FormDataPart implementation"); it reads a Blob or a File of
-     * expo-file-system, which brings its own name and type.
-     */
-    const body = new FormData();
-    body.append('photo', new File(photo.uri) as unknown as Blob);
-
-    await pb.collection('users').update(userId, body);
+    await pb.collection('users').update(userId, photoBody(photo));
 }
 
 /** Removes the photo of the signed-in user (RB19), so the screens go back to showing initials. */

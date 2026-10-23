@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '../contexts/AuthContext';
 import ChangePasswordScreen from '../screens/ChangePasswordScreen';
+import DriverDetailScreen from '../screens/DriverDetailScreen';
 import DriverFormScreen from '../screens/DriverFormScreen';
 import DriversScreen from '../screens/DriversScreen';
 import ExampleFormScreen from '../screens/ExampleFormScreen';
@@ -140,11 +141,18 @@ export default function AppNavigator() {
                 ))}
 
                 {user?.role === 'supervisor' && (
-                    <Stack.Screen
-                        name="DriverNew"
-                        component={DriverFormScreen}
-                        options={{ title: 'Novo motorista' }}
-                    />
+                    <>
+                        <Stack.Screen
+                            name="DriverNew"
+                            component={DriverFormScreen}
+                            options={{ title: 'Novo motorista' }}
+                        />
+                        <Stack.Screen
+                            name="DriverDetail"
+                            component={DriverDetailScreen}
+                            options={{ title: 'Motorista' }}
+                        />
+                    </>
                 )}
             </Stack.Navigator>
         </NavigationContainer>

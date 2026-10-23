@@ -244,6 +244,7 @@ describe("a supervisor edits a driver's name, photo, active flag and password (R
         const response = await asSupervisorA.patch(`/api/collections/users/records/${driver.id}`, { name: "Renamed driver" });
         assert.equal(response.status, 200);
         assert.equal(response.body.name, "Renamed driver");
+        assert.equal(response.body.email, driver.email, "the supervisor still sees the e-mail in the response");
 
         assert.equal((await asSupervisorA.patch(`/api/collections/users/records/${driver.id}`, photoBody())).status, 200);
         assert.ok((await stored(driver)).photo);

@@ -1,6 +1,5 @@
 import { useNavigation } from '@react-navigation/native';
 import { Camera, ChevronRight, KeyRound } from 'lucide-react-native';
-import * as ImagePicker from 'expo-image-picker';
 import { useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -16,6 +15,7 @@ import { useAuth } from '../contexts/AuthContext';
 import type { SessionUser } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import type { RootNavigation } from '../navigation/types';
+import { CAMERA_DENIED_MESSAGE, pickImage } from '../services/photoPicker';
 import { removePhoto, updatePhoto } from '../services/profile';
 import { isRuleError, parseServerError } from '../services/serverErrors';
 import { colors, fontFamily, fontSize, palette, sizes, spacing } from '../theme';
@@ -55,14 +55,6 @@ function MenuRow({ icon, label, onPress, busy = false, disabled = false }: MenuR
         </Pressable>
     );
 }
-
-/** Options of the pick, shared by the camera and the gallery: a square crop, already compressed. */
-const PICKER_OPTIONS: ImagePicker.ImagePickerOptions = {
-    mediaTypes: ['images'],
-    allowsEditing: true,
-    aspect: [1, 1],
-    quality: 0.7,
-};
 
 /**
  * User tab (RF04): photo, name, e-mail and role of the signed-in user, read only except for the
@@ -108,27 +100,17 @@ export default function UserScreen() {
                 return;
             }
 
-            if (source === 'camera') {
-                const permission = await ImagePicker.requestCameraPermissionsAsync();
-                if (!permission.granted) {
-                    fail(
-                        'Permissão necessária',
-                        'Permita o uso da câmera nas configurações do aparelho para tirar a foto.',
-                    );
-                    return;
-                }
+            const picked = await pickImage(source);
+            if (picked.status === 'denied') {
+                fail('Permissão necessária', CAMERA_DENIED_MESSAGE);
+                return;
             }
-
-            const result =
-                source === 'camera'
-                    ? await ImagePicker.launchCameraAsync(PICKER_OPTIONS)
-                    : await ImagePicker.launchImageLibraryAsync(PICKER_OPTIONS);
-            if (result.canceled) {
+            if (picked.status === 'canceled') {
                 return;
             }
 
             setUploading(true);
-            await updatePhoto(user.id, result.assets[0]);
+            await updatePhoto(user.id, picked.photo);
             toast.show('success', 'Foto atualizada.');
         } catch (error) {
             const { fields, form } = parseServerError(error);
@@ -172,7 +154,7 @@ export default function UserScreen() {
                 />
             </Card>
 
-            <Button variant="outline" title="Sair" onPress={signOut} />
+            <Button variant="destructive" title="Sair" onPress={signOut} />
 
             <PhotoSheet
                 visible={sheetOpen}
