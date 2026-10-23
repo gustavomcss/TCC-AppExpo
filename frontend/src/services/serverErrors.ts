@@ -41,6 +41,8 @@ const FIELD_MESSAGES: Record<string, (params: Record<string, unknown>) => string
     validation_too_many_decimals: () => 'Use no máximo duas casas decimais.',
     validation_invalid_mime_type: () => 'Use uma imagem JPG, PNG ou WebP.',
     validation_file_size_limit: () => 'A imagem é grande demais. O limite é 5 MB.',
+    user_has_open_route: () =>
+        'Este motorista tem uma rota aberta. Encerre a rota antes de desativá-lo.',
 };
 
 /** Translates the error of one field, preferring the override for that field and code. */

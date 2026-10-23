@@ -1,6 +1,7 @@
+import { CircleAlert } from 'lucide-react-native';
 import { Modal, StyleSheet, Text, View } from 'react-native';
 
-import { colors, fontFamily, fontSize, palette, radius, spacing } from '../theme';
+import { colors, fontFamily, fontSize, palette, radius, sizes, spacing } from '../theme';
 import { Button } from './Button';
 
 /**
@@ -19,7 +20,8 @@ export type NoticeDialogProps = {
  * rule, such as a vehicle that already has an open route, or the save failed. It is a dialog and
  * not an inline alert because it concerns the whole action, so the user reads it and
  * acknowledges it before going on. Everything in it is centered, as it sits in the middle of the
- * screen. The default title is the one of a refused rule.
+ * screen. A red alert icon above the title marks it as an error, so the title itself stays in the
+ * regular text color. The default title is the one of a refused rule.
  */
 export function NoticeDialog({
     visible,
@@ -32,6 +34,11 @@ export function NoticeDialog({
             <View style={styles.backdrop}>
                 <View accessibilityViewIsModal style={styles.dialog}>
                     <View style={styles.header}>
+                        <CircleAlert
+                            color={colors.destructive}
+                            size={sizes.icon}
+                            style={styles.icon}
+                        />
                         <Text accessibilityRole="header" style={styles.title}>
                             {title}
                         </Text>
@@ -64,8 +71,11 @@ const styles = StyleSheet.create({
     header: {
         gap: spacing.sm,
     },
+    icon: {
+        alignSelf: 'center',
+    },
     title: {
-        color: colors.destructive,
+        color: colors.foreground,
         fontFamily: fontFamily.semibold,
         fontSize: fontSize.lg,
         textAlign: 'center',

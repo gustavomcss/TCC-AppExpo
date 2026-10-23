@@ -27,3 +27,27 @@ export const driverSchema = z.object({
 
 /** Values of the driver form. */
 export type DriverValues = z.infer<typeof driverSchema>;
+
+/**
+ * Name edit on the driver detail (RB19: the supervisor edits only name, photo, situation and
+ * password of a driver). Same rule as the registration form.
+ */
+export const driverNameSchema = driverSchema.pick({ name: true });
+
+/** Values of the name edit form. */
+export type DriverNameValues = z.infer<typeof driverNameSchema>;
+
+/**
+ * Password reset on the driver detail (RB19). The supervisor types the new password once and
+ * passes it on; the server needs no old password for this, and the minimum is the same 8
+ * characters of the initial one.
+ */
+export const driverPasswordSchema = z.object({
+    password: z
+        .string()
+        .min(1, 'Informe a nova senha.')
+        .min(8, 'A senha deve ter no mínimo 8 caracteres.'),
+});
+
+/** Values of the password reset form. */
+export type DriverPasswordValues = z.infer<typeof driverPasswordSchema>;

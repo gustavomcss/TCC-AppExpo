@@ -80,9 +80,7 @@ export default function DriverFormScreen() {
                 <Card>
                     <CardHeader>
                         <CardTitle>Dados do motorista</CardTitle>
-                        <CardDescription>
-                            O cargo será Motorista. O acesso é liberado com a senha inicial.
-                        </CardDescription>
+                        <CardDescription>O acesso é liberado com a senha inicial.</CardDescription>
                     </CardHeader>
 
                     <CardContent>
