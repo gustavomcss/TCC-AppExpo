@@ -37,8 +37,20 @@ export const vehicleSchema = z.object({
     odometer: decimalField('Informe o km atual.'),
 });
 
+/**
+ * Vehicle edit form (RF06): the registration form without the odometer, which is read-only after
+ * registration (RB09).
+ */
+export const vehicleEditSchema = vehicleSchema.omit({ odometer: true });
+
 /** What the vehicle form holds while it is being filled in. */
 export type VehicleInput = z.input<typeof vehicleSchema>;
 
 /** Values of the vehicle form once validated and converted. */
 export type VehicleValues = z.output<typeof vehicleSchema>;
+
+/** What the vehicle edit form holds while it is being filled in. */
+export type VehicleEditInput = z.input<typeof vehicleEditSchema>;
+
+/** Values of the vehicle edit form once validated and converted. */
+export type VehicleEditValues = z.output<typeof vehicleEditSchema>;

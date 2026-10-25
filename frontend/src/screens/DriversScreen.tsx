@@ -165,7 +165,8 @@ const styles = StyleSheet.create({
         backgroundColor: colors.muted,
     },
     list: {
-        padding: spacing.lg,
+        paddingHorizontal: spacing.lg,
+        paddingBottom: spacing.lg,
         gap: spacing.md,
     },
     pressed: {

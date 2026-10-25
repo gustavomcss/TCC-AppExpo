@@ -15,6 +15,7 @@ import HistoryScreen from '../screens/HistoryScreen';
 import ModuleScreen from '../screens/ModuleScreen';
 import ServicesScreen from '../screens/ServicesScreen';
 import UserScreen from '../screens/UserScreen';
+import VehicleDetailScreen from '../screens/VehicleDetailScreen';
 import VehicleFormScreen from '../screens/VehicleFormScreen';
 import VehiclesScreen from '../screens/VehiclesScreen';
 import { colors, fontFamily, fontSize, palette, sizes } from '../theme';
@@ -156,6 +157,11 @@ export default function AppNavigator() {
                             name="VehicleNew"
                             component={VehicleFormScreen}
                             options={{ title: 'Novo veículo' }}
+                        />
+                        <Stack.Screen
+                            name="VehicleDetail"
+                            component={VehicleDetailScreen}
+                            options={{ title: 'Veículo' }}
                         />
                     </>
                 )}
