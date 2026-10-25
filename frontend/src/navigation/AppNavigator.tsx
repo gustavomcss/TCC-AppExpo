@@ -11,11 +11,12 @@ import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 import DriverDetailScreen from '../screens/DriverDetailScreen';
 import DriverFormScreen from '../screens/DriverFormScreen';
 import DriversScreen from '../screens/DriversScreen';
-import ExampleFormScreen from '../screens/ExampleFormScreen';
 import HistoryScreen from '../screens/HistoryScreen';
 import ModuleScreen from '../screens/ModuleScreen';
 import ServicesScreen from '../screens/ServicesScreen';
 import UserScreen from '../screens/UserScreen';
+import VehicleFormScreen from '../screens/VehicleFormScreen';
+import VehiclesScreen from '../screens/VehiclesScreen';
 import { colors, fontFamily, fontSize, palette, sizes } from '../theme';
 import { modulesFor } from './modules';
 import type { RootStackParamList } from './types';
@@ -131,8 +132,7 @@ export default function AppNavigator() {
                                 case 'drivers':
                                     return <DriversScreen />;
                                 case 'vehicles':
-                                    /* Stand-in until the vehicle management (I-16) exists. */
-                                    return <ExampleFormScreen />;
+                                    return <VehiclesScreen />;
                                 default:
                                     return <ModuleScreen moduleKey={module.key} />;
                             }
@@ -151,6 +151,11 @@ export default function AppNavigator() {
                             name="DriverDetail"
                             component={DriverDetailScreen}
                             options={{ title: 'Motorista' }}
+                        />
+                        <Stack.Screen
+                            name="VehicleNew"
+                            component={VehicleFormScreen}
+                            options={{ title: 'Novo veículo' }}
                         />
                     </>
                 )}

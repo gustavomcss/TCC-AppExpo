@@ -1,21 +1,26 @@
 import { Eye, EyeOff } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import type { TextInputProps } from 'react-native';
 
 import { colors, fontFamily, fontSize, radius, sizes, spacing } from '../theme';
 
-/** Props of Input. `invalid` paints the border with the error color. */
-export type InputProps = TextInputProps & { invalid?: boolean };
+/**
+ * Props of Input. `invalid` paints the border with the error color, and `suffix` is a short text
+ * drawn inside the box, on the right, such as the unit of the value ("km").
+ */
+export type InputProps = TextInputProps & { invalid?: boolean; suffix?: string };
 
 /**
  * Single-line text input with the app border and radius, 44 dp tall. The border darkens while it
- * has focus, and a field with `secureTextEntry` gets a button to show or hide what is typed.
+ * has focus, a field with `secureTextEntry` gets a button to show or hide what is typed, and a
+ * `suffix` shows the unit of the value beside what is typed.
  */
 export function Input({
     invalid,
     editable = true,
     secureTextEntry,
+    suffix,
     style,
     onFocus,
     onBlur,
@@ -50,6 +55,7 @@ export function Input({
                 }}
                 {...props}
             />
+            {suffix && <Text style={styles.suffix}>{suffix}</Text>}
             {isPassword && (
                 <Pressable
                     accessibilityRole="button"
@@ -100,6 +106,12 @@ const styles = StyleSheet.create({
     },
     inputDisabled: {
         color: colors.mutedForeground,
+    },
+    suffix: {
+        marginLeft: spacing.sm,
+        color: colors.mutedForeground,
+        fontFamily: fontFamily.normal,
+        fontSize: fontSize.sm,
     },
     toggle: {
         width: sizes.control,

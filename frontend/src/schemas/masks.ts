@@ -58,3 +58,12 @@ export function capitalizeWords(text: string): string {
         .trimStart()
         .replace(/(^|\s)(\S)/g, (_, space, letter) => space + letter.toUpperCase());
 }
+
+/**
+ * Formats a km value read from the server for display in the same 000.000,00 shape as the input
+ * mask, so every value has the same width: 50 is "000.000,50" and 999999.99 is "999.999,99".
+ */
+export function formatKm(value: number): string {
+    const padded = String(Math.round(value * 100)).padStart(8, '0');
+    return `${padded.slice(0, 3)}.${padded.slice(3, 6)},${padded.slice(6)}`;
+}
