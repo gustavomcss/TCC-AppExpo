@@ -10,6 +10,7 @@ import { Avatar } from '../components/Avatar';
 import { Badge } from '../components/Badge';
 import { Button } from '../components/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/Card';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ErrorState } from '../components/ErrorState';
 import { LoadingState } from '../components/LoadingState';
 import { NoticeDialog } from '../components/NoticeDialog';
@@ -21,6 +22,7 @@ import type { RootStackParamList } from '../navigation/types';
 import { driverNameSchema, driverPasswordSchema } from '../schemas/driver';
 import type { DriverNameValues, DriverPasswordValues } from '../schemas/driver';
 import {
+    deleteDriver,
     getDriver,
     removeDriverPhoto,
     resetDriverPassword,
@@ -40,17 +42,20 @@ type State =
     | { status: 'ready'; driver: Driver };
 
 /** The action in progress that has no form of its own, so its button can show it is working. */
-type Busy = 'photo' | 'status' | null;
+type Busy = 'photo' | 'status' | 'delete' | null;
 
 /**
  * Driver detail (RF03), opened from the driver list. The supervisor edits the name and the photo,
- * sets a new password and deactivates or reactivates the driver (RB19). The e-mail and the role
- * are shown but cannot be edited. The server holds every one of these rules: Zod only gives the
- * feedback before sending. Deactivating a driver with an open route is refused by the server, and
- * the app shows the warning to close the route first (RB18, RF10).
+ * sets a new password, deactivates or reactivates the driver and deletes one that has no records
+ * (RB19). The e-mail and the role are shown but cannot be edited. The server holds every one of
+ * these rules: Zod only gives the feedback before sending. Deactivating a driver with an open
+ * route is refused by the server, and the app shows the warning to close the route first (RB18,
+ * RF10). Deleting a driver with records is refused too, and the warning says to deactivate the
+ * driver instead (RB18); a confirmed deletion goes back to the list.
  */
 export default function DriverDetailScreen({
     route,
+    navigation,
 }: NativeStackScreenProps<RootStackParamList, 'DriverDetail'>) {
     const { driverId } = route.params;
     const toast = useToast();
@@ -59,6 +64,8 @@ export default function DriverDetailScreen({
     const [sheetOpen, setSheetOpen] = useState(false);
     const pendingSource = useRef<PhotoSource | null>(null);
     const [failure, setFailure] = useState({ visible: false, title: '', message: '' });
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const afterConfirm = useRef<(() => void) | null>(null);
 
     const nameForm = useForm<DriverNameValues>({
         resolver: zodResolver(driverNameSchema),
@@ -91,17 +98,21 @@ export default function DriverDetailScreen({
         load();
     }
 
-    /* Shows the failure of an action that has no field of its own on the screen. */
-    function fail(error: unknown) {
+    /* The dialog text for the failure of an action that has no field of its own on the screen. */
+    function describeFailure(error: unknown) {
         const { fields, form } = parseServerError(error);
-        /* A refused deactivation comes as an error on `active`, but it is a refused rule. */
-        const refused = isRuleError(error) || 'active' in fields;
-        setFailure({
-            visible: true,
+        /* A refused deactivation or deletion comes as a field error, but it is a refused rule. */
+        const refused = isRuleError(error) || 'active' in fields || 'id' in fields;
+        return {
             title: refused ? 'Ação não permitida' : 'Não foi possível salvar',
             message:
                 form ?? Object.values(fields)[0] ?? 'Não foi possível salvar. Tente novamente.',
-        });
+        };
+    }
+
+    /* Shows the failure of an action that has no field of its own on the screen. */
+    function fail(error: unknown) {
+        setFailure({ visible: true, ...describeFailure(error) });
     }
 
     const saveName = nameForm.handleSubmit(async (values) => {
@@ -154,6 +165,35 @@ export default function DriverDetailScreen({
         } finally {
             setBusy(null);
         }
+    }
+
+    /*
+     * The deletion runs behind the confirmation dialog, which stays open and busy while the
+     * request is on its way. What follows (the warning, or going back to the list) waits for the
+     * dialog to be gone (onHidden): iOS cannot present a Modal or change screen under one that is
+     * still closing.
+     */
+    async function confirmDelete() {
+        setBusy('delete');
+        try {
+            await deleteDriver(driverId);
+            afterConfirm.current = () => {
+                toast.show('success', 'Motorista excluído.');
+                navigation.goBack();
+            };
+        } catch (error) {
+            const failed = describeFailure(error);
+            afterConfirm.current = () => setFailure({ visible: true, ...failed });
+        } finally {
+            setBusy(null);
+            setConfirmOpen(false);
+        }
+    }
+
+    function afterConfirmHidden() {
+        const next = afterConfirm.current;
+        afterConfirm.current = null;
+        next?.();
     }
 
     /*
@@ -337,10 +377,15 @@ export default function DriverDetailScreen({
 
                     <CardContent>
                         <Button
-                            variant={driver.active ? 'destructive' : 'outline'}
+                            variant="outline"
                             title={driver.active ? 'Desativar motorista' : 'Reativar motorista'}
                             onPress={toggleActive}
                             loading={busy === 'status'}
+                        />
+                        <Button
+                            variant="destructive"
+                            title="Excluir motorista"
+                            onPress={() => setConfirmOpen(true)}
                         />
                     </CardContent>
                 </Card>
@@ -357,6 +402,17 @@ export default function DriverDetailScreen({
                 onPick={choose}
                 onHidden={changePhoto}
                 canRemove={Boolean(driver.photoUrl)}
+            />
+
+            <ConfirmDialog
+                visible={confirmOpen}
+                title="Excluir motorista?"
+                message="O cadastro será removido. Essa ação não pode ser desfeita."
+                confirmLabel="Excluir"
+                onConfirm={confirmDelete}
+                onCancel={() => setConfirmOpen(false)}
+                onHidden={afterConfirmHidden}
+                loading={busy === 'delete'}
             />
 
             <NoticeDialog

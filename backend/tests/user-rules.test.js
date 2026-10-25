@@ -351,17 +351,92 @@ describe("a supervisor does not edit another supervisor (RB19)", () => {
     });
 });
 
-describe("nothing is deleted or re-mailed by a user", () => {
-    for (const [label, getSession] of [["driver", () => asDriverA], ["supervisor", () => asSupervisorA]]) {
-        test(`${label}: cannot delete a user, not even themself`, async () => {
-            const target = await make.user();
-            for (const user of [target, label === "driver" ? driverA : supervisorA]) {
-                const response = await getSession().delete(`/api/collections/users/records/${user.id}`);
-                assert.ok([403, 404].includes(response.status), `delete status ${response.status}`);
-                assert.equal((await admin.get(`/api/collections/users/records/${user.id}`)).status, 200);
+/** Whether the user still exists, read as superuser. */
+async function exists(user) {
+    return (await admin.get(`/api/collections/users/records/${user.id}`)).status === 200;
+}
+
+describe("deleting users (I-15, RB18, RB19)", () => {
+    const remove = (session, user) => session.delete(`/api/collections/users/records/${user.id}`);
+
+    test("a driver cannot delete a user, not even themself", async () => {
+        const target = await make.user();
+        for (const user of [target, driverA, supervisorA]) {
+            assertRefused(await remove(asDriverA, user), "delete as driver");
+            assert.equal(await exists(user), true);
+        }
+    });
+
+    test("a supervisor deletes a driver without records, active or not", async () => {
+        const active = await make.user();
+        const inactive = await make.user({ active: false });
+        for (const driver of [active, inactive]) {
+            assert.equal((await remove(asSupervisorA, driver)).status, 204);
+            assert.equal(await exists(driver), false);
+        }
+    });
+
+    test("a supervisor cannot delete a supervisor, not even themself (RB19)", async () => {
+        for (const user of [supervisorB, supervisorA]) {
+            assertRefused(await remove(asSupervisorA, user), "delete supervisor");
+            assert.equal(await exists(user), true);
+        }
+    });
+
+    for (const collection of ["route", "fuel", "oil", "repair"]) {
+        test(`a driver with a ${collection} is not deleted, and the answer says why (RB18)`, async () => {
+            const driver = await make.user();
+            const vehicle = await make.vehicle();
+            await make[collection]({ user: driver, vehicle, ...(collection === "route" ? { status: "finalizada", km_return: 1100 } : {}) });
+
+            for (const session of [asSupervisorA, admin]) {
+                const response = await remove(session, driver);
+                assert.equal(response.status, 400);
+                assert.equal(response.body.data.id.code, "user_has_records");
+                assert.equal(await exists(driver), true);
             }
         });
+    }
 
+    test("a driver with a complaint is not deleted (RB18)", async () => {
+        const driver = await make.user();
+        const vehicle = await make.vehicle();
+        const route = await make.route({ user: driver, vehicle });
+        await make.complaint({ route_current: route.id });
+
+        assert.equal((await remove(asSupervisorA, driver)).status, 400);
+        assert.equal(await exists(driver), true);
+    });
+
+    test("deactivating is the way out for a driver with records, and it keeps them", async () => {
+        const driver = await make.user();
+        const vehicle = await make.vehicle();
+        const fuel = await make.fuel({ user: driver, vehicle });
+
+        assert.equal((await remove(asSupervisorA, driver)).status, 400);
+        assert.equal((await asSupervisorA.patch(`/api/collections/users/records/${driver.id}`, { active: false })).status, 200);
+        assert.equal((await admin.get(`/api/collections/fuels/records/${fuel.id}`)).body.user, driver.id);
+    });
+
+    test("an inactive supervisor with an open session cannot delete", async () => {
+        const supervisor = await make.user({ role: "supervisor" });
+        const session = await signIn(supervisor);
+        const driver = await make.user();
+        await admin.patch(`/api/collections/users/records/${supervisor.id}`, { active: false });
+
+        assertRefused(await remove(session, driver), "delete as inactive supervisor");
+        assert.equal(await exists(driver), true);
+    });
+
+    test("nobody signed out deletes a user", async () => {
+        const driver = await make.user();
+        assertRefused(await remove(createClient(pb.url), driver), "delete anonymous");
+        assert.equal(await exists(driver), true);
+    });
+});
+
+describe("nothing is re-mailed by a user", () => {
+    for (const [label, getSession] of [["driver", () => asDriverA], ["supervisor", () => asSupervisorA]]) {
         test(`${label}: cannot start the e-mail change flow`, async () => {
             const user = await make.user({ role: label === "driver" ? "motorista" : "supervisor" });
             const session = await signIn(user);

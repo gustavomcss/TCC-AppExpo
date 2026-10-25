@@ -80,7 +80,7 @@ A migração `1792601121_set_base_api_rules.js` (I-05) é a linha de base de ace
 
 | Coleção                                | Listar e ver                      | Criar                                    | Editar                                    | Excluir     |
 | -------------------------------------- | --------------------------------- | ---------------------------------------- | ----------------------------------------- | ----------- |
-| `users`                                | o próprio usuário; supervisor: todos | supervisor, só `motorista` (RB19)     | veja [Usuários](#usuários-rb19) (I-11)    | `null`      |
+| `users`                                | o próprio usuário; supervisor: todos | supervisor, só `motorista` (RB19)     | veja [Usuários](#usuários-rb19) (I-11)    | supervisor, só `motorista` sem registros (I-15) |
 | `vehicles`                             | qualquer usuário autenticado      | supervisor                               | supervisor, sem alterar o `odometer` (RB09) | supervisor |
 | `routes`, `fuels`, `oils`, `repairs`   | o autor; supervisor: todos        | autenticado, autor definido pelo servidor | `null` (I-18, I-31)                      | `null` (RB17) |
 | `complaints`                           | o autor da `route_current`; supervisor: todos | só quem é o usuário da `route_current` | `null` (I-27)                      | `null` (RB17) |
@@ -104,7 +104,7 @@ A migração `1792705420_set_user_edit_rules.js` (I-11) define quem cria e quem 
 
 - **Criar:** só o supervisor, com `role = "motorista"` e sem `verified` ligado. Supervisores nascem no painel `/_/`, pelo superadmin, que também é o único que muda o cargo de alguém. Auto-cadastro não existe.
 - **`manageRule`:** vale para o supervisor sobre um motorista que não seja ele mesmo. É ela que dispensa a senha antiga na redefinição. A senha do próprio supervisor continua pedindo a antiga. Trocar a senha invalida a sessão antiga do usuário.
-- **Excluir:** `null` (só superuser), como no resto do modelo (RB17).
+- **Excluir:** só o supervisor, e só um `motorista` que não seja ele mesmo, pela migração `1792957049_set_user_delete_rule.js` (I-15). O supervisor nunca exclui outro supervisor (RB19). Motorista com registro vinculado não é excluído (RB18): as relações de `routes`, `fuels`, `oils` e `repairs` são obrigatórias e sem cascata, e `pb_hooks/users.pb.js` confere antes e responde `400` com `data.id.code = "user_has_records"` (vale também para o superuser). A denúncia não conta à parte, porque pendura numa rota. O caminho para quem tem registros é desativar.
 - **E-mail:** o fluxo de troca de e-mail por link do PocketBase (`request-email-change`) responde `403` para todos, em `pb_hooks/users.pb.js`, porque contornaria a regra de edição.
 - **Desativação com rota aberta (RB18):** o mesmo hook recusa `active` de `true` para `false` enquanto houver rota `aberta` do usuário, para qualquer requisição, superuser incluído. A resposta é `400` com `data.active.code = "user_has_open_route"`. Reativar não é afetado. O teste completo do fluxo, com a rota criada pelo app, é depois da I-21.
 
