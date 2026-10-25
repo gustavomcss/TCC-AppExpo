@@ -1,9 +1,12 @@
+import type { RecordModel } from 'pocketbase';
+
 import { equivalentPlate } from '../schemas/plates';
-import type { VehicleValues } from '../schemas/vehicle';
+import type { VehicleEditValues, VehicleValues } from '../schemas/vehicle';
 import { VEHICLE_TYPES } from '../schemas/vehicle';
 import { fold, matchesStatus } from './listFilters';
 import type { StatusFilter } from './listFilters';
 import { pb } from './pocketbase';
+import type { MessageOverrides } from './serverErrors';
 
 /** A vehicle as the management list shows it. */
 export type Vehicle = {
@@ -17,9 +20,30 @@ export type Vehicle = {
     active: boolean;
 };
 
+/** Messages of the vehicle forms that are more specific than the default translation of a code. */
+export const VEHICLE_MESSAGE_OVERRIDES: MessageOverrides = {
+    plate: {
+        validation_not_unique:
+            'Já existe um veículo com esta placa ou com a equivalente em outro padrão.',
+        validation_invalid_format: 'Informe uma placa válida, como ABC-1D23.',
+    },
+};
+
 /** Label of a vehicle type as the user reads it ("caminhao" is "Caminhão"). */
 export function typeLabel(type: Vehicle['type']): string {
     return VEHICLE_TYPES.find((item) => item.value === type)?.label ?? type;
+}
+
+/** Maps a `vehicles` record to the vehicle the screens show. */
+function toVehicle(record: RecordModel): Vehicle {
+    return {
+        id: record.id,
+        plate: record.plate,
+        model: record.model,
+        type: record.type,
+        odometer: record.odometer,
+        active: record.active === true,
+    };
 }
 
 /**
@@ -30,14 +54,12 @@ export function typeLabel(type: Vehicle['type']): string {
 export async function listVehicles(): Promise<Vehicle[]> {
     const records = await pb.collection('vehicles').getFullList({ sort: '-active,plate' });
 
-    return records.map((record) => ({
-        id: record.id,
-        plate: record.plate,
-        model: record.model,
-        type: record.type,
-        odometer: record.odometer,
-        active: record.active === true,
-    }));
+    return records.map(toVehicle);
+}
+
+/** Loads one vehicle for the detail screen. */
+export async function getVehicle(id: string): Promise<Vehicle> {
+    return toVehicle(await pb.collection('vehicles').getOne(id));
 }
 
 /**
@@ -72,12 +94,18 @@ export function filterVehicles(
 /**
  * Looks for a registered vehicle with this plate or with its equivalent in the other format
  * (RB20). The server refuses the duplicate anyway; this lets the form say which plate is taken.
+ * When editing, `exceptId` leaves the vehicle itself out, so it can keep its plate or convert it
+ * to the equivalent one.
  */
-export async function findVehicleByPlate(plate: string): Promise<{ plate: string } | null> {
+export async function findVehicleByPlate(
+    plate: string,
+    exceptId?: string,
+): Promise<{ plate: string } | null> {
     const equivalent = equivalentPlate(plate);
-    const filter = equivalent
-        ? pb.filter('plate = {:plate} || plate = {:equivalent}', { plate, equivalent })
+    const match = equivalent
+        ? pb.filter('(plate = {:plate} || plate = {:equivalent})', { plate, equivalent })
         : pb.filter('plate = {:plate}', { plate });
+    const filter = exceptId ? `${match} && ${pb.filter('id != {:exceptId}', { exceptId })}` : match;
 
     const { items } = await pb.collection('vehicles').getList(1, 1, { filter });
     return items[0] ? { plate: items[0].plate as string } : null;
@@ -89,4 +117,29 @@ export async function findVehicleByPlate(plate: string): Promise<{ plate: string
  */
 export async function createVehicle(values: VehicleValues): Promise<void> {
     await pb.collection('vehicles').create(values);
+}
+
+/**
+ * Saves plate, type and model of a vehicle (RF06). The odometer is not sent: the update rule
+ * refuses a request that changes it (RB09). Returns the vehicle as saved.
+ */
+export async function updateVehicle(id: string, values: VehicleEditValues): Promise<Vehicle> {
+    return toVehicle(await pb.collection('vehicles').update(id, values));
+}
+
+/**
+ * Inactivates or reactivates a vehicle (RB12). Inactive vehicles leave the selections of new
+ * routes and records, and keep their history.
+ */
+export async function setVehicleActive(id: string, active: boolean): Promise<Vehicle> {
+    return toVehicle(await pb.collection('vehicles').update(id, { active }));
+}
+
+/**
+ * Deletes a vehicle (RF06). The server refuses it with `vehicle_has_records` on `id` while the
+ * vehicle has any route, fueling, oil change or repair (RB12); the way out for those is to
+ * inactivate the vehicle.
+ */
+export async function deleteVehicle(id: string): Promise<void> {
+    await pb.collection('vehicles').delete(id);
 }

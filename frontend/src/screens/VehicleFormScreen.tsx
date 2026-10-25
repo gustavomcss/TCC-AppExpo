@@ -17,21 +17,11 @@ import { capitalizeWords, formatDecimalInput, formatPlate } from '../schemas/mas
 import { vehicleSchema } from '../schemas/vehicle';
 import type { VehicleInput, VehicleValues } from '../schemas/vehicle';
 import { applyServerError, isRuleError } from '../services/serverErrors';
-import type { MessageOverrides } from '../services/serverErrors';
-import { createVehicle, findVehicleByPlate } from '../services/vehicles';
+import { VEHICLE_MESSAGE_OVERRIDES, createVehicle, findVehicleByPlate } from '../services/vehicles';
 import { colors, spacing } from '../theme';
 
 /** Fields of the form, in the names the server uses, so its field errors can be matched. */
 const FIELDS = ['plate', 'type', 'model', 'odometer'] as const;
-
-/** Messages of this form that are more specific than the default translation of the code. */
-const OVERRIDES: MessageOverrides = {
-    plate: {
-        validation_not_unique:
-            'Já existe um veículo com esta placa ou com a equivalente em outro padrão.',
-        validation_invalid_format: 'Informe uma placa válida, como ABC-1D23.',
-    },
-};
 
 /**
  * Vehicle registration (RF05), opened from the vehicle list. Asks for plate, type, model and the
@@ -75,7 +65,7 @@ export default function VehicleFormScreen() {
             toast.show('success', 'Veículo cadastrado.');
             navigation.goBack();
         } catch (error) {
-            const message = applyServerError(error, setError, FIELDS, OVERRIDES);
+            const message = applyServerError(error, setError, FIELDS, VEHICLE_MESSAGE_OVERRIDES);
             if (!message) {
                 return;
             }

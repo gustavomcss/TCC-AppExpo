@@ -87,12 +87,17 @@ export function ListFilters({
     );
 }
 
-/** Styles of the filters: the search field over a row of chips, with the list's side padding. */
+/**
+ * Styles of the filters: the search field over a row of chips, with the list's side padding. The
+ * bottom padding is the gap to the list, which has none at the top: it stays between them while
+ * the cards scroll under the edge of the list.
+ */
 const styles = StyleSheet.create({
     filters: {
         gap: spacing.md,
         paddingHorizontal: spacing.lg,
         paddingTop: spacing.lg,
+        paddingBottom: spacing.lg,
     },
     searchWithClear: {
         paddingRight: sizes.control,

@@ -5,7 +5,7 @@ import type { ModuleKey } from './modules';
 /**
  * Screens of the root stack: the tabs, the password change opened from the User tab, one screen
  * per service module and the screens opened from a module's list (`DriverNew` and `VehicleNew`,
- * the registration forms, and `DriverDetail`, the edit of one driver). The admin modules and
+ * the registration forms, and `DriverDetail` and `VehicleDetail`, the edit of one driver or vehicle). The admin modules and
  * their forms are only registered for a supervisor, so a driver has no route to them.
  */
 export type RootStackParamList = {
@@ -14,6 +14,7 @@ export type RootStackParamList = {
     DriverNew: undefined;
     DriverDetail: { driverId: string };
     VehicleNew: undefined;
+    VehicleDetail: { vehicleId: string };
 } & Record<ModuleKey, undefined>;
 
 /** Navigation prop of the root stack, for the screens that open a module. */

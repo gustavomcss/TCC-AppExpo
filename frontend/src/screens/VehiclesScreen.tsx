@@ -1,7 +1,7 @@
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Car, SearchX } from 'lucide-react-native';
 import { useCallback, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ActionBar } from '../components/ActionBar';
 import { Badge } from '../components/Badge';
@@ -36,7 +36,7 @@ type State =
  * type chips after them (Moto, Carro, Van and Caminhão; pressing the one in use clears it) narrow
  * the list on the device, without a new request. The situation and the type combine. The list is
  * loaded again each time the screen gets focus, so a vehicle just registered shows up when the
- * form goes back. Editing a vehicle comes with the detail screen (I-17).
+ * form goes back or the detail screen is left. Pressing a vehicle opens its detail (I-17).
  */
 export default function VehiclesScreen() {
     const navigation = useNavigation<RootNavigation>();
@@ -129,24 +129,36 @@ export default function VehiclesScreen() {
                             const TypeIcon = VEHICLE_TYPE_ICONS[vehicle.type];
 
                             return (
-                                <Card key={vehicle.id} style={styles.card}>
-                                    <View style={styles.iconBox}>
-                                        <TypeIcon color={palette.g20} size={sizes.icon} />
-                                    </View>
-                                    <View style={styles.texts}>
-                                        <Text style={styles.plate}>{vehicle.plate}</Text>
-                                        <Text style={styles.detail}>
-                                            {vehicle.model} · {typeLabel(vehicle.type)}
-                                        </Text>
-                                        <Text style={styles.detail}>
-                                            {formatKm(vehicle.odometer)} km
-                                        </Text>
-                                    </View>
-                                    <Badge
-                                        label={vehicle.active ? 'Ativo' : 'Inativo'}
-                                        variant={vehicle.active ? 'outline' : 'secondary'}
-                                    />
-                                </Card>
+                                <Pressable
+                                    key={vehicle.id}
+                                    accessibilityRole="button"
+                                    accessibilityLabel={vehicle.plate}
+                                    onPress={() =>
+                                        navigation.navigate('VehicleDetail', {
+                                            vehicleId: vehicle.id,
+                                        })
+                                    }
+                                    style={({ pressed }) => pressed && styles.pressed}
+                                >
+                                    <Card style={styles.card}>
+                                        <View style={styles.iconBox}>
+                                            <TypeIcon color={palette.g20} size={sizes.icon} />
+                                        </View>
+                                        <View style={styles.texts}>
+                                            <Text style={styles.plate}>{vehicle.plate}</Text>
+                                            <Text style={styles.detail}>
+                                                {vehicle.model} · {typeLabel(vehicle.type)}
+                                            </Text>
+                                            <Text style={styles.detail}>
+                                                {formatKm(vehicle.odometer)} km
+                                            </Text>
+                                        </View>
+                                        <Badge
+                                            label={vehicle.active ? 'Ativo' : 'Inativo'}
+                                            variant={vehicle.active ? 'outline' : 'secondary'}
+                                        />
+                                    </Card>
+                                </Pressable>
                             );
                         })}
                     </ScrollView>
@@ -176,8 +188,12 @@ const styles = StyleSheet.create({
         backgroundColor: colors.muted,
     },
     list: {
-        padding: spacing.lg,
+        paddingHorizontal: spacing.lg,
+        paddingBottom: spacing.lg,
         gap: spacing.md,
+    },
+    pressed: {
+        opacity: 0.6,
     },
     card: {
         flexDirection: 'row',
