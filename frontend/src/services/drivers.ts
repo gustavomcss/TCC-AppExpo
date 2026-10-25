@@ -1,6 +1,8 @@
 import type { RecordModel } from 'pocketbase';
 
 import type { DriverValues } from '../schemas/driver';
+import { fold, matchesStatus } from './listFilters';
+import type { StatusFilter } from './listFilters';
 import { pb } from './pocketbase';
 import { photoBody } from './profile';
 import type { PickedPhoto } from './profile';
@@ -49,34 +51,16 @@ export async function getDriver(id: string): Promise<Driver> {
     return toDriver(await pb.collection('users').getOne(id));
 }
 
-/** Situation filter of the driver list. */
-export type DriverStatusFilter = 'all' | 'active' | 'inactive';
-
-/** Lowercase text without accents, so "jose" finds "José" and "JOSÉ". */
-function fold(text: string): string {
-    return text
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase();
-}
-
 /**
  * Narrows the loaded list by situation and by a search text that must appear in the name or in
  * the e-mail, ignoring case and accents. It works on what the list already holds, since the whole
  * list is loaded at once, so typing sends no request.
  */
-export function filterDrivers(
-    drivers: Driver[],
-    query: string,
-    status: DriverStatusFilter,
-): Driver[] {
+export function filterDrivers(drivers: Driver[], query: string, status: StatusFilter): Driver[] {
     const term = fold(query.trim());
 
     return drivers.filter((driver) => {
-        if (status === 'active' && !driver.active) {
-            return false;
-        }
-        if (status === 'inactive' && driver.active) {
+        if (!matchesStatus(driver.active, status)) {
             return false;
         }
 

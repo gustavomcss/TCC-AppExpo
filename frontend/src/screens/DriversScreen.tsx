@@ -1,5 +1,5 @@
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { SearchX, X } from 'lucide-react-native';
+import { SearchX } from 'lucide-react-native';
 import { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -8,14 +8,14 @@ import { Avatar } from '../components/Avatar';
 import { Badge } from '../components/Badge';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
-import { Chip } from '../components/Chip';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorState } from '../components/ErrorState';
-import { Input } from '../components/Input';
+import { ListFilters } from '../components/ListFilters';
 import { LoadingState } from '../components/LoadingState';
 import type { RootNavigation } from '../navigation/types';
 import { filterDrivers, listDrivers } from '../services/drivers';
-import type { Driver, DriverStatusFilter } from '../services/drivers';
+import type { Driver } from '../services/drivers';
+import type { StatusFilter } from '../services/listFilters';
 import { parseServerError } from '../services/serverErrors';
 import { colors, fontFamily, fontSize, sizes, spacing } from '../theme';
 
@@ -24,13 +24,6 @@ type State =
     | { status: 'loading' }
     | { status: 'error'; message: string }
     | { status: 'ready'; drivers: Driver[] };
-
-/** Options of the situation filter, in the order the chips appear. */
-const STATUS_FILTERS: { value: DriverStatusFilter; label: string }[] = [
-    { value: 'all', label: 'Todos' },
-    { value: 'active', label: 'Ativos' },
-    { value: 'inactive', label: 'Inativos' },
-];
 
 /**
  * Driver management (RF03), a module of the supervisor. Lists every driver in alphabetical order
@@ -45,7 +38,7 @@ export default function DriversScreen() {
     const navigation = useNavigation<RootNavigation>();
     const [state, setState] = useState<State>({ status: 'loading' });
     const [query, setQuery] = useState('');
-    const [status, setStatus] = useState<DriverStatusFilter>('all');
+    const [status, setStatus] = useState<StatusFilter>('all');
     const drivers = state.status === 'ready' ? state.drivers : null;
     const visible = useMemo(
         () => (drivers ? filterDrivers(drivers, query, status) : []),
@@ -97,40 +90,14 @@ export default function DriversScreen() {
 
         return (
             <>
-                <View style={styles.filters}>
-                    <View>
-                        <Input
-                            accessibilityLabel="Buscar motorista"
-                            placeholder="Buscar por nome ou e-mail"
-                            value={query}
-                            onChangeText={setQuery}
-                            autoCapitalize="none"
-                            autoCorrect={false}
-                            returnKeyType="search"
-                            style={query !== '' && styles.searchWithClear}
-                        />
-                        {query !== '' && (
-                            <Pressable
-                                accessibilityRole="button"
-                                accessibilityLabel="Limpar busca"
-                                onPress={() => setQuery('')}
-                                style={styles.clear}
-                            >
-                                <X color={colors.mutedForeground} size={20} />
-                            </Pressable>
-                        )}
-                    </View>
-                    <View style={styles.chips}>
-                        {STATUS_FILTERS.map((filter) => (
-                            <Chip
-                                key={filter.value}
-                                label={filter.label}
-                                selected={status === filter.value}
-                                onPress={() => setStatus(filter.value)}
-                            />
-                        ))}
-                    </View>
-                </View>
+                <ListFilters
+                    searchLabel="Buscar motorista"
+                    searchPlaceholder="Buscar por nome ou e-mail"
+                    query={query}
+                    onQueryChange={setQuery}
+                    status={status}
+                    onStatusChange={setStatus}
+                />
 
                 {visible.length === 0 ? (
                     <EmptyState
@@ -196,27 +163,6 @@ const styles = StyleSheet.create({
     screen: {
         flex: 1,
         backgroundColor: colors.muted,
-    },
-    filters: {
-        gap: spacing.md,
-        paddingHorizontal: spacing.lg,
-        paddingTop: spacing.lg,
-    },
-    searchWithClear: {
-        paddingRight: sizes.control,
-    },
-    clear: {
-        position: 'absolute',
-        top: 0,
-        right: 0,
-        width: sizes.control,
-        height: sizes.control,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    chips: {
-        flexDirection: 'row',
-        gap: spacing.sm,
     },
     list: {
         padding: spacing.lg,
