@@ -43,6 +43,8 @@ const FIELD_MESSAGES: Record<string, (params: Record<string, unknown>) => string
     validation_file_size_limit: () => 'A imagem é grande demais. O limite é 5 MB.',
     user_has_open_route: () =>
         'Este motorista tem uma rota aberta. Encerre a rota antes de desativá-lo.',
+    user_has_records: () =>
+        'Este motorista tem registros vinculados e não pode ser excluído. Desative o motorista em vez de excluir.',
 };
 
 /** Translates the error of one field, preferring the override for that field and code. */

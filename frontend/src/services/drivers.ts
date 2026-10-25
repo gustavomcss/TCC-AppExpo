@@ -124,6 +124,15 @@ export async function setDriverActive(id: string, active: boolean): Promise<Driv
 }
 
 /**
+ * Deletes a driver (RF03). The server accepts it from a supervisor for a driver only (RB19), and
+ * refuses it with `user_has_records` on `id` while the driver has any route, fueling, oil change
+ * or repair (RB18); the way out for those is to deactivate the driver.
+ */
+export async function deleteDriver(id: string): Promise<void> {
+    await pb.collection('users').delete(id);
+}
+
+/**
  * Sets a new password for a driver (RB19). The manage rule of `users` lets a supervisor do it
  * without the old password (I-11); the confirmation is sent equal because PocketBase asks for
  * it. The server then invalidates the driver's tokens, so the driver signs in again with it.
