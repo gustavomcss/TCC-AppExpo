@@ -83,7 +83,7 @@ A migração `1792601121_set_base_api_rules.js` (I-05) é a linha de base de ace
 | `users`                                | o próprio usuário; supervisor: todos | supervisor, só `motorista` (RB19)     | veja [Usuários](#usuários-rb19) (I-11)    | supervisor, só `motorista` sem registros (I-15) |
 | `vehicles`                             | qualquer usuário autenticado      | supervisor                               | supervisor, sem alterar o `odometer` (RB09) | supervisor |
 | `routes`                               | o autor; supervisor: todos        | autenticado, rota `aberta` e sem dados de retorno (I-18) | veja [Rotas](#rotas-rb01-rb02-rb03-rb13-rb15-rb17) (I-18) | `null` (RB17) |
-| `fuels`, `oils`, `repairs`             | o autor; supervisor: todos        | autenticado, autor definido pelo servidor | `null` (I-31)                            | `null` (RB17) |
+| `fuels`, `oils`, `repairs`             | o autor; supervisor: todos        | autenticado, veículo ativo, autor definido pelo servidor (I-19) | `null` (I-31)                            | `null` (RB17) |
 | `complaints`                           | o autor da `route_current`; supervisor: todos | só quem é o usuário da `route_current` | `null` (I-27)                      | `null` (RB17) |
 
 - O autor de `routes`, `fuels`, `oils` e `repairs` é gravado por `pb_hooks/author.pb.js` a partir do usuário autenticado. O `user` enviado no corpo é descartado.
@@ -112,6 +112,16 @@ A migração `1793049600_set_route_rules.js` e o hook `pb_hooks/routes.pb.js` (I
 - Uma edição recusada pela regra responde com o erro de regra do PocketBase (sem `code` de campo): o app mostra "Ação não permitida". O superuser não passa pelas regras e pode reabrir ou corrigir uma rota pelo painel, mas a recusa de duas rotas abertas e o `km_return` maior que a saída valem também para ele.
 
 Testes em `tests/route-rules.test.js`. Rotas criadas por superuser nos outros testes precisam de motorista e veículo próprios, porque a recusa vale para ele também.
+### Registros de serviço (RB04, RB09, RB12, RB17, RNF05)
+
+As regras de `fuels`, `oils` e `repairs` vêm da I-05 e da I-07, sem migração nova na I-19: qualquer motorista ou supervisor ativo cria, o autor é gravado por `pb_hooks/author.pb.js` (o `user` do corpo é descartado, e pode ser omitido), `created` é do servidor e o delete segue `null`. O hook `pb_hooks/service_records.pb.js` (I-19) soma o que a regra não expressa:
+
+- **Veículo inativo (RB12):** a criação é recusada com `400` e `data.vehicle.code = "vehicle_inactive"`, para o superuser também. Os registros já salvos continuam no histórico, e reativar o veículo libera a criação de novo.
+- **Km informativo (RB04, RB09):** o `km_fuel`, o `km_oil` e o `km_repair` não alteram o `odometer`, seja o km maior, menor ou igual a ele.
+- **Edição:** segue `null` até a I-31, que libera ao autor só os campos não sensíveis.
+
+Testes em `tests/service-records.test.js`. A recusa vale para o superuser também, então um teste que precisa de histórico num veículo inativo cria o registro antes de inativar o veículo.
+
 ### Usuários (RB19)
 
 A migração `1792705420_set_user_edit_rules.js` (I-11) define quem cria e quem edita `users`. Todas as regras começam com a condição de usuário ativo (RB18). Os campos são protegidos com `:changed`, então um formulário que devolve um valor igual ao salvo é aceito.

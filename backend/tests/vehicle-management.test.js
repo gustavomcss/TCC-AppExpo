@@ -186,8 +186,9 @@ describe("a vehicle with records is not deleted, it is inactivated (RB12)", () =
     });
 
     test("an inactive vehicle is still listed and viewed, so the history keeps it", async () => {
-        const vehicle = await make.vehicle({ active: false });
+        const vehicle = await make.vehicle();
         await make.fuel({ user: driver, vehicle });
+        assert.equal((await asSupervisor.patch(`${PATH}/${vehicle.id}`, { active: false })).status, 200);
 
         for (const session of [asSupervisor, asDriver]) {
             const list = await session.get(`${PATH}?perPage=200&filter=${encodeURIComponent(`id = "${vehicle.id}"`)}`);
