@@ -13,6 +13,7 @@ import DriverFormScreen from '../screens/DriverFormScreen';
 import DriversScreen from '../screens/DriversScreen';
 import HistoryScreen from '../screens/HistoryScreen';
 import ModuleScreen from '../screens/ModuleScreen';
+import RouteDepartureScreen from '../screens/RouteDepartureScreen';
 import ServicesScreen from '../screens/ServicesScreen';
 import UserScreen from '../screens/UserScreen';
 import VehicleDetailScreen from '../screens/VehicleDetailScreen';
@@ -130,6 +131,8 @@ export default function AppNavigator() {
                     >
                         {() => {
                             switch (module.key) {
+                                case 'routes':
+                                    return <RouteDepartureScreen />;
                                 case 'drivers':
                                     return <DriversScreen />;
                                 case 'vehicles':
