@@ -57,6 +57,30 @@ export async function listVehicles(): Promise<Vehicle[]> {
     return records.map(toVehicle);
 }
 
+/** A vehicle in the choice for a new route, with whether it can be taken now (RB01). */
+export type RouteVehicle = Vehicle & { available: boolean };
+
+/**
+ * Lists the active vehicles for the start of a route (RF07), free ones first and then by plate.
+ * A vehicle is unavailable while it has an open route. A driver cannot list the routes of the
+ * others, so that comes from `vehicle_availability`, which holds only the ids of the vehicles
+ * with an open route. Inactive vehicles are left out (RB12). The server still refuses a route on
+ * an unavailable vehicle (`vehicle_in_open_route`), so this list is only the feedback.
+ */
+export async function listRouteVehicles(): Promise<RouteVehicle[]> {
+    const [records, busy] = await Promise.all([
+        pb.collection('vehicles').getFullList({ filter: 'active = true', sort: 'plate' }),
+        pb.collection('vehicle_availability').getFullList(),
+    ]);
+    const busyIds = new Set(busy.map((record) => record.id));
+    const vehicles = records.map((record) => ({
+        ...toVehicle(record),
+        available: !busyIds.has(record.id),
+    }));
+
+    return [...vehicles.filter((v) => v.available), ...vehicles.filter((v) => !v.available)];
+}
+
 /** Loads one vehicle for the detail screen. */
 export async function getVehicle(id: string): Promise<Vehicle> {
     return toVehicle(await pb.collection('vehicles').getOne(id));

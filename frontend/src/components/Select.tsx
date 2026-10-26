@@ -11,8 +11,15 @@ import { Label } from './Label';
 /**
  * One choice of a Select: the `value` the form stores and the `label` the user reads. An `icon`
  * shows before the label in the sheet, for choices that a picture identifies, such as a vehicle type.
+ * A `disabled` choice is listed but cannot be picked, and its `badge` says why.
  */
-export type SelectOption<T extends string> = { value: T; label: string; icon?: LucideIcon };
+export type SelectOption<T extends string> = {
+    value: T;
+    label: string;
+    icon?: LucideIcon;
+    disabled?: boolean;
+    badge?: string;
+};
 
 /** Props of Select. The list is closed until the field is pressed. */
 export type SelectProps<T extends string> = {
@@ -82,6 +89,8 @@ export function Select<T extends string>({
                                 )
                             }
                             selected={item.value === value}
+                            disabled={item.disabled}
+                            badge={item.badge}
                             onPress={() => choose(item.value)}
                         />
                     )}

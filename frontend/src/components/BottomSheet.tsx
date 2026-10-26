@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 
 import { colors, fontFamily, fontSize, radius, spacing } from '../theme';
+import { Badge } from './Badge';
 
 /** How long the sheet takes to slide in and out, in milliseconds. */
 const SLIDE_IN = 350;
@@ -119,7 +120,8 @@ export function BottomSheet({ visible, title, onClose, onHidden, children }: Bot
 
 /**
  * Props of SheetOption: its text, an optional icon before it, whether it is the chosen one and
- * whether it is a destructive action, which is written in red.
+ * whether it is a destructive action, which is written in red. A `disabled` row does not react to
+ * touch and is dimmed; its `badge` ends the row and says why.
  */
 export type SheetOptionProps = {
     label: string;
@@ -127,6 +129,8 @@ export type SheetOptionProps = {
     icon?: ReactNode;
     selected?: boolean;
     destructive?: boolean;
+    disabled?: boolean;
+    badge?: string;
 };
 
 /** One 48 dp row of a BottomSheet list. The chosen row is bold and ends with a check. */
@@ -136,13 +140,20 @@ export function SheetOption({
     icon,
     selected = false,
     destructive = false,
+    disabled = false,
+    badge,
 }: SheetOptionProps) {
     return (
         <Pressable
             accessibilityRole="menuitem"
-            accessibilityState={{ selected }}
+            accessibilityState={{ selected, disabled }}
+            disabled={disabled}
             onPress={onPress}
-            style={({ pressed }) => [styles.option, pressed && styles.pressed]}
+            style={({ pressed }) => [
+                styles.option,
+                disabled && styles.optionDisabled,
+                pressed && styles.pressed,
+            ]}
         >
             <View style={styles.optionLabel}>
                 {icon}
@@ -156,6 +167,7 @@ export function SheetOption({
                     {label}
                 </Text>
             </View>
+            {badge && <Badge label={badge} variant="secondary" />}
             {selected && <Check color={colors.foreground} size={20} />}
         </Pressable>
     );
@@ -205,6 +217,9 @@ const styles = StyleSheet.create({
     },
     pressed: {
         backgroundColor: colors.muted,
+    },
+    optionDisabled: {
+        opacity: 0.6,
     },
     optionLabel: {
         flexDirection: 'row',
