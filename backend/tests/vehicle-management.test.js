@@ -42,6 +42,9 @@ const read = async (vehicle) => (await admin.get(`${PATH}/${vehicle.id}`)).body;
 /** Whether the vehicle still exists. */
 const exists = async (vehicle) => (await admin.get(`${PATH}/${vehicle.id}`)).status === 200;
 
+/** An open route of a driver of its own, since a driver has at most one open route (RB02). */
+const openRoute = async (vehicle) => make.route({ user: await make.user(), vehicle });
+
 describe("the supervisor edits plate, model and type (RF06)", () => {
     test("the three fields change and the odometer stays", async () => {
         const vehicle = await make.vehicle({ odometer: 1234.5 });
@@ -127,7 +130,7 @@ describe("a vehicle without records is deleted (RF06)", () => {
 
 describe("a vehicle with records is not deleted, it is inactivated (RB12)", () => {
     const records = {
-        routes: (vehicle) => make.route({ user: driver, vehicle }),
+        routes: (vehicle) => openRoute(vehicle),
         fuels: (vehicle) => make.fuel({ user: driver, vehicle }),
         oils: (vehicle) => make.oil({ user: driver, vehicle }),
         repairs: (vehicle) => make.repair({ user: driver, vehicle }),
@@ -150,7 +153,7 @@ describe("a vehicle with records is not deleted, it is inactivated (RB12)", () =
 
     test("a vehicle with a complaint is not deleted, through its route", async () => {
         const vehicle = await make.vehicle();
-        const route = await make.route({ user: driver, vehicle });
+        const route = await openRoute(vehicle);
         await make.complaint({ route_current: route.id });
 
         assert.equal((await asSupervisor.delete(`${PATH}/${vehicle.id}`)).status, 400);
@@ -205,7 +208,7 @@ describe("a vehicle with records is not deleted, it is inactivated (RB12)", () =
 describe("a vehicle with an open route is not inactivated (RB12)", () => {
     test("refused with vehicle_has_open_route on active, for the supervisor and the superuser", async () => {
         const vehicle = await make.vehicle();
-        await make.route({ user: driver, vehicle });
+        await openRoute(vehicle);
 
         for (const session of [asSupervisor, admin]) {
             const response = await session.patch(`${PATH}/${vehicle.id}`, { active: false });
@@ -218,7 +221,7 @@ describe("a vehicle with an open route is not inactivated (RB12)", () => {
 
     test("the other fields of that vehicle are still edited", async () => {
         const vehicle = await make.vehicle();
-        await make.route({ user: driver, vehicle });
+        await openRoute(vehicle);
         const response = await asSupervisor.patch(`${PATH}/${vehicle.id}`, { model: "Renamed" });
 
         assert.equal(response.status, 200);
@@ -227,7 +230,7 @@ describe("a vehicle with an open route is not inactivated (RB12)", () => {
 
     test("a request that edits fields and inactivates is refused as a whole", async () => {
         const vehicle = await make.vehicle();
-        await make.route({ user: driver, vehicle });
+        await openRoute(vehicle);
         const response = await asSupervisor.patch(`${PATH}/${vehicle.id}`, { model: "Renamed", active: false });
 
         assert.equal(response.status, 400);
@@ -248,14 +251,17 @@ describe("a vehicle with an open route is not inactivated (RB12)", () => {
     test("an open route of another vehicle does not block it", async () => {
         const other = await make.vehicle();
         const vehicle = await make.vehicle();
-        await make.route({ user: driver, vehicle: other });
+        await openRoute(other);
 
         assert.equal((await asSupervisor.patch(`${PATH}/${vehicle.id}`, { active: false })).status, 200);
     });
 
     test("reactivating, and saving one that is already inactive, are not affected", async () => {
-        const vehicle = await make.vehicle({ active: false });
-        await make.route({ user: driver, vehicle });
+        const vehicle = await make.vehicle();
+        const route = await openRoute(vehicle);
+        await admin.patch(`/api/collections/routes/records/${route.id}`, { status: "encerrada" });
+        await admin.patch(`${PATH}/${vehicle.id}`, { active: false });
+        await admin.patch(`/api/collections/routes/records/${route.id}`, { status: "aberta" });
 
         assert.equal((await asSupervisor.patch(`${PATH}/${vehicle.id}`, { model: "Same state", active: false })).status, 200);
         assert.equal((await asSupervisor.patch(`${PATH}/${vehicle.id}`, { active: true })).status, 200);

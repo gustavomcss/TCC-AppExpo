@@ -82,15 +82,36 @@ A migração `1792601121_set_base_api_rules.js` (I-05) é a linha de base de ace
 | -------------------------------------- | --------------------------------- | ---------------------------------------- | ----------------------------------------- | ----------- |
 | `users`                                | o próprio usuário; supervisor: todos | supervisor, só `motorista` (RB19)     | veja [Usuários](#usuários-rb19) (I-11)    | supervisor, só `motorista` sem registros (I-15) |
 | `vehicles`                             | qualquer usuário autenticado      | supervisor                               | supervisor, sem alterar o `odometer` (RB09) | supervisor |
-| `routes`, `fuels`, `oils`, `repairs`   | o autor; supervisor: todos        | autenticado, autor definido pelo servidor | `null` (I-18, I-31)                      | `null` (RB17) |
+| `routes`                               | o autor; supervisor: todos        | autenticado, rota `aberta` e sem dados de retorno (I-18) | veja [Rotas](#rotas-rb01-rb02-rb03-rb13-rb15-rb17) (I-18) | `null` (RB17) |
+| `fuels`, `oils`, `repairs`             | o autor; supervisor: todos        | autenticado, autor definido pelo servidor | `null` (I-31)                            | `null` (RB17) |
 | `complaints`                           | o autor da `route_current`; supervisor: todos | só quem é o usuário da `route_current` | `null` (I-27)                      | `null` (RB17) |
 
 - O autor de `routes`, `fuels`, `oils` e `repairs` é gravado por `pb_hooks/author.pb.js` a partir do usuário autenticado. O `user` enviado no corpo é descartado.
 - A placa de `vehicles` segue `AAA-0A00` (maiúsculas, 8 caracteres com o hífen), por `pattern` na migração `1792617392_restrict_vehicle_plate_format.js`. Placas já salvas só são conferidas quando o veículo é salvo de novo. `pb_hooks/vehicles.pb.js` recusa a criação sem `odometer` numérico (o campo não é `required` porque o PocketBase rejeitaria o 0) e grava como ativo o veículo criado por um usuário; o superusuário mantém o `active` que enviar. O mesmo hook recusa a inativação de veículo com rota aberta (`vehicle_has_open_route` em `active`, RB12) e a exclusão de veículo com rota, abastecimento, troca de óleo ou manutenção (`vehicle_has_records` em `id`, RB12), e o caminho para esses é inativar; a denúncia entra pela rota. Testes em `tests/vehicle-management.test.js`.
 - Placa antiga e Mercosul equivalente são a mesma placa (RB20): o 5º caractere é dígito no formato antigo e a letra de A a J no Mercosul (`ABC-1323` = `ABC-1D23`). `pb_hooks/vehicle_plate.pb.js` recusa a placa equivalente à de outro veículo com `validation_not_unique`, e o índice único `idx_vehicles_plate_canonical` (migração `1792622079_restrict_plate_equivalence.js`) garante no banco. A migração falha se já houver veículos com placas equivalentes: remova-os antes. Mudar a placa do próprio veículo para a equivalente é permitido (é a conversão).
 - Uma listagem sem permissão responde `200` com a lista vazia, e uma visualização, `404`. Regra `null` responde `403`.
-- Um motorista só enxerga as próprias rotas, então a checagem de "veículo já em rota aberta" feita pelo app (RB01) não vê rotas de outros motoristas. Quem garante a regra é o servidor (I-18).
+- Um motorista só enxerga as próprias rotas, então a checagem de "veículo já em rota aberta" feita pelo app (RB01) não vê rotas de outros motoristas. Quem garante a regra é o servidor (I-18, veja [Rotas](#rotas-rb01-rb02-rb03-rb13-rb15-rb17)).
 
+### Rotas (RB01, RB02, RB03, RB13, RB15, RB17)
+
+A migração `1793049600_set_route_rules.js` e o hook `pb_hooks/routes.pb.js` (I-18) definem o ciclo de vida da rota. As regras mantêm a condição de usuário ativo (RB18).
+
+| Operação                 | Quem                      | Condição                                                                                          |
+| ------------------------ | ------------------------- | ------------------------------------------------------------------------------------------------- |
+| Criar                    | qualquer usuário          | `status = "aberta"`, sem `km_return`, `obs_return` nem `date_return`; `km_departure` obrigatório |
+| Finalizar (`finalizada`) | só o autor, uma vez       | rota `aberta`; `km_return` maior que `km_departure`; só `status`, `km_return` e `obs_return` mudam |
+| Encerrar (`encerrada`)   | só o supervisor           | rota `aberta`; sem `km_return` nem `obs_return` no pedido                                          |
+| Qualquer edição depois   | ninguém (só o superuser)  | rota `finalizada` ou `encerrada` não muda mais (RB17)                                             |
+
+- **Uma rota aberta por veículo e por motorista (RB01, RB02):** `pb_hooks/routes.pb.js` recusa a criação com `400` e `data.vehicle.code = "vehicle_in_open_route"` ou `data.user.code = "user_in_open_route"`. Só rotas `aberta` contam, então `finalizada` e `encerrada` liberam o veículo e o motorista (RB15). Os índices únicos parciais `idx_routes_open_vehicle` e `idx_routes_open_user` garantem isso no banco mesmo com duas requisições simultâneas. **A migração falha se já houver duas rotas abertas do mesmo veículo ou motorista na base:** encerre as sobras pelo painel antes de reiniciar a produção.
+- **Veículo inativo (RB12):** não recebe rota nova (`data.vehicle.code = "vehicle_inactive"`).
+- **Km de saída:** é obrigatório e numérico na criação (o campo não é `required` porque o PocketBase rejeitaria o 0), com duas casas (RB16).
+- **Retorno maior que a saída (RB13):** vale em todo salvamento de rota `finalizada`, inclusive de uma correção futura (I-30): `400` com `data.km_return.code = "km_return_not_greater"`.
+- **Finalização:** `date_return` é gravada pelo servidor e o `odometer` do veículo passa a ser o `km_return` (RB03), na mesma transação da rota (se o veículo não puder ser salvo, a rota continua aberta). O `odometer` só muda por esse hook (RB09). O encerramento não mexe em km nem no `odometer`, e rota `encerrada` não entra na conta.
+- **Campos fixos:** `user`, `vehicle`, `itinerary`, `km_departure`, `obs_departure`, `date_departure` e `date_return` não mudam por pedido. O pedido de edição precisa trazer o `status`.
+- Uma edição recusada pela regra responde com o erro de regra do PocketBase (sem `code` de campo): o app mostra "Ação não permitida". O superuser não passa pelas regras e pode reabrir ou corrigir uma rota pelo painel, mas a recusa de duas rotas abertas e o `km_return` maior que a saída valem também para ele.
+
+Testes em `tests/route-rules.test.js`. Rotas criadas por superuser nos outros testes precisam de motorista e veículo próprios, porque a recusa vale para ele também.
 ### Usuários (RB19)
 
 A migração `1792705420_set_user_edit_rules.js` (I-11) define quem cria e quem edita `users`. Todas as regras começam com a condição de usuário ativo (RB18). Os campos são protegidos com `:changed`, então um formulário que devolve um valor igual ao salvo é aceito.

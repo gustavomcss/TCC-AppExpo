@@ -47,6 +47,12 @@ const ids = (response) => response.body.items.map((item) => item.id);
 /** Total number of records of a collection, read as superuser. */
 const count = async (collection) => (await admin.get(`/api/collections/${collection}/records?perPage=1`)).body.totalItems;
 
+/** A driver with a session and a vehicle of their own, so a new route breaks neither RB01 nor RB02. */
+async function freshDriver() {
+    const user = await make.user();
+    return { user, session: await login(pb.url, "users", user.email, user.password), vehicle: await make.vehicle() };
+}
+
 /* Starts the instance, creates the users, a vehicle each and one record of every scoped collection per driver. */
 before(async () => {
     pb = await startPocketBase();
@@ -215,33 +221,36 @@ describe("the current km of a vehicle is not changed by a request from the app (
 describe("the author is set by the server from the signed-in user, not by the body", () => {
     for (const collection of AUTHORED) {
         test(`${collection}: the author is the signed-in user even if the body names another`, async () => {
-            const response = await asA.post(`/api/collections/${collection}/records`, { ...PAYLOADS[collection](vehicleA), user: driverB.id });
+            const { user, session, vehicle } = await freshDriver();
+            const response = await session.post(`/api/collections/${collection}/records`, { ...PAYLOADS[collection](vehicle), user: driverB.id });
             assert.equal(response.status, 200);
-            assert.equal(response.body.user, driverA.id);
-            assert.equal((await admin.get(`/api/collections/${collection}/records/${response.body.id}`)).body.user, driverA.id);
+            assert.equal(response.body.user, user.id);
+            assert.equal((await admin.get(`/api/collections/${collection}/records/${response.body.id}`)).body.user, user.id);
         });
 
         test(`${collection}: the author is filled in when the body omits it`, async () => {
-            const response = await asB.post(`/api/collections/${collection}/records`, PAYLOADS[collection](vehicleB));
+            const { user, session, vehicle } = await freshDriver();
+            const response = await session.post(`/api/collections/${collection}/records`, PAYLOADS[collection](vehicle));
             assert.equal(response.status, 200);
-            assert.equal(response.body.user, driverB.id);
+            assert.equal(response.body.user, user.id);
         });
 
         test(`${collection}: a supervisor is also the author of what they create`, async () => {
-            const response = await asSupervisor.post(`/api/collections/${collection}/records`, { ...PAYLOADS[collection](vehicleA), user: driverA.id });
+            const response = await asSupervisor.post(`/api/collections/${collection}/records`, { ...PAYLOADS[collection](await make.vehicle()), user: driverA.id });
             assert.equal(response.status, 200);
             assert.equal(response.body.user, supervisor.id);
         });
     }
 
     test("complaints: only the author of the route files a complaint on it", async () => {
-        const route = await make.route({ user: driverA, vehicle: await make.vehicle() });
+        const owner = await freshDriver();
+        const route = await make.route({ user: owner.user, vehicle: owner.vehicle });
 
         const foreign = await asB.post("/api/collections/complaints/records", complaintForm({ route_current: route.id }));
         assert.ok([400, 403].includes(foreign.status), `status ${foreign.status}`);
         assert.equal((await admin.get(`/api/collections/complaints/records?filter=route_current='${route.id}'`)).body.totalItems, 0);
 
-        const own = await asA.post("/api/collections/complaints/records", complaintForm({ route_current: route.id }));
+        const own = await owner.session.post("/api/collections/complaints/records", complaintForm({ route_current: route.id }));
         assert.equal(own.status, 200);
     });
 });
