@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+import { decimalField } from './common';
+import { formatKm } from './masks';
+
 /** Longest itinerary or observation the `routes` text fields accept. */
 export const ROUTE_TEXT_MAX = 500;
 
@@ -28,3 +31,34 @@ export type RouteDepartureInput = z.input<typeof routeDepartureSchema>;
 
 /** Values of the route departure form once validated and converted. */
 export type RouteDepartureValues = z.output<typeof routeDepartureSchema>;
+
+/** Message for a return km that is not greater than the departure km (RB13). */
+export function kmNotGreaterMessage(kmDeparture: number): string {
+    return `O km de retorno deve ser maior que o km de saída (${formatKm(kmDeparture)}).`;
+}
+
+/**
+ * Route return form (RF09), with the field names of the `routes` collection. The return km is
+ * typed in the km mask and must be greater than the departure km of the route (RB13); the
+ * observation is optional free text of at most ROUTE_TEXT_MAX characters. The departure km
+ * comes from the open route, so the schema is built for it. The server checks the same rule
+ * again (`km_return_not_greater`), which also covers a departure km corrected in the meantime.
+ */
+export function createRouteReturnSchema(kmDeparture: number) {
+    return z.object({
+        km_return: decimalField('Informe o km de retorno.').refine(
+            (value) => value > kmDeparture,
+            kmNotGreaterMessage(kmDeparture),
+        ),
+        obs_return: z
+            .string()
+            .trim()
+            .max(ROUTE_TEXT_MAX, `A observação deve ter no máximo ${ROUTE_TEXT_MAX} caracteres.`),
+    });
+}
+
+/** What the route return form holds while it is being filled in. */
+export type RouteReturnInput = z.input<ReturnType<typeof createRouteReturnSchema>>;
+
+/** Values of the route return form once validated and converted. */
+export type RouteReturnValues = z.output<ReturnType<typeof createRouteReturnSchema>>;

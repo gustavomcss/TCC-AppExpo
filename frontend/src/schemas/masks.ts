@@ -67,3 +67,16 @@ export function formatKm(value: number): string {
     const padded = String(Math.round(value * 100)).padStart(8, '0');
     return `${padded.slice(0, 3)}.${padded.slice(3, 6)},${padded.slice(6)}`;
 }
+
+/** Reads a date from the server ("2026-10-22 08:15:00.000Z") as a Date. */
+function parseServerDate(value: string): Date {
+    return new Date(value.replace(' ', 'T'));
+}
+
+/** Formats a date from the server as the user reads it in Brazil: "22/10/26, 08:15". */
+export function formatDateTime(value: string): string {
+    const date = parseServerDate(value);
+    const pad = (number: number) => String(number).padStart(2, '0');
+
+    return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${pad(date.getFullYear() % 100)}, ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}

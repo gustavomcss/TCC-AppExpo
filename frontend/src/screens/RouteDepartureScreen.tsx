@@ -3,13 +3,15 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Car } from 'lucide-react-native';
 import { useCallback, useMemo, useState } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { ActionBar } from '../components/ActionBar';
 import { Button } from '../components/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/Card';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorState } from '../components/ErrorState';
+import { FormScrollView } from '../components/FormScrollView';
 import { LoadingState } from '../components/LoadingState';
 import { NoticeDialog } from '../components/NoticeDialog';
 import { Select } from '../components/Select';
@@ -42,7 +44,8 @@ type State =
  * checks whether the driver already has an open route (RB02): if so it warns and goes back to
  * the Services tab without showing the form. Otherwise the form asks for the vehicle, shows its
  * current km read-only (RB03, the km of departure is that value) and takes the itinerary and an
- * optional observation, validated with Zod before sending. The vehicle field lists the active
+ * optional observation, validated with Zod before sending; the valid form then asks for a
+ * confirmation (a reminder to check what was filled in), and only the confirmed values are sent. The vehicle field lists the active
  * vehicles (RB12): the free ones can be chosen, and the ones with an open route are listed with
  * the "Indisponível" badge and cannot be (RB01). The list is loaded again with each focus, so it
  * reflects a return or an administrative closure made since the last visit, and the choice is
@@ -57,13 +60,16 @@ export default function RouteDepartureScreen() {
     const [state, setState] = useState<State>({ status: 'loading' });
     const [openRouteNotice, setOpenRouteNotice] = useState(false);
     const [failure, setFailure] = useState({ visible: false, title: '', message: '' });
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [confirmed, setConfirmed] = useState<RouteDepartureValues | null>(null);
     const {
         control,
         handleSubmit,
         setError,
         setValue,
         getValues,
-        formState: { errors, isSubmitting },
+        formState: { errors },
     } = useForm<RouteDepartureInput, unknown, RouteDepartureValues>({
         resolver: zodResolver(routeDepartureSchema),
         defaultValues: { vehicle: '', itinerary: '', obs_departure: '' },
@@ -118,7 +124,13 @@ export default function RouteDepartureScreen() {
      * route finalized since the list was loaded cannot leave a stale value behind. If it moved,
      * the form shows the new km and asks the driver to confirm by sending again.
      */
-    const submit = handleSubmit(async (values) => {
+    const review = handleSubmit((values) => {
+        setConfirmed(values);
+        setConfirmOpen(true);
+    });
+
+    async function perform(values: RouteDepartureValues) {
+        setSaving(true);
         try {
             const fresh = await getVehicle(values.vehicle);
             if (selected && fresh.odometer !== selected.odometer) {
@@ -162,8 +174,22 @@ export default function RouteDepartureScreen() {
                 title: isRuleError(error) ? 'Ação não permitida' : 'Não foi possível salvar',
                 message,
             });
+        } finally {
+            setSaving(false);
         }
-    });
+    }
+
+    function cancelConfirm() {
+        setConfirmed(null);
+        setConfirmOpen(false);
+    }
+
+    function sendConfirmed() {
+        if (confirmed) {
+            setConfirmed(null);
+            perform(confirmed);
+        }
+    }
 
     const openRouteDialog = (
         <NoticeDialog
@@ -206,11 +232,8 @@ export default function RouteDepartureScreen() {
     }
 
     return (
-        <KeyboardAvoidingView
-            style={styles.screen}
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
-            <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <View style={styles.screen}>
+            <FormScrollView contentContainerStyle={styles.content}>
                 <Card>
                     <CardHeader>
                         <CardTitle>Registrar saída</CardTitle>
@@ -228,7 +251,7 @@ export default function RouteDepartureScreen() {
                                     value={value || undefined}
                                     onChange={onChange}
                                     error={errors.vehicle?.message}
-                                    disabled={isSubmitting}
+                                    disabled={saving}
                                 />
                             )}
                         />
@@ -252,7 +275,7 @@ export default function RouteDepartureScreen() {
                                     onChangeText={onChange}
                                     onBlur={onBlur}
                                     error={errors.itinerary?.message}
-                                    editable={!isSubmitting}
+                                    editable={!saving}
                                 />
                             )}
                         />
@@ -271,18 +294,28 @@ export default function RouteDepartureScreen() {
                                     multiline
                                     maxLength={ROUTE_TEXT_MAX}
                                     showCount
-                                    editable={!isSubmitting}
+                                    editable={!saving}
                                 />
                             )}
                         />
                     </CardContent>
                 </Card>
-            </ScrollView>
+            </FormScrollView>
 
             <ActionBar>
-                <Button title="Registrar saída" onPress={() => submit()} loading={isSubmitting} />
+                <Button title="Registrar saída" onPress={() => review()} loading={saving} />
             </ActionBar>
 
+            <ConfirmDialog
+                visible={confirmOpen}
+                title="Registrar saída?"
+                message="Confira o veículo e o itinerário antes de iniciar a rota. Depois de registrada, a saída não poderá ser alterada."
+                confirmLabel="Registrar saída"
+                destructive={false}
+                onConfirm={() => setConfirmOpen(false)}
+                onCancel={cancelConfirm}
+                onHidden={sendConfirmed}
+            />
             <NoticeDialog
                 visible={failure.visible}
                 title={failure.title}
@@ -290,7 +323,7 @@ export default function RouteDepartureScreen() {
                 onClose={() => setFailure((previous) => ({ ...previous, visible: false }))}
             />
             {openRouteDialog}
-        </KeyboardAvoidingView>
+        </View>
     );
 }
 

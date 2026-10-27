@@ -2,11 +2,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigation } from '@react-navigation/native';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { ActionBar } from '../components/ActionBar';
 import { Button } from '../components/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/Card';
+import { FormScrollView } from '../components/FormScrollView';
 import { NoticeDialog } from '../components/NoticeDialog';
 import { Select } from '../components/Select';
 import { TextField } from '../components/TextField';
@@ -78,11 +79,8 @@ export default function VehicleFormScreen() {
     });
 
     return (
-        <KeyboardAvoidingView
-            style={styles.screen}
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
-            <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <View style={styles.screen}>
+            <FormScrollView contentContainerStyle={styles.content}>
                 <Card>
                     <CardHeader>
                         <CardTitle>Dados do veículo</CardTitle>
@@ -164,7 +162,7 @@ export default function VehicleFormScreen() {
                         />
                     </CardContent>
                 </Card>
-            </ScrollView>
+            </FormScrollView>
 
             <ActionBar>
                 <Button title="Cadastrar veículo" onPress={() => submit()} loading={isSubmitting} />
@@ -176,7 +174,7 @@ export default function VehicleFormScreen() {
                 message={failure.message}
                 onClose={() => setFailure((previous) => ({ ...previous, visible: false }))}
             />
-        </KeyboardAvoidingView>
+        </View>
     );
 }
 
