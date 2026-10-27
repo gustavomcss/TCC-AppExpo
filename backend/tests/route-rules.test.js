@@ -414,6 +414,45 @@ describe("the supervisor closes a route administratively (RF10, RB15)", () => {
     });
 });
 
+describe("the closure module lists open and closed routes, never finalized ones (RF10, RB10)", () => {
+    /** The query of the closure list in the app (src/services/routes.ts), as a session reads it. */
+    const closureList = (session) =>
+        session.get(`${PATH}?perPage=200&sort=-date_departure&expand=user,vehicle&filter=${encodeURIComponent('status != "finalizada"')}`);
+
+    test("the supervisor sees open and encerrada routes of every driver, with driver and vehicle", async () => {
+        const open = await driverWithVehicle();
+        const openRoute = await start(open.session, open.vehicle);
+        const closed = await driverWithVehicle();
+        const closedRoute = await start(closed.session, closed.vehicle);
+        await asSupervisor.patch(`${PATH}/${closedRoute.id}`, { status: "encerrada" });
+        const done = await driverWithVehicle();
+        const doneRoute = await start(done.session, done.vehicle);
+        assert.equal((await finalize(done.session, doneRoute)).status, 200);
+
+        const response = await closureList(asSupervisor);
+        const byId = new Map(response.body.items.map((item) => [item.id, item]));
+
+        assert.equal(response.status, 200);
+        assert.equal(byId.get(openRoute.id).status, "aberta");
+        assert.equal(byId.get(closedRoute.id).status, "encerrada");
+        assert.equal(byId.has(doneRoute.id), false);
+        assert.equal(byId.get(openRoute.id).expand.user.name, open.user.name);
+        assert.equal(byId.get(openRoute.id).expand.vehicle.plate, open.vehicle.plate);
+    });
+
+    test("a driver gets only their own routes from the same query", async () => {
+        const mine = await driverWithVehicle();
+        const myRoute = await start(mine.session, mine.vehicle);
+        const other = await driverWithVehicle();
+        const otherRoute = await start(other.session, other.vehicle);
+
+        const ids = (await closureList(mine.session)).body.items.map((item) => item.id);
+
+        assert.ok(ids.includes(myRoute.id));
+        assert.equal(ids.includes(otherRoute.id), false);
+    });
+});
+
 describe("the current km follows only finalized routes (RB03, RB15)", () => {
     test("a closed route in between does not count; the last finalized one sets the km", async () => {
         const { session, vehicle } = await driverWithVehicle();

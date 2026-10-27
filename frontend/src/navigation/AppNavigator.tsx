@@ -14,6 +14,8 @@ import DriverFormScreen from '../screens/DriverFormScreen';
 import DriversScreen from '../screens/DriversScreen';
 import HistoryScreen from '../screens/HistoryScreen';
 import ModuleScreen from '../screens/ModuleScreen';
+import RouteClosureDetailScreen from '../screens/RouteClosureDetailScreen';
+import RouteClosureScreen from '../screens/RouteClosureScreen';
 import RouteScreen from '../screens/RouteScreen';
 import ServicesScreen from '../screens/ServicesScreen';
 import UserScreen from '../screens/UserScreen';
@@ -138,6 +140,8 @@ export default function AppNavigator() {
                                     return <DriversScreen />;
                                 case 'vehicles':
                                     return <VehiclesScreen />;
+                                case 'routeClosure':
+                                    return <RouteClosureScreen />;
                                 default:
                                     return <ModuleScreen moduleKey={module.key} />;
                             }
@@ -166,6 +170,11 @@ export default function AppNavigator() {
                             name="VehicleDetail"
                             component={VehicleDetailScreen}
                             options={{ title: 'Veículo' }}
+                        />
+                        <Stack.Screen
+                            name="RouteClosureDetail"
+                            component={RouteClosureDetailScreen}
+                            options={{ title: 'Rota aberta' }}
                         />
                     </>
                 )}
