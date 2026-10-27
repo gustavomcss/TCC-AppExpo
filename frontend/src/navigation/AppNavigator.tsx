@@ -7,13 +7,14 @@ import { StyleSheet, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '../contexts/AuthContext';
+import { useBottomBar } from '../contexts/ToastContext';
 import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 import DriverDetailScreen from '../screens/DriverDetailScreen';
 import DriverFormScreen from '../screens/DriverFormScreen';
 import DriversScreen from '../screens/DriversScreen';
 import HistoryScreen from '../screens/HistoryScreen';
 import ModuleScreen from '../screens/ModuleScreen';
-import RouteDepartureScreen from '../screens/RouteDepartureScreen';
+import RouteScreen from '../screens/RouteScreen';
 import ServicesScreen from '../screens/ServicesScreen';
 import UserScreen from '../screens/UserScreen';
 import VehicleDetailScreen from '../screens/VehicleDetailScreen';
@@ -21,6 +22,7 @@ import VehicleFormScreen from '../screens/VehicleFormScreen';
 import VehiclesScreen from '../screens/VehiclesScreen';
 import { colors, fontFamily, fontSize, palette, sizes } from '../theme';
 import { modulesFor } from './modules';
+import { StackHeader } from './StackHeader';
 import type { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -57,6 +59,7 @@ const headerOptions = {
 /** The three tabs both roles see (RF20): History, Services and User. */
 function Tabs() {
     const { bottom } = useSafeAreaInsets();
+    useBottomBar(TAB_BAR_HEIGHT + bottom);
 
     return (
         <Tab.Navigator
@@ -113,9 +116,7 @@ export default function AppNavigator() {
 
     return (
         <NavigationContainer theme={navigationTheme}>
-            <Stack.Navigator
-                screenOptions={{ ...headerOptions, headerBackButtonDisplayMode: 'minimal' }}
-            >
+            <Stack.Navigator screenOptions={{ header: (props) => <StackHeader {...props} /> }}>
                 <Stack.Screen name="Tabs" component={Tabs} options={{ headerShown: false }} />
                 <Stack.Screen
                     name="ChangePassword"
@@ -132,7 +133,7 @@ export default function AppNavigator() {
                         {() => {
                             switch (module.key) {
                                 case 'routes':
-                                    return <RouteDepartureScreen />;
+                                    return <RouteScreen />;
                                 case 'drivers':
                                     return <DriversScreen />;
                                 case 'vehicles':

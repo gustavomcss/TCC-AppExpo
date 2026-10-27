@@ -2,11 +2,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigation } from '@react-navigation/native';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { ActionBar } from '../components/ActionBar';
 import { Button } from '../components/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/Card';
+import { FormScrollView } from '../components/FormScrollView';
 import { NoticeDialog } from '../components/NoticeDialog';
 import { TextField } from '../components/TextField';
 import { useToast } from '../contexts/ToastContext';
@@ -72,11 +73,8 @@ export default function DriverFormScreen() {
     });
 
     return (
-        <KeyboardAvoidingView
-            style={styles.screen}
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
-            <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <View style={styles.screen}>
+            <FormScrollView contentContainerStyle={styles.content}>
                 <Card>
                     <CardHeader>
                         <CardTitle>Dados do motorista</CardTitle>
@@ -143,7 +141,7 @@ export default function DriverFormScreen() {
                         />
                     </CardContent>
                 </Card>
-            </ScrollView>
+            </FormScrollView>
 
             <ActionBar>
                 <Button
@@ -159,7 +157,7 @@ export default function DriverFormScreen() {
                 message={failure.message}
                 onClose={() => setFailure((previous) => ({ ...previous, visible: false }))}
             />
-        </KeyboardAvoidingView>
+        </View>
     );
 }
 

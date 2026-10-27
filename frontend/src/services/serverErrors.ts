@@ -52,6 +52,7 @@ const FIELD_MESSAGES: Record<string, (params: Record<string, unknown>) => string
     vehicle_in_open_route: () => 'Este veículo já tem uma rota aberta. Escolha outro veículo.',
     user_in_open_route: () =>
         'Você já tem uma rota aberta. Registre o retorno antes de iniciar outra.',
+    km_return_not_greater: () => 'O km de retorno deve ser maior que o km de saída.',
     vehicle_inactive: () => 'Este veículo está inativo e não pode receber registros.',
 };
 
@@ -128,6 +129,14 @@ export function isRuleError(error: unknown): boolean {
         (error.status === 400 || error.status === 403) &&
         Object.keys(parseServerError(error).fields).length === 0
     );
+}
+
+/**
+ * Tells that the record of the request is gone or no longer matches the rule that selects it: a
+ * 404 on an update, such as finalizing a route that was closed in the meantime (RB17).
+ */
+export function isNotFoundError(error: unknown): boolean {
+    return error instanceof ClientResponseError && error.status === 404;
 }
 
 /**

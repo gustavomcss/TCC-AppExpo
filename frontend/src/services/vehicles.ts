@@ -35,7 +35,7 @@ export function typeLabel(type: Vehicle['type']): string {
 }
 
 /** Maps a `vehicles` record to the vehicle the screens show. */
-function toVehicle(record: RecordModel): Vehicle {
+export function toVehicle(record: RecordModel): Vehicle {
     return {
         id: record.id,
         plate: record.plate,

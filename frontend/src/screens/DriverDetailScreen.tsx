@@ -3,7 +3,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useCallback, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { ActionBar } from '../components/ActionBar';
 import { Avatar } from '../components/Avatar';
@@ -12,6 +12,7 @@ import { Button } from '../components/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/Card';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ErrorState } from '../components/ErrorState';
+import { FormScrollView } from '../components/FormScrollView';
 import { LoadingState } from '../components/LoadingState';
 import { NoticeDialog } from '../components/NoticeDialog';
 import { PhotoSheet } from '../components/PhotoSheet';
@@ -270,11 +271,8 @@ export default function DriverDetailScreen({
     const saving = nameForm.formState.isSubmitting;
 
     return (
-        <KeyboardAvoidingView
-            style={styles.screen}
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
-            <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <View style={styles.screen}>
+            <FormScrollView contentContainerStyle={styles.content}>
                 <Card>
                     <View style={styles.hero}>
                         <Avatar name={driver.name} uri={driver.photoUrl} />
@@ -389,7 +387,7 @@ export default function DriverDetailScreen({
                         />
                     </CardContent>
                 </Card>
-            </ScrollView>
+            </FormScrollView>
 
             <ActionBar>
                 <Button title="Salvar alterações" onPress={() => saveName()} loading={saving} />
@@ -421,7 +419,7 @@ export default function DriverDetailScreen({
                 message={failure.message}
                 onClose={() => setFailure((previous) => ({ ...previous, visible: false }))}
             />
-        </KeyboardAvoidingView>
+        </View>
     );
 }
 

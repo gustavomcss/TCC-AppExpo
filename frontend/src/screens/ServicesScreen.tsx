@@ -1,23 +1,43 @@
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { Badge } from '../components/Badge';
 import { Card } from '../components/Card';
 import { useAuth } from '../contexts/AuthContext';
 import { modulesFor } from '../navigation/modules';
 import type { ServiceModule } from '../navigation/modules';
 import type { RootNavigation } from '../navigation/types';
+import { hasOpenRoute } from '../services/routes';
 import { colors, fontFamily, fontSize, palette, radius, sizes, spacing } from '../theme';
 
 /**
  * Services tab: one card per module the user's role can use, each with the icon of its service.
  * The driver gets the operational services only; the supervisor also gets the administrative
  * ones, under their own heading (RF02, RF20). Hiding a card is only the interface: the API rules
- * refuse the same requests (RNF03). The status badges of the prototype (open route, pending
- * reviews) come with the issues that have that data.
+ * refuse the same requests (RNF03). The "Rota" card carries the "Aberta" badge, over its top right
+ * corner like a notification count, while the user has an open route, read again each time the
+ * tab gets focus. The other status badges of the prototype (complaint, pending reviews, open
+ * routes) come with the issues that have that data.
  */
 export default function ServicesScreen() {
     const { user } = useAuth();
     const navigation = useNavigation<RootNavigation>();
+    const [routeOpen, setRouteOpen] = useState(false);
+    const userId = user?.id;
+
+    useFocusEffect(
+        useCallback(() => {
+            if (!userId) {
+                return;
+            }
+
+            /* The badge is only a hint: if the request fails there is simply no badge. */
+            hasOpenRoute(userId)
+                .then(setRouteOpen)
+                .catch(() => setRouteOpen(false));
+        }, [userId]),
+    );
 
     if (!user) {
         return null;
@@ -47,6 +67,11 @@ export default function ServicesScreen() {
                         <Text style={styles.description}>{module.description}</Text>
                     </View>
                 </Card>
+                {module.key === 'routes' && routeOpen && (
+                    <View pointerEvents="none" style={styles.corner}>
+                        <Badge label="Aberta" variant="success" />
+                    </View>
+                )}
             </Pressable>
         );
     }
@@ -117,6 +142,11 @@ const styles = StyleSheet.create({
         fontFamily: fontFamily.normal,
         fontSize: fontSize.sm,
         lineHeight: 20,
+    },
+    corner: {
+        position: 'absolute',
+        top: -spacing.sm,
+        right: spacing.lg,
     },
     pressed: {
         opacity: 0.85,
