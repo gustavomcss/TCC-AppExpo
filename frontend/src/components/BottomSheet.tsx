@@ -133,7 +133,10 @@ export type SheetOptionProps = {
     badge?: string;
 };
 
-/** One 48 dp row of a BottomSheet list. The chosen row is bold and ends with a check. */
+/**
+ * One row of a BottomSheet list, at least 48 dp tall. The chosen row is bold and ends with a
+ * check. A long label wraps and the badge keeps its size, vertically centered at the end.
+ */
 export function SheetOption({
     label,
     onPress,
@@ -167,7 +170,11 @@ export function SheetOption({
                     {label}
                 </Text>
             </View>
-            {badge && <Badge label={badge} variant="secondary" />}
+            {badge && (
+                <View style={styles.optionBadge}>
+                    <Badge label={badge} variant="secondary" />
+                </View>
+            )}
             {selected && <Check color={colors.foreground} size={20} />}
         </Pressable>
     );
@@ -214,6 +221,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         gap: spacing.md,
         paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.sm,
     },
     pressed: {
         backgroundColor: colors.muted,
@@ -222,11 +230,16 @@ const styles = StyleSheet.create({
         opacity: 0.6,
     },
     optionLabel: {
+        flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         gap: spacing.md,
     },
+    optionBadge: {
+        flexShrink: 0,
+    },
     optionText: {
+        flexShrink: 1,
         color: colors.foreground,
         fontFamily: fontFamily.normal,
         fontSize: fontSize.base,

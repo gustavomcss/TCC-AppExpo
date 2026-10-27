@@ -3,15 +3,19 @@ import { Modal, StyleSheet, Text, View } from 'react-native';
 
 import { colors, fontFamily, fontSize, palette, radius, sizes, spacing } from '../theme';
 import { Button } from './Button';
+import { useHiddenCallback } from './useHiddenCallback';
 
 /**
  * Props of NoticeDialog. `message` stays set by the caller while the dialog fades out, so that
- * the text does not vanish before the dialog does: hide it with `visible`.
+ * the text does not vanish before the dialog does: hide it with `visible`. `onHidden` is called
+ * once the dialog is gone from the screen, for what must wait for that, such as going back to
+ * the previous screen: iOS cannot change screen under a Modal that is still closing.
  */
 export type NoticeDialogProps = {
     visible: boolean;
     message: string;
     onClose: () => void;
+    onHidden?: () => void;
     title?: string;
 };
 
@@ -27,10 +31,19 @@ export function NoticeDialog({
     visible,
     message,
     onClose,
+    onHidden,
     title = 'Ação não permitida',
 }: NoticeDialogProps) {
+    const onDismiss = useHiddenCallback(visible, onHidden);
+
     return (
-        <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+        <Modal
+            visible={visible}
+            transparent
+            animationType="fade"
+            onRequestClose={onClose}
+            onDismiss={onDismiss}
+        >
             <View style={styles.backdrop}>
                 <View accessibilityViewIsModal style={styles.dialog}>
                     <View style={styles.header}>

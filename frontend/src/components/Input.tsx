@@ -12,14 +12,16 @@ import { colors, fontFamily, fontSize, radius, sizes, spacing } from '../theme';
 export type InputProps = TextInputProps & { invalid?: boolean; suffix?: string };
 
 /**
- * Single-line text input with the app border and radius, 44 dp tall. The border darkens while it
- * has focus, a field with `secureTextEntry` gets a button to show or hide what is typed, and a
- * `suffix` shows the unit of the value beside what is typed.
+ * Text input with the app border and radius, 44 dp tall. The border darkens while it has focus, a
+ * field with `secureTextEntry` gets a button to show or hide what is typed, and a `suffix` shows
+ * the unit of the value beside what is typed. With `multiline` the box grows from 88 dp for free
+ * text, such as an observation.
  */
 export function Input({
     invalid,
     editable = true,
     secureTextEntry,
+    multiline,
     suffix,
     style,
     onFocus,
@@ -34,6 +36,7 @@ export function Input({
         <View
             style={[
                 styles.box,
+                multiline && styles.boxMultiline,
                 focused && styles.focused,
                 invalid && styles.invalid,
                 !editable && styles.disabled,
@@ -41,7 +44,12 @@ export function Input({
             ]}
         >
             <TextInput
-                style={[styles.input, !editable && styles.inputDisabled]}
+                style={[
+                    styles.input,
+                    multiline && styles.inputMultiline,
+                    !editable && styles.inputDisabled,
+                ]}
+                multiline={multiline}
                 placeholderTextColor={colors.mutedForeground}
                 editable={editable}
                 secureTextEntry={isPassword && hidden}
@@ -87,6 +95,12 @@ const styles = StyleSheet.create({
         backgroundColor: colors.background,
         paddingHorizontal: spacing.md,
     },
+    boxMultiline: {
+        height: undefined,
+        minHeight: sizes.multilineControl,
+        alignItems: 'flex-start',
+        paddingVertical: spacing.md,
+    },
     focused: {
         borderColor: colors.primary,
     },
@@ -103,6 +117,11 @@ const styles = StyleSheet.create({
         color: colors.foreground,
         fontFamily: fontFamily.normal,
         fontSize: fontSize.base,
+    },
+    inputMultiline: {
+        height: undefined,
+        minHeight: sizes.multilineControl - 2 * spacing.md - 2,
+        textAlignVertical: 'top',
     },
     inputDisabled: {
         color: colors.mutedForeground,
