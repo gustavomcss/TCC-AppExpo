@@ -49,6 +49,9 @@ const FIELD_MESSAGES: Record<string, (params: Record<string, unknown>) => string
         'Este veículo tem uma rota aberta. Encerre a rota antes de inativá-lo.',
     vehicle_has_records: () =>
         'Este veículo tem registros vinculados e não pode ser excluído. Inative o veículo em vez de excluir.',
+    vehicle_in_open_route: () => 'Este veículo já tem uma rota aberta. Escolha outro veículo.',
+    user_in_open_route: () =>
+        'Você já tem uma rota aberta. Registre o retorno antes de iniciar outra.',
     vehicle_inactive: () => 'Este veículo está inativo e não pode receber registros.',
 };
 

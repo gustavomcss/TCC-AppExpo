@@ -1,8 +1,8 @@
-import { useEffect, useRef } from 'react';
-import { Modal, Platform, StyleSheet, Text, View } from 'react-native';
+import { Modal, StyleSheet, Text, View } from 'react-native';
 
 import { colors, fontFamily, fontSize, palette, radius, spacing } from '../theme';
 import { Button } from './Button';
+import { useHiddenCallback } from './useHiddenCallback';
 
 /**
  * Props of ConfirmDialog. `message` stays set by the caller while the dialog fades out, so that
@@ -41,21 +41,7 @@ export function ConfirmDialog({
     destructive = true,
     loading = false,
 }: ConfirmDialogProps) {
-    /*
-     * Android has no Modal onDismiss, and there nothing needs to wait for the Modal, so the
-     * callback runs as soon as the dialog is told to hide.
-     */
-    const wasVisible = useRef(visible);
-    const hiddenCallback = useRef(onHidden);
-    useEffect(() => {
-        hiddenCallback.current = onHidden;
-    });
-    useEffect(() => {
-        if (wasVisible.current && !visible && Platform.OS !== 'ios') {
-            hiddenCallback.current?.();
-        }
-        wasVisible.current = visible;
-    }, [visible]);
+    const onDismiss = useHiddenCallback(visible, onHidden);
 
     return (
         <Modal
@@ -63,7 +49,7 @@ export function ConfirmDialog({
             transparent
             animationType="fade"
             onRequestClose={loading ? undefined : onCancel}
-            onDismiss={onHidden}
+            onDismiss={onDismiss}
         >
             <View style={styles.backdrop}>
                 <View accessibilityViewIsModal style={styles.dialog}>

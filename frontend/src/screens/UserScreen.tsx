@@ -8,6 +8,7 @@ import { Avatar } from '../components/Avatar';
 import { Badge } from '../components/Badge';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import { NoticeDialog } from '../components/NoticeDialog';
 import { PhotoSheet } from '../components/PhotoSheet';
 import type { PhotoSource } from '../components/PhotoSheet';
@@ -68,10 +69,25 @@ export default function UserScreen() {
     const navigation = useNavigation<RootNavigation>();
     const toast = useToast();
     const [sheetOpen, setSheetOpen] = useState(false);
+    const [signOutOpen, setSignOutOpen] = useState(false);
+    const leaving = useRef(false);
     const [uploading, setUploading] = useState(false);
     const pendingSource = useRef<PhotoSource | null>(null);
     const [failure, setFailure] = useState({ visible: false, title: '', message: '' });
     const name = user?.name || user?.email || '';
+
+    /* Signing out waits for the dialog to be gone: iOS cannot change screen under a closing Modal. */
+    function confirmSignOut() {
+        leaving.current = true;
+        setSignOutOpen(false);
+    }
+
+    function signOutHidden() {
+        if (leaving.current) {
+            leaving.current = false;
+            signOut();
+        }
+    }
 
     const fail = (title: string, message: string) => setFailure({ visible: true, title, message });
 
@@ -154,7 +170,17 @@ export default function UserScreen() {
                 />
             </Card>
 
-            <Button variant="destructive" title="Sair" onPress={signOut} />
+            <Button variant="destructive" title="Sair" onPress={() => setSignOutOpen(true)} />
+
+            <ConfirmDialog
+                visible={signOutOpen}
+                title="Sair da conta?"
+                message="Você precisará entrar de novo para usar o app."
+                confirmLabel="Sair"
+                onConfirm={confirmSignOut}
+                onCancel={() => setSignOutOpen(false)}
+                onHidden={signOutHidden}
+            />
 
             <PhotoSheet
                 visible={sheetOpen}
