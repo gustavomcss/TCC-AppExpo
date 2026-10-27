@@ -8,7 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { modulesFor } from '../navigation/modules';
 import type { ServiceModule } from '../navigation/modules';
 import type { RootNavigation } from '../navigation/types';
-import { hasOpenRoute } from '../services/routes';
+import { countOpenRoutes, hasOpenRoute } from '../services/routes';
 import { colors, fontFamily, fontSize, palette, radius, sizes, spacing } from '../theme';
 
 /**
@@ -17,14 +17,18 @@ import { colors, fontFamily, fontSize, palette, radius, sizes, spacing } from '.
  * ones, under their own heading (RF02, RF20). Hiding a card is only the interface: the API rules
  * refuse the same requests (RNF03). The "Rota" card carries the "Aberta" badge, over its top right
  * corner like a notification count, while the user has an open route, read again each time the
- * tab gets focus. The other status badges of the prototype (complaint, pending reviews, open
- * routes) come with the issues that have that data.
+ * tab gets focus. A supervisor's "Encerramento de rotas" card carries, the same way, the count of
+ * open routes of every driver. Both are notification badges, black with white text, unlike the
+ * outline and muted badges that state a situation inside the screens. The other badges of the
+ * prototype (complaint, pending reviews) come with the issues that have that data.
  */
 export default function ServicesScreen() {
     const { user } = useAuth();
     const navigation = useNavigation<RootNavigation>();
     const [routeOpen, setRouteOpen] = useState(false);
+    const [openCount, setOpenCount] = useState(0);
     const userId = user?.id;
+    const isSupervisor = user?.role === 'supervisor';
 
     useFocusEffect(
         useCallback(() => {
@@ -36,7 +40,13 @@ export default function ServicesScreen() {
             hasOpenRoute(userId)
                 .then(setRouteOpen)
                 .catch(() => setRouteOpen(false));
-        }, [userId]),
+
+            if (isSupervisor) {
+                countOpenRoutes()
+                    .then(setOpenCount)
+                    .catch(() => setOpenCount(0));
+            }
+        }, [userId, isSupervisor]),
     );
 
     if (!user) {
@@ -69,7 +79,12 @@ export default function ServicesScreen() {
                 </Card>
                 {module.key === 'routes' && routeOpen && (
                     <View pointerEvents="none" style={styles.corner}>
-                        <Badge label="Aberta" variant="success" />
+                        <Badge label="Aberta" />
+                    </View>
+                )}
+                {module.key === 'routeClosure' && openCount > 0 && (
+                    <View pointerEvents="none" style={styles.corner}>
+                        <Badge label={String(openCount)} />
                     </View>
                 )}
             </Pressable>

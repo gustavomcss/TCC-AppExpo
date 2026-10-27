@@ -7,41 +7,48 @@ import { colors, sizes, spacing } from '../theme';
 import { Chip } from './Chip';
 import { Input } from './Input';
 
+/** One option of the situation filter: its value and the text of its chip. */
+export type StatusOption<T extends string> = { value: T; label: string };
+
 /**
  * Props of ListFilters: the search text and the situation filter, both held by the screen, and
- * optional extra chips that a list adds after the situation ones (the vehicle types).
+ * optional extra chips that a list adds after the situation ones (the vehicle types). The
+ * situation options default to Todos, Ativos and Inativos; a list whose items have another
+ * situation (the routes: open or closed) gives its own `statusOptions`.
  */
-export type ListFiltersProps = {
+export type ListFiltersProps<T extends string = StatusFilter> = {
     searchLabel: string;
     searchPlaceholder: string;
     query: string;
     onQueryChange: (query: string) => void;
-    status: StatusFilter;
-    onStatusChange: (status: StatusFilter) => void;
+    status: T;
+    onStatusChange: (status: T) => void;
+    statusOptions?: readonly StatusOption<T>[];
     extraChips?: ReactNode;
 };
 
-/** Options of the situation filter, in the order the chips appear. */
-const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
+/** Options of the default situation filter, in the order the chips appear. */
+const ACTIVE_FILTERS: readonly StatusOption<StatusFilter>[] = [
     { value: 'all', label: 'Todos' },
     { value: 'active', label: 'Ativos' },
     { value: 'inactive', label: 'Inativos' },
 ];
 
 /**
- * Search field (with a button to clear it) over the chips Todos, Ativos and Inativos, shared by
- * the management lists, with room for more chips after them. The row of chips scrolls sideways
+ * Search field (with a button to clear it) over the chips Todos, Ativos and Inativos (or the
+ * given situation options), shared by the lists, with room for more chips after them. The row of chips scrolls sideways
  * when they do not fit. It only holds the controls: each screen narrows its own list with them.
  */
-export function ListFilters({
+export function ListFilters<T extends string = StatusFilter>({
     searchLabel,
     searchPlaceholder,
     query,
     onQueryChange,
     status,
     onStatusChange,
+    statusOptions = ACTIVE_FILTERS as readonly StatusOption<string>[] as readonly StatusOption<T>[],
     extraChips,
-}: ListFiltersProps) {
+}: ListFiltersProps<T>) {
     return (
         <View style={styles.filters}>
             <View>
@@ -73,7 +80,7 @@ export function ListFilters({
                 style={styles.chipsScroll}
                 contentContainerStyle={styles.chips}
             >
-                {STATUS_FILTERS.map((filter) => (
+                {statusOptions.map((filter) => (
                     <Chip
                         key={filter.value}
                         label={filter.label}

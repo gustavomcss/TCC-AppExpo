@@ -27,6 +27,14 @@ const authStore = new AsyncAuthStore({
 /** The single PocketBase client of the app. */
 export const pb = new PocketBase(env.pocketbaseUrl, authStore);
 
+/*
+ * By default the SDK cancels a pending request when another one with the same method and path
+ * starts, so two list requests to the same collection at once (the two badges of the Services
+ * tab, both on `routes`) cancel the first. The app filters its lists on the device and never
+ * relies on that, so the auto-cancellation is off.
+ */
+pb.autoCancellation(false);
+
 /** Statuses with which the server refuses a session. */
 export type RejectionStatus = 401 | 403;
 
