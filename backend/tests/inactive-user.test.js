@@ -46,10 +46,15 @@ async function setActive(user, active) {
  * that the user could read if the rule let them.
  */
 async function seed(user) {
-    const route = await make.route({ user, vehicle, status: "finalizada", km_return: 1100 });
+    /* A complaint is only filed on an open route (I-27), so the route is finalized afterwards. */
+    const open = await make.route({ user, vehicle });
+    const complaint = await make.complaint({ route_current: open.id });
+    const finalized = await admin.patch(`/api/collections/routes/records/${open.id}`, { status: "finalizada", km_return: 1100 });
+    assert.equal(finalized.status, 200);
+    const route = finalized.body;
     return {
         route,
-        complaint: await make.complaint({ route_current: route.id }),
+        complaint,
         fuel: await make.fuel({ user, vehicle }),
         oil: await make.oil({ user, vehicle }),
         repair: await make.repair({ user, vehicle }),
