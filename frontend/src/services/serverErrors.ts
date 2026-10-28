@@ -132,6 +132,20 @@ export function isRuleError(error: unknown): boolean {
 }
 
 /**
+ * Tells that the server refused one field with the given `code`, such as `vehicle_inactive` on
+ * `vehicle`. Screens use it to show a refusal that the user cannot fix on the field itself in the
+ * NoticeDialog instead of under the field.
+ */
+export function hasFieldCode(error: unknown, field: string, code: string): boolean {
+    const data = error instanceof ClientResponseError ? error.response?.data : undefined;
+    return (
+        !!data &&
+        typeof data === 'object' &&
+        (data as Record<string, FieldError | undefined>)[field]?.code === code
+    );
+}
+
+/**
  * Tells that the record of the request is gone or no longer matches the rule that selects it: a
  * 404 on an update, such as finalizing a route that was closed in the meantime (RB17).
  */
