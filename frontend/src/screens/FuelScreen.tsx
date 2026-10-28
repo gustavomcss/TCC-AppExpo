@@ -181,7 +181,6 @@ export default function FuelScreen() {
                                     onBlur={onBlur}
                                     error={errors.km_fuel?.message}
                                     keyboardType="number-pad"
-                                    masked
                                     suffix="km"
                                     editable={!isSubmitting}
                                 />
@@ -217,7 +216,6 @@ export default function FuelScreen() {
                                     onBlur={onBlur}
                                     error={errors.liters?.message}
                                     keyboardType="number-pad"
-                                    masked
                                     suffix="L"
                                     editable={!isSubmitting}
                                 />
@@ -239,7 +237,6 @@ export default function FuelScreen() {
                                     onSubmitEditing={() => submit()}
                                     error={errors.cost?.message}
                                     keyboardType="number-pad"
-                                    masked
                                     prefix="R$"
                                     editable={!isSubmitting}
                                 />

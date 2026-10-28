@@ -162,7 +162,6 @@ export default function RouteReturnScreen({ route }: RouteReturnScreenProps) {
                                     onBlur={onBlur}
                                     error={errors.km_return?.message}
                                     keyboardType="number-pad"
-                                    masked
                                     suffix="km"
                                     editable={!saving}
                                 />
