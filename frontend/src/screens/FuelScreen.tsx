@@ -22,13 +22,21 @@ import { FUEL_TYPES, fuelSchema } from '../schemas/fuel';
 import type { FuelInput, FuelValues } from '../schemas/fuel';
 import { formatDecimalInput } from '../schemas/masks';
 import { createFuel } from '../services/fuels';
-import { applyServerError, isRuleError, parseServerError } from '../services/serverErrors';
+import {
+    applyServerError,
+    hasFieldCode,
+    isRuleError,
+    parseServerError,
+} from '../services/serverErrors';
 import { listActiveVehicles } from '../services/vehicles';
 import type { Vehicle } from '../services/vehicles';
 import { colors, spacing } from '../theme';
 
-/** Fields of the form, in the names the server uses, so its field errors can be matched. */
-const FIELDS = ['vehicle', 'km_fuel', 'type', 'liters', 'cost'] as const;
+/**
+ * Fields of the form, in the names the server uses, so its field errors can be matched. The
+ * vehicle is left out: a refusal on it (an inactive vehicle) goes to the NoticeDialog.
+ */
+const FIELDS = ['km_fuel', 'type', 'liters', 'cost'] as const;
 
 /** What the screen is showing: the request in progress, its failure or the form. */
 type State =
@@ -110,7 +118,10 @@ export default function FuelScreen() {
             }
             setFailure({
                 visible: true,
-                title: isRuleError(error) ? 'Ação não permitida' : 'Não foi possível salvar',
+                title:
+                    isRuleError(error) || hasFieldCode(error, 'vehicle', 'vehicle_inactive')
+                        ? 'Ação não permitida'
+                        : 'Não foi possível salvar',
                 message,
             });
         }
@@ -137,6 +148,13 @@ export default function FuelScreen() {
                     icon={Car}
                     title="Nenhum veículo ativo"
                     description="Peça ao supervisor para cadastrar ou reativar um veículo."
+                />
+
+                <NoticeDialog
+                    visible={failure.visible}
+                    title={failure.title}
+                    message={failure.message}
+                    onClose={() => setFailure((previous) => ({ ...previous, visible: false }))}
                 />
             </View>
         );

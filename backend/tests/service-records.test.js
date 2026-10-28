@@ -331,3 +331,63 @@ describe("oils: the values of the form (RF12, RB16)", () => {
         }
     });
 });
+
+describe("repairs: the values of the form (RF13, RB16)", () => {
+    test("the four fields of the form create the record with every value as sent", async () => {
+        const vehicle = await make.vehicle();
+        const response = await asDriver.post(path("repairs"), BODIES.repairs(vehicle, { km_repair: 999999.99, description: "Clutch replacement", cost: 0.01 }));
+
+        assert.equal(response.status, 200, JSON.stringify(response.body));
+        assert.equal(response.body.vehicle, vehicle.id);
+        assert.equal(response.body.km_repair, 999999.99);
+        assert.equal(response.body.description, "Clutch replacement");
+        assert.equal(response.body.cost, 0.01);
+    });
+
+    test("the description is free text of up to 500 characters and is required", async () => {
+        const vehicle = await make.vehicle();
+
+        assert.equal((await asDriver.post(path("repairs"), BODIES.repairs(vehicle, { description: "x".repeat(500) }))).status, 200);
+
+        const tooLong = await asDriver.post(path("repairs"), BODIES.repairs(vehicle, { description: "x".repeat(501) }));
+        assert.equal(tooLong.status, 400);
+        assert.equal(tooLong.body.data.description.code, "validation_max_text_constraint");
+
+        for (const description of ["", null]) {
+            const missing = await asDriver.post(path("repairs"), BODIES.repairs(vehicle, { description }));
+            assert.equal(missing.status, 400, `description=${description}`);
+            assert.equal(missing.body.data.description.code, "validation_required", `description=${description}`);
+        }
+    });
+
+    test("km and cost are required, and a zero counts as missing", async () => {
+        const vehicle = await make.vehicle();
+        const before = await countFor("repairs", vehicle);
+
+        for (const field of ["km_repair", "cost"]) {
+            for (const value of [0, null]) {
+                const response = await asDriver.post(path("repairs"), BODIES.repairs(vehicle, { [field]: value }));
+                assert.equal(response.status, 400, `${field}=${value}`);
+                assert.equal(response.body.data[field].code, "validation_required", `${field}=${value}`);
+            }
+        }
+        assert.equal(await countFor("repairs", vehicle), before);
+    });
+
+    test("a negative value, a value above 999.999,99 and a third decimal are refused", async () => {
+        const vehicle = await make.vehicle();
+        const cases = [
+            [-1, "validation_min_number_constraint"],
+            [1000000, "validation_max_number_constraint"],
+            [10.123, "validation_too_many_decimals"],
+        ];
+
+        for (const field of ["km_repair", "cost"]) {
+            for (const [value, code] of cases) {
+                const response = await asDriver.post(path("repairs"), BODIES.repairs(vehicle, { [field]: value }));
+                assert.equal(response.status, 400, `${field}=${value}`);
+                assert.equal(response.body.data[field].code, code, `${field}=${value}`);
+            }
+        }
+    });
+});

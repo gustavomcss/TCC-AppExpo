@@ -16,6 +16,7 @@ import FuelScreen from '../screens/FuelScreen';
 import OilScreen from '../screens/OilScreen';
 import HistoryScreen from '../screens/HistoryScreen';
 import ModuleScreen from '../screens/ModuleScreen';
+import RepairScreen from '../screens/RepairScreen';
 import RouteClosureDetailScreen from '../screens/RouteClosureDetailScreen';
 import RouteClosureScreen from '../screens/RouteClosureScreen';
 import RouteScreen from '../screens/RouteScreen';
@@ -142,6 +143,8 @@ export default function AppNavigator() {
                                     return <FuelScreen />;
                                 case 'oil':
                                     return <OilScreen />;
+                                case 'repair':
+                                    return <RepairScreen />;
                                 case 'drivers':
                                     return <DriversScreen />;
                                 case 'vehicles':
