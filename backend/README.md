@@ -84,7 +84,7 @@ A migração `1792601121_set_base_api_rules.js` (I-05) é a linha de base de ace
 | `vehicles`                             | qualquer usuário autenticado      | supervisor                               | supervisor, sem alterar o `odometer` (RB09) | supervisor |
 | `routes`                               | o autor; supervisor: todos        | autenticado, rota `aberta` e sem dados de retorno (I-18) | veja [Rotas](#rotas-rb01-rb02-rb03-rb13-rb15-rb17) (I-18) | `null` (RB17) |
 | `fuels`, `oils`, `repairs`             | o autor; supervisor: todos        | autenticado, veículo ativo, autor definido pelo servidor (I-19) | `null` (I-31)                            | `null` (RB17) |
-| `complaints`                           | o autor da `route_current`; supervisor: todos | só quem é o usuário da `route_current` | `null` (I-27)                      | `null` (RB17) |
+| `complaints`                           | o autor da `route_current`; supervisor: todos | só quem é o usuário da `route_current`, `pendente` (I-27) | só o supervisor, para revisar (I-27) | `null` (RB17) |
 
 - O autor de `routes`, `fuels`, `oils` e `repairs` é gravado por `pb_hooks/author.pb.js` a partir do usuário autenticado. O `user` enviado no corpo é descartado.
 - A placa de `vehicles` segue `AAA-0A00` (maiúsculas, 8 caracteres com o hífen), por `pattern` na migração `1792617392_restrict_vehicle_plate_format.js`. Placas já salvas só são conferidas quando o veículo é salvo de novo. `pb_hooks/vehicles.pb.js` recusa a criação sem `odometer` numérico (o campo não é `required` porque o PocketBase rejeitaria o 0) e grava como ativo o veículo criado por um usuário; o superusuário mantém o `active` que enviar. O mesmo hook recusa a inativação de veículo com rota aberta (`vehicle_has_open_route` em `active`, RB12) e a exclusão de veículo com rota, abastecimento, troca de óleo ou manutenção (`vehicle_has_records` em `id`, RB12), e o caminho para esses é inativar; a denúncia entra pela rota. Testes em `tests/vehicle-management.test.js`.
@@ -112,6 +112,26 @@ A migração `1793049600_set_route_rules.js` e o hook `pb_hooks/routes.pb.js` (I
 - Uma edição recusada pela regra responde com o erro de regra do PocketBase (sem `code` de campo): o app mostra "Ação não permitida". O superuser não passa pelas regras e pode reabrir ou corrigir uma rota pelo painel, mas a recusa de duas rotas abertas e o `km_return` maior que a saída valem também para ele.
 
 Testes em `tests/route-rules.test.js`. Rotas criadas por superuser nos outros testes precisam de motorista e veículo próprios, porque a recusa vale para ele também.
+### Denúncias (RB05, RB06, RB08, RB11, RB17)
+
+A migração `1793196483_set_complaint_rules.js` e o hook `pb_hooks/complaints.pb.js` (I-27) definem o ciclo de vida da denúncia. As regras mantêm a condição de usuário ativo (RB18). A denúncia não tem campo de autor: o denunciante é o `user` da `route_current`.
+
+| Operação | Quem                               | Condição                                                                                               |
+| -------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Criar    | só o autor da `route_current`      | `status = "pendente"`, sem `reviewed` nem `route_previous` no pedido; rota `aberta`; km diferente do de saída |
+| Revisar  | só o supervisor, inclusive a própria denúncia (RB08) | denúncia `pendente`; o pedido traz `status` `aprovada` ou `reprovada` e nenhum outro campo mudado |
+| Depois   | ninguém (só o superuser)           | denúncia revisada não muda mais (RB17); `delete` segue `null`                                          |
+
+- **Uma por rota (RB11):** o índice único `idx_complaints_route_current` (I-03) recusa a segunda com `400` e `data.route_current.code = "validation_not_unique"`.
+- **Só com a rota aberta (RB11):** o hook recusa com `data.route_current.code = "route_not_open"` quando a rota está `finalizada` ou `encerrada`, para o superuser também. Quem não é o autor da rota é barrado pela regra (`400` sem `code` de campo).
+- **Km diferente do de saída (RB11):** `data.km_complaint.code = "km_equals_departure"`. As duas casas e o intervalo (RB16) são os dos outros decimais.
+- **`route_previous` é do servidor (RB06):** o hook grava a rota imediatamente anterior do mesmo veículo, seja qual for o status, ou deixa vazio se não houver. O pedido não pode enviá-lo, para a denúncia não apontar para uma rota de outro veículo (a correção da I-30 usa esse campo).
+- **Revisão:** `reviewed` é gravado pelo servidor com o relógio dele quando o `status` sai de `pendente`; o pedido não pode enviá-lo. Os outros campos (`route_current`, `route_previous`, `km_complaint`, `photo`) ficam fixos. Esta issue não corrige nenhum km: isso é a I-30, que vai estender o `onRecordUpdateRequest` deste mesmo hook para fazer a aprovação em transação.
+- **Não bloqueia a rota (RB05):** a denúncia pendente não impede finalizar a rota, e o supervisor revisa depois da finalização.
+- Os códigos novos ainda não estão traduzidos em `serverErrors.ts`: entram na tela de denúncia (I-28).
+
+Testes em `tests/complaint-rules.test.js`. Como o hook vale para o superuser também, um teste que precisa de denúncia numa rota já finalizada cria a denúncia com a rota aberta e finaliza a rota depois.
+
 ### Registros de serviço (RB04, RB09, RB12, RB17, RNF05)
 
 As regras de `fuels`, `oils` e `repairs` vêm da I-05 e da I-07, sem migração nova na I-19: qualquer motorista ou supervisor ativo cria, o autor é gravado por `pb_hooks/author.pb.js` (o `user` do corpo é descartado, e pode ser omitido), `created` é do servidor e o delete segue `null`. O hook `pb_hooks/service_records.pb.js` (I-19) soma o que a regra não expressa:
