@@ -57,6 +57,19 @@ export async function listVehicles(): Promise<Vehicle[]> {
     return records.map(toVehicle);
 }
 
+/**
+ * Lists the active vehicles by plate, for the records that name a vehicle (fueling, oil change and
+ * repair). Inactive vehicles leave the selections and keep their history (RB12); the server also
+ * refuses a record for one (`vehicle_inactive`).
+ */
+export async function listActiveVehicles(): Promise<Vehicle[]> {
+    const records = await pb
+        .collection('vehicles')
+        .getFullList({ filter: 'active = true', sort: 'plate' });
+
+    return records.map(toVehicle);
+}
+
 /** A vehicle in the choice for a new route, with whether it can be taken now (RB01). */
 export type RouteVehicle = Vehicle & { available: boolean };
 

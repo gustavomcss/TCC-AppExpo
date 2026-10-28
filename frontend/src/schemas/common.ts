@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 /**
  * Km or money value typed in a text input (RB16), in the format of formatDecimalInput
- * (000.123,45): up to six integer digits and two decimals, which is 0 to 999.999,99. Yields a
+ * (123.456,78): up to six integer digits and two decimals, which is 0 to 999.999,99. Yields a
  * number. The server checks the same limits again, so this only gives the feedback before sending.
  */
 export function decimalField(requiredMessage: string) {
