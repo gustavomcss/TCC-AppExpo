@@ -6,16 +6,28 @@ import type { TextInputProps } from 'react-native';
 import { colors, fontFamily, fontSize, radius, sizes, spacing } from '../theme';
 
 /**
- * Props of Input. `invalid` paints the border with the error color, and `suffix` is a short text
- * drawn inside the box, on the right, such as the unit of the value ("km").
+ * Props of Input. `invalid` paints the border with the error color, `suffix` is a short text
+ * drawn inside the box, on the right, such as the unit of the value ("km"), and `prefix` is the
+ * same on the left, such as the currency ("R$"). `masked` is for values the app reformats on every
+ * key, such as km and money: the native text is made invisible and the value is drawn over it,
+ * with a caret of its own.
  */
-export type InputProps = TextInputProps & { invalid?: boolean; suffix?: string };
+export type InputProps = TextInputProps & {
+    invalid?: boolean;
+    suffix?: string;
+    prefix?: string;
+    masked?: boolean;
+};
 
 /**
  * Text input with the app border and radius, 44 dp tall. The border darkens while it has focus, a
- * field with `secureTextEntry` gets a button to show or hide what is typed, and a `suffix` shows
- * the unit of the value beside what is typed. With `multiline` the box grows from 88 dp for free
- * text, such as an observation.
+ * field with `secureTextEntry` gets a button to show or hide what is typed, and a `prefix` or
+ * `suffix` shows the currency or the unit beside what is typed. With `multiline` the box grows
+ * from 88 dp for free text, such as an observation. A `masked` input keeps the keyboard and the
+ * focus of the native field but shows the value through a Text: when the app rewrites the typed
+ * text (adding the separators), the system replaces the native text and restarts its caret, which
+ * then blinks again on every key. So the native text and caret are hidden, and the input draws its
+ * own caret, steady and always after the last digit, where the next one goes.
  */
 export function Input({
     invalid,
@@ -23,6 +35,8 @@ export function Input({
     secureTextEntry,
     multiline,
     suffix,
+    prefix,
+    masked,
     style,
     onFocus,
     onBlur,
@@ -31,6 +45,32 @@ export function Input({
     const [focused, setFocused] = useState(false);
     const [hidden, setHidden] = useState(true);
     const isPassword = Boolean(secureTextEntry);
+
+    const field = (
+        <TextInput
+            style={[
+                styles.input,
+                multiline && styles.inputMultiline,
+                !editable && styles.inputDisabled,
+                masked && styles.inputInvisible,
+            ]}
+            multiline={multiline}
+            placeholderTextColor={masked ? 'transparent' : colors.mutedForeground}
+            editable={editable}
+            secureTextEntry={isPassword && hidden}
+            caretHidden={masked}
+            contextMenuHidden={masked}
+            onFocus={(event) => {
+                setFocused(true);
+                onFocus?.(event);
+            }}
+            onBlur={(event) => {
+                setFocused(false);
+                onBlur?.(event);
+            }}
+            {...props}
+        />
+    );
 
     return (
         <View
@@ -43,26 +83,28 @@ export function Input({
                 style,
             ]}
         >
-            <TextInput
-                style={[
-                    styles.input,
-                    multiline && styles.inputMultiline,
-                    !editable && styles.inputDisabled,
-                ]}
-                multiline={multiline}
-                placeholderTextColor={colors.mutedForeground}
-                editable={editable}
-                secureTextEntry={isPassword && hidden}
-                onFocus={(event) => {
-                    setFocused(true);
-                    onFocus?.(event);
-                }}
-                onBlur={(event) => {
-                    setFocused(false);
-                    onBlur?.(event);
-                }}
-                {...props}
-            />
+            {prefix && <Text style={styles.prefix}>{prefix}</Text>}
+            {masked ? (
+                <View style={styles.maskedBox}>
+                    {field}
+                    <View pointerEvents="none" style={styles.maskedOverlay}>
+                        {focused && !props.value && <View style={styles.caret} />}
+                        <Text
+                            numberOfLines={1}
+                            style={[
+                                styles.maskedText,
+                                !props.value && styles.maskedPlaceholder,
+                                !editable && styles.inputDisabled,
+                            ]}
+                        >
+                            {props.value || props.placeholder}
+                        </Text>
+                        {focused && Boolean(props.value) && <View style={styles.caret} />}
+                    </View>
+                </View>
+            ) : (
+                field
+            )}
             {suffix && <Text style={styles.suffix}>{suffix}</Text>}
             {isPassword && (
                 <Pressable
@@ -125,6 +167,38 @@ const styles = StyleSheet.create({
     },
     inputDisabled: {
         color: colors.mutedForeground,
+    },
+    inputInvisible: {
+        color: 'transparent',
+    },
+    maskedBox: {
+        flex: 1,
+        height: '100%',
+    },
+    maskedOverlay: {
+        ...StyleSheet.absoluteFill,
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    maskedPlaceholder: {
+        color: colors.mutedForeground,
+    },
+    caret: {
+        width: 2,
+        height: fontSize.base + 4,
+        marginHorizontal: 1,
+        backgroundColor: colors.foreground,
+    },
+    maskedText: {
+        color: colors.foreground,
+        fontFamily: fontFamily.normal,
+        fontSize: fontSize.base,
+    },
+    prefix: {
+        marginRight: spacing.sm,
+        color: colors.mutedForeground,
+        fontFamily: fontFamily.normal,
+        fontSize: fontSize.sm,
     },
     suffix: {
         marginLeft: spacing.sm,

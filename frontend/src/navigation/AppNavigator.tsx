@@ -12,6 +12,7 @@ import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 import DriverDetailScreen from '../screens/DriverDetailScreen';
 import DriverFormScreen from '../screens/DriverFormScreen';
 import DriversScreen from '../screens/DriversScreen';
+import FuelScreen from '../screens/FuelScreen';
 import HistoryScreen from '../screens/HistoryScreen';
 import ModuleScreen from '../screens/ModuleScreen';
 import RouteClosureDetailScreen from '../screens/RouteClosureDetailScreen';
@@ -136,6 +137,8 @@ export default function AppNavigator() {
                             switch (module.key) {
                                 case 'routes':
                                     return <RouteScreen />;
+                                case 'fuel':
+                                    return <FuelScreen />;
                                 case 'drivers':
                                     return <DriversScreen />;
                                 case 'vehicles':

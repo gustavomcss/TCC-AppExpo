@@ -23,15 +23,17 @@ export function formatPlate(text: string): string {
     return plate.length > 3 ? `${plate.slice(0, 3)}-${plate.slice(3)}` : plate;
 }
 
-/** The mask with every digit at zero. */
-const ZERO_DECIMAL = '000.000,00';
+/** What the field shows when the digits typed are all zeros. */
+const ZERO_DECIMAL = '0,00';
 
 /**
- * Km and money mask, 000.000,00 (RB16). Digits enter from the right, as in a calculator: typing 9
- * shows 000.000,09, another 9 shows 000.000,99 and another one 000.009,99. Always shows the full
- * mask once there is a digit, and ignores digits past 999.999,99. Deleting from a nonzero value
- * shifts the digits back; deleting from 000.000,00 clears the field. `previous` is the text
- * the field held before this change, which tells a deletion from a typed zero.
+ * Km and money mask (RB16), like a bank app: the value is always read in cents and grows to the
+ * left as digits are typed, so 1 shows 0,01, then 12 shows 0,12, 123 shows 1,23, 1234 shows
+ * 12,34, and so on up to 999.999,99 (six integer digits and two decimals, the DECIMAL(8,2) of
+ * the server). Digits past that are ignored. The field starts empty, with "0,00" only as the
+ * placeholder, so the user always has to type the value. Typing a zero first shows 0,00; deleting
+ * from 0,00 clears the field, and deleting from any other value shifts the digits back. `previous`
+ * is the text the field held before this change, which tells a deletion from a typed zero.
  */
 export function formatDecimalInput(text: string, previous = ''): string {
     if (!/\d/.test(text)) {
@@ -44,8 +46,9 @@ export function formatDecimalInput(text: string, previous = ''): string {
         return previous === ZERO_DECIMAL && text.length < previous.length ? '' : ZERO_DECIMAL;
     }
 
-    const padded = digits.padStart(8, '0');
-    return `${padded.slice(0, 3)}.${padded.slice(3, 6)},${padded.slice(6)}`;
+    const padded = digits.padStart(3, '0');
+    const integer = padded.slice(0, -2).replace(/\B(?=(\d{3})+$)/g, '.');
+    return `${integer},${padded.slice(-2)}`;
 }
 
 /**

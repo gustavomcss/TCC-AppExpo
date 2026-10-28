@@ -146,7 +146,7 @@ export default function VehicleFormScreen() {
                             render={({ field: { onChange, onBlur, value } }) => (
                                 <TextField
                                     label="Km Atual"
-                                    placeholder="000.000,00"
+                                    placeholder="0,00"
                                     value={value}
                                     onChangeText={(text) =>
                                         onChange(formatDecimalInput(text, value))
@@ -155,6 +155,7 @@ export default function VehicleFormScreen() {
                                     onSubmitEditing={() => submit()}
                                     error={errors.odometer?.message}
                                     keyboardType="number-pad"
+                                    masked
                                     suffix="km"
                                     editable={!isSubmitting}
                                 />

@@ -154,7 +154,7 @@ export default function RouteReturnScreen({ route }: RouteReturnScreenProps) {
                             render={({ field: { onChange, onBlur, value } }) => (
                                 <TextField
                                     label="Km de retorno"
-                                    placeholder="000.000,00"
+                                    placeholder="0,00"
                                     value={value}
                                     onChangeText={(text) =>
                                         onChange(formatDecimalInput(text, value))
@@ -162,6 +162,7 @@ export default function RouteReturnScreen({ route }: RouteReturnScreenProps) {
                                     onBlur={onBlur}
                                     error={errors.km_return?.message}
                                     keyboardType="number-pad"
+                                    masked
                                     suffix="km"
                                     editable={!saving}
                                 />

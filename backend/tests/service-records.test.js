@@ -215,3 +215,59 @@ for (const collection of COLLECTIONS) {
         });
     });
 }
+
+describe("fuels: the values of the form (RF11, RB16)", () => {
+    test("the five fields of the form create the record with every value as sent", async () => {
+        const vehicle = await make.vehicle();
+        const response = await asDriver.post(path("fuels"), BODIES.fuels(vehicle, { km_fuel: 999999.99, type: "diesel", liters: 0.01, cost: 0.01 }));
+
+        assert.equal(response.status, 200, JSON.stringify(response.body));
+        assert.equal(response.body.km_fuel, 999999.99);
+        assert.equal(response.body.type, "diesel");
+        assert.equal(response.body.liters, 0.01);
+        assert.equal(response.body.cost, 0.01);
+    });
+
+    test("each fuel type of the form is accepted and any other is refused", async () => {
+        const vehicle = await make.vehicle();
+
+        for (const type of ["gasolina", "aditivada", "etanol", "diesel"]) {
+            assert.equal((await asDriver.post(path("fuels"), BODIES.fuels(vehicle, { type }))).status, 200, type);
+        }
+
+        const refused = await asDriver.post(path("fuels"), BODIES.fuels(vehicle, { type: "gnv" }));
+        assert.equal(refused.status, 400);
+        assert.equal(refused.body.data.type.code, "validation_invalid_value");
+    });
+
+    test("km, liters and cost are required, and a zero counts as missing", async () => {
+        const vehicle = await make.vehicle();
+
+        for (const field of ["km_fuel", "liters", "cost"]) {
+            for (const value of [0, null]) {
+                const response = await asDriver.post(path("fuels"), BODIES.fuels(vehicle, { [field]: value }));
+                assert.equal(response.status, 400, `${field}=${value}`);
+                assert.equal(response.body.data[field].code, "validation_required", `${field}=${value}`);
+            }
+        }
+        assert.equal(await countFor("fuels", vehicle), 0);
+    });
+
+    test("a negative value, a value above 999.999,99 and a third decimal are refused", async () => {
+        const vehicle = await make.vehicle();
+        const cases = [
+            [-1, "validation_min_number_constraint"],
+            [1000000, "validation_max_number_constraint"],
+            [10.123, "validation_too_many_decimals"],
+        ];
+
+        for (const field of ["km_fuel", "liters", "cost"]) {
+            for (const [value, code] of cases) {
+                const response = await asDriver.post(path("fuels"), BODIES.fuels(vehicle, { [field]: value }));
+                assert.equal(response.status, 400, `${field}=${value}`);
+                assert.equal(response.body.data[field].code, code, `${field}=${value}`);
+            }
+        }
+        assert.equal(await countFor("fuels", vehicle), 0);
+    });
+});
