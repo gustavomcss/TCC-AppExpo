@@ -155,7 +155,6 @@ export default function VehicleFormScreen() {
                                     onSubmitEditing={() => submit()}
                                     error={errors.odometer?.message}
                                     keyboardType="number-pad"
-                                    masked
                                     suffix="km"
                                     editable={!isSubmitting}
                                 />
