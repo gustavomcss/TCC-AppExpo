@@ -1,12 +1,17 @@
 import * as ImagePicker from 'expo-image-picker';
 
-import type { PickedPhoto } from './profile';
-
 /** Options of the pick, shared by the camera and the gallery: a square crop, already compressed. */
 const PICKER_OPTIONS: ImagePicker.ImagePickerOptions = {
     mediaTypes: ['images'],
     allowsEditing: true,
     aspect: [1, 1],
+    quality: 0.7,
+};
+
+/** Options for a picture that must be kept whole, such as the photo of an odometer: no crop. */
+const WHOLE_PICTURE_OPTIONS: ImagePicker.ImagePickerOptions = {
+    mediaTypes: ['images'],
+    allowsEditing: false,
     quality: 0.7,
 };
 
@@ -16,14 +21,17 @@ export const CAMERA_DENIED_MESSAGE =
 
 /** What a pick ended in: a picture, the user backing out, or the camera permission refused. */
 export type PickResult =
-    { status: 'picked'; photo: PickedPhoto } | { status: 'canceled' } | { status: 'denied' };
+    | { status: 'picked'; photo: ImagePicker.ImagePickerAsset }
+    | { status: 'canceled' }
+    | { status: 'denied' };
 
 /**
  * Opens the camera (asking for its permission first) or the gallery and returns what the user
- * chose. It only picks: sending the picture is up to the caller. On iOS the caller must wait for
- * the sheet that asked to be gone before calling this, or the screen is left frozen.
+ * chose. It only picks: sending the picture is up to the caller. The picture is cropped to a
+ * square, for a profile photo, unless `whole` asks to keep it as taken. On iOS the caller must
+ * wait for the sheet that asked to be gone before calling this, or the screen is left frozen.
  */
-export async function pickImage(source: 'camera' | 'library'): Promise<PickResult> {
+export async function pickImage(source: 'camera' | 'library', whole = false): Promise<PickResult> {
     if (source === 'camera') {
         const permission = await ImagePicker.requestCameraPermissionsAsync();
         if (!permission.granted) {
@@ -31,10 +39,11 @@ export async function pickImage(source: 'camera' | 'library'): Promise<PickResul
         }
     }
 
+    const options = whole ? WHOLE_PICTURE_OPTIONS : PICKER_OPTIONS;
     const result =
         source === 'camera'
-            ? await ImagePicker.launchCameraAsync(PICKER_OPTIONS)
-            : await ImagePicker.launchImageLibraryAsync(PICKER_OPTIONS);
+            ? await ImagePicker.launchCameraAsync(options)
+            : await ImagePicker.launchImageLibraryAsync(options);
 
     return result.canceled ? { status: 'canceled' } : { status: 'picked', photo: result.assets[0] };
 }

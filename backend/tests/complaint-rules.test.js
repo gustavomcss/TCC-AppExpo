@@ -287,6 +287,114 @@ describe("a complaint does not block the route (RB05)", () => {
     });
 });
 
+describe("a pending complaint raises the floor of the return km (RB13, RB05)", () => {
+    /** Finalizes the route the way the app does. */
+    const finalize = (session, route, kmReturn) => session.patch(`${ROUTES}/${route.id}`, { status: "finalizada", km_return: kmReturn });
+
+    /** Expects the finalization to be refused as a return km that is not greater. */
+    const assertRefused = (response, label) => {
+        assert.equal(response.status, 400, label);
+        assert.equal(response.body.data.km_return.code, "km_return_not_greater", label);
+    };
+
+    test("with a complaint below the departure km, the return must still be greater than the departure km (RB13)", async () => {
+        const { route, session, vehicle } = await driverWithRoute();
+        await fileOk(session, route, { km_complaint: 990 });
+
+        for (const kmReturn of [1000, 995, 990, 0]) {
+            assertRefused(await finalize(session, route, kmReturn), String(kmReturn));
+        }
+        assert.equal((await readRoute(route)).status, "aberta");
+        assert.equal((await admin.get(`/api/collections/vehicles/records/${vehicle.id}`)).body.odometer, 1000);
+
+        assert.equal((await finalize(session, route, 1100)).status, 200);
+    });
+
+    test("with a complaint above the departure km, the return must be greater than the complaint km", async () => {
+        const { route, session, vehicle } = await driverWithRoute();
+        await fileOk(session, route, { km_complaint: 1010 });
+
+        for (const kmReturn of [1005, 1010, 1000, 0]) {
+            assertRefused(await finalize(session, route, kmReturn), String(kmReturn));
+        }
+        assert.equal((await readRoute(route)).status, "aberta");
+        assert.equal((await admin.get(`/api/collections/vehicles/records/${vehicle.id}`)).body.odometer, 1000);
+
+        const response = await finalize(session, route, 1010.01);
+        assert.equal(response.status, 200, JSON.stringify(response.body));
+        assert.equal((await admin.get(`/api/collections/vehicles/records/${vehicle.id}`)).body.odometer, 1010.01);
+    });
+
+    test("a route without a complaint keeps the plain rule", async () => {
+        const { route, session } = await driverWithRoute();
+
+        assertRefused(await finalize(session, route, 1000));
+        assert.equal((await finalize(session, route, 1001)).status, 200);
+    });
+
+    test("a complaint of another route does not raise the floor", async () => {
+        const { route, session } = await driverWithRoute();
+        const other = await driverWithRoute();
+        await fileOk(other.session, other.route, { km_complaint: 1500 });
+
+        assert.equal((await finalize(session, route, 1100)).status, 200);
+    });
+
+    test("a rejected complaint no longer raises the floor", async () => {
+        const { route, session } = await driverWithRoute();
+        const complaint = await fileOk(session, route, { km_complaint: 1010 });
+        assert.equal((await review(asSupervisor, complaint, { status: "reprovada" })).status, 200);
+
+        assert.equal((await finalize(session, route, 1005)).status, 200);
+    });
+
+    test("rejecting is never refused, whatever the km of the route (RB07)", async () => {
+        const { route, session } = await driverWithRoute();
+        const complaint = await fileOk(session, route, { km_complaint: 990 });
+        assert.equal((await finalize(session, route, 1100)).status, 200);
+
+        const response = await review(asSupervisor, complaint, { status: "reprovada" });
+
+        assert.equal(response.status, 200, JSON.stringify(response.body));
+        assert.equal((await readComplaint(complaint)).status, "reprovada");
+    });
+});
+
+describe("the app reads the complaint of the open route (I-28)", () => {
+    /* The two queries of src/services/complaints.ts: by route, and by the open route of the user. */
+    const byOpenRoute = (user) => `${PATH}?filter=${encodeURIComponent(`route_current.user = '${user.id}' && route_current.status = 'aberta'`)}`;
+
+    test("the driver finds the complaint by route and by their open route", async () => {
+        const { user, route, session } = await driverWithRoute();
+        const complaint = await fileOk(session, route);
+
+        const byRoute = await session.get(`${PATH}?filter=${encodeURIComponent(`route_current = '${route.id}'`)}`);
+        const open = await session.get(byOpenRoute(user));
+
+        assert.deepEqual(byRoute.body.items.map((item) => item.id), [complaint.id]);
+        assert.deepEqual(open.body.items.map((item) => item.id), [complaint.id]);
+    });
+
+    test("the open-route query finds nothing once the route is finalized, and nothing before the complaint", async () => {
+        const { user, route, session } = await driverWithRoute();
+        assert.equal((await session.get(byOpenRoute(user))).body.totalItems, 0);
+        await fileOk(session, route);
+
+        assert.equal((await session.patch(`${ROUTES}/${route.id}`, { status: "finalizada", km_return: 1100 })).status, 200);
+
+        assert.equal((await session.get(byOpenRoute(user))).body.totalItems, 0);
+    });
+
+    test("the driver does not see the complaint of another driver", async () => {
+        const { user, route, session } = await driverWithRoute();
+        await fileOk(session, route);
+        const stranger = await signIn(await make.user());
+
+        assert.equal((await stranger.get(byOpenRoute(user))).body.totalItems, 0);
+        assert.equal((await stranger.get(`${PATH}?filter=${encodeURIComponent(`route_current = '${route.id}'`)}`)).body.totalItems, 0);
+    });
+});
+
 describe("a complaint changes only by the review of a supervisor (RB17, RB08)", () => {
     test("the author cannot edit the complaint after filing it, whatever the field", async () => {
         const { route, session } = await driverWithRoute();

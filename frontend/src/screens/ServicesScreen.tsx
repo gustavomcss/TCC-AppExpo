@@ -8,8 +8,17 @@ import { useAuth } from '../contexts/AuthContext';
 import { modulesFor } from '../navigation/modules';
 import type { ServiceModule } from '../navigation/modules';
 import type { RootNavigation } from '../navigation/types';
+import { getOpenRouteComplaint } from '../services/complaints';
+import type { ComplaintStatus } from '../services/complaints';
 import { countOpenRoutes, hasOpenRoute } from '../services/routes';
 import { colors, fontFamily, fontSize, palette, radius, sizes, spacing } from '../theme';
+
+/** Text of the badge of the "Denúncia de km" card for each situation of the complaint. */
+const COMPLAINT_BADGES: Record<ComplaintStatus, string> = {
+    pendente: 'Pendente',
+    aprovada: 'Aprovada',
+    reprovada: 'Reprovada',
+};
 
 /**
  * Services tab: one card per module the user's role can use, each with the icon of its service.
@@ -19,14 +28,17 @@ import { colors, fontFamily, fontSize, palette, radius, sizes, spacing } from '.
  * corner like a notification count, while the user has an open route, read again each time the
  * tab gets focus. A supervisor's "Encerramento de rotas" card carries, the same way, the count of
  * open routes of every driver. Both are notification badges, black with white text, unlike the
- * outline and muted badges that state a situation inside the screens. The other badges of the
- * prototype (complaint, pending reviews) come with the issues that have that data.
+ * outline and muted badges that state a situation inside the screens. The "Denúncia de km" card
+ * carries the situation of the complaint on the open route, in the same corner: "Pendente" is a
+ * notification, black, and "Aprovada" and "Reprovada" are outcomes, muted, told apart by their
+ * text. The other badge of the prototype (pending reviews) comes with the issue that has that data.
  */
 export default function ServicesScreen() {
     const { user } = useAuth();
     const navigation = useNavigation<RootNavigation>();
     const [routeOpen, setRouteOpen] = useState(false);
     const [openCount, setOpenCount] = useState(0);
+    const [complaintStatus, setComplaintStatus] = useState<ComplaintStatus | null>(null);
     const userId = user?.id;
     const isSupervisor = user?.role === 'supervisor';
 
@@ -40,6 +52,10 @@ export default function ServicesScreen() {
             hasOpenRoute(userId)
                 .then(setRouteOpen)
                 .catch(() => setRouteOpen(false));
+
+            getOpenRouteComplaint(userId)
+                .then((complaint) => setComplaintStatus(complaint?.status ?? null))
+                .catch(() => setComplaintStatus(null));
 
             if (isSupervisor) {
                 countOpenRoutes()
@@ -80,6 +96,14 @@ export default function ServicesScreen() {
                 {module.key === 'routes' && routeOpen && (
                     <View pointerEvents="none" style={styles.corner}>
                         <Badge label="Aberta" />
+                    </View>
+                )}
+                {module.key === 'complaint' && complaintStatus && (
+                    <View pointerEvents="none" style={styles.corner}>
+                        <Badge
+                            label={COMPLAINT_BADGES[complaintStatus]}
+                            variant={complaintStatus === 'pendente' ? 'default' : 'secondary'}
+                        />
                     </View>
                 )}
                 {module.key === 'routeClosure' && openCount > 0 && (

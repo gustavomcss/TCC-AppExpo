@@ -54,6 +54,8 @@ const FIELD_MESSAGES: Record<string, (params: Record<string, unknown>) => string
         'Você já tem uma rota aberta. Registre o retorno antes de iniciar outra.',
     km_return_not_greater: () => 'O km de retorno deve ser maior que o km de saída.',
     vehicle_inactive: () => 'Este veículo está inativo e não pode receber registros.',
+    route_not_open: () => 'Esta rota não está mais aberta.',
+    km_equals_departure: () => 'O km informado deve ser diferente do km de saída.',
 };
 
 /** Translates the error of one field, preferring the override for that field and code. */
