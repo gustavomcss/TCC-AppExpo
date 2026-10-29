@@ -32,24 +32,56 @@ export type RouteDepartureInput = z.input<typeof routeDepartureSchema>;
 /** Values of the route departure form once validated and converted. */
 export type RouteDepartureValues = z.output<typeof routeDepartureSchema>;
 
-/** Message for a return km that is not greater than the departure km (RB13). */
-export function kmNotGreaterMessage(kmDeparture: number): string {
+/**
+ * Message for a return km that is not greater than the floor (RB13): the departure km or, while a
+ * pending complaint (RB05) names a higher km, the km of the complaint.
+ */
+export function kmNotGreaterMessage(
+    kmDeparture: number,
+    kmComplaint: number | null = null,
+): string {
+    if (kmComplaint !== null && kmComplaint > kmDeparture) {
+        return `O km de retorno deve ser maior que o km denunciado (${formatKm(kmComplaint)}).`;
+    }
     return `O km de retorno deve ser maior que o km de saída (${formatKm(kmDeparture)}).`;
 }
 
 /**
- * Route return form (RF09), with the field names of the `routes` collection. The return km is
- * typed in the km mask and must be greater than the departure km of the route (RB13); the
- * observation is optional free text of at most ROUTE_TEXT_MAX characters. The departure km
- * comes from the open route, so the schema is built for it. The server checks the same rule
- * again (`km_return_not_greater`), which also covers a departure km corrected in the meantime.
+ * Whether a return km typed in the km mask is refused only because the departure km may be wrong:
+ * the route has a pending complaint that says a lower km is the real one (`kmComplaint`) and the
+ * typed km is not greater than the departure km. The driver then has to wait for the review.
  */
-export function createRouteReturnSchema(kmDeparture: number) {
+export function waitsForReview(
+    kmDeparture: number,
+    kmComplaint: number | null,
+    kmReturnText: string,
+): boolean {
+    if (kmComplaint === null || kmComplaint >= kmDeparture || kmReturnText.trim() === '') {
+        return false;
+    }
+    const kmReturn = Number(kmReturnText.replace(/\./g, '').replace(',', '.'));
+    return kmReturn <= kmDeparture;
+}
+
+/**
+ * Route return form (RF09), with the field names of the `routes` collection. The return km is
+ * typed in the km mask and must be greater than the departure km of the route (RB13) and, while a
+ * pending complaint names a higher km (`kmComplaint`, RB05), than the km of the complaint, so the
+ * route stays consistent whichever way the review goes; the observation is optional free text of
+ * at most ROUTE_TEXT_MAX characters. Both km come from the server, so the schema is built for
+ * them. The server checks the same rule again (`km_return_not_greater`), which also covers a
+ * departure km corrected in the meantime.
+ */
+export function createRouteReturnSchema(kmDeparture: number, kmComplaint: number | null = null) {
+    const complaintAbove = kmComplaint !== null && kmComplaint > kmDeparture;
+
     return z.object({
-        km_return: decimalField('Informe o km de retorno.').refine(
-            (value) => value > kmDeparture,
-            kmNotGreaterMessage(kmDeparture),
-        ),
+        km_return: decimalField('Informe o km de retorno.')
+            .refine((value) => value > kmDeparture, kmNotGreaterMessage(kmDeparture))
+            .refine(
+                (value) => !complaintAbove || value > kmComplaint,
+                kmNotGreaterMessage(kmDeparture, kmComplaint),
+            ),
         obs_return: z
             .string()
             .trim()

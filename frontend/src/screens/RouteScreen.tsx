@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react';
 import { ErrorState } from '../components/ErrorState';
 import { LoadingState } from '../components/LoadingState';
 import { useAuth } from '../contexts/AuthContext';
+import { getRouteComplaint } from '../services/complaints';
 import { getOpenRoute } from '../services/routes';
 import type { OpenRoute } from '../services/routes';
 import { parseServerError } from '../services/serverErrors';
@@ -14,14 +15,15 @@ import RouteReturnScreen from './RouteReturnScreen';
 type State =
     | { status: 'loading' }
     | { status: 'error'; message: string }
-    | { status: 'ready'; route: OpenRoute | null };
+    | { status: 'ready'; route: OpenRoute | null; complaintKm: number | null };
 
 /**
- * The "Rota" module (RF07, RF09). Opens the return form when the driver has an open route and the
- * departure form when there is none, as in the prototype: a driver with an open route cannot start
- * another one (RB02), and without one there is nothing to finalize. The choice is read from the
- * server each time the module opens; the departure and return screens check again on their own,
- * because the server is what holds the rule.
+ * The "Rota" module (RF07, RF09). Reads the pending complaint of the open route too, because it
+ * affects the km the return must exceed (RB13, RB05). Opens the return form when the driver has an
+ * open route and the departure form when there is none, as in the prototype: a driver with an
+ * open route cannot start another one (RB02), and without one there is nothing to finalize. The
+ * choice is read from the server each time the module opens; the departure and return screens
+ * check again on their own, because the server is what holds the rule.
  */
 export default function RouteScreen() {
     const { user } = useAuth();
@@ -30,7 +32,12 @@ export default function RouteScreen() {
     const load = useCallback(async () => {
         try {
             const route = user ? await getOpenRoute(user.id) : null;
-            setState({ status: 'ready', route });
+            const complaint = route ? await getRouteComplaint(route.id) : null;
+            setState({
+                status: 'ready',
+                route,
+                complaintKm: complaint?.status === 'pendente' ? complaint.kmComplaint : null,
+            });
         } catch (error) {
             setState({ status: 'error', message: parseServerError(error).form ?? '' });
         }
@@ -59,5 +66,9 @@ export default function RouteScreen() {
         );
     }
 
-    return state.route ? <RouteReturnScreen route={state.route} /> : <RouteDepartureScreen />;
+    return state.route ? (
+        <RouteReturnScreen route={state.route} complaintKm={state.complaintKm} />
+    ) : (
+        <RouteDepartureScreen />
+    );
 }

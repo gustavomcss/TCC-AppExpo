@@ -5,18 +5,22 @@ import { Controller, useForm } from 'react-hook-form';
 import { StyleSheet, View } from 'react-native';
 
 import { ActionBar } from '../components/ActionBar';
-import { Badge } from '../components/Badge';
 import { Button } from '../components/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/Card';
 import { ConfirmDialog } from '../components/ConfirmDialog';
-import { CollapsibleFact, Fact } from '../components/Fact';
 import { FormScrollView } from '../components/FormScrollView';
 import { NoticeDialog } from '../components/NoticeDialog';
+import { OpenRouteCard } from '../components/OpenRouteCard';
 import { TextField } from '../components/TextField';
 import { useToast } from '../contexts/ToastContext';
 import type { RootNavigation } from '../navigation/types';
-import { formatDateTime, formatDecimalInput, formatKm } from '../schemas/masks';
-import { ROUTE_TEXT_MAX, createRouteReturnSchema, kmNotGreaterMessage } from '../schemas/route';
+import { formatDecimalInput } from '../schemas/masks';
+import {
+    ROUTE_TEXT_MAX,
+    createRouteReturnSchema,
+    kmNotGreaterMessage,
+    waitsForReview,
+} from '../schemas/route';
 import type { RouteReturnInput, RouteReturnValues } from '../schemas/route';
 import { finalizeRoute } from '../services/routes';
 import type { OpenRoute } from '../services/routes';
@@ -29,20 +33,24 @@ const FIELDS = ['km_return', 'obs_return'] as const;
 /** Props of RouteReturnScreen: the open route the driver is finalizing. */
 export type RouteReturnScreenProps = {
     route: OpenRoute;
+    /** Km of the pending complaint of the route, or null when there is none (RB05). */
+    complaintKm: number | null;
 };
 
 /**
  * Route return (RF09), the "Rota" module when the driver has an open route. A card summarizes the
  * route, vehicle included, which comes from the route and cannot be changed. The form asks for the
- * return km, which must be greater than the departure km (RB13), and an optional observation,
+ * return km, which must be greater than the departure km (RB13) and, while a pending complaint
+ * names a higher km, than the km of the complaint, and an optional observation,
  * validated with Zod before sending; the valid form then asks for a confirmation (a reminder to
  * check what was filled in), and only the confirmed values are sent. Finalizing is one update of the route: the server stamps
  * the return date and makes the return km the current km of the vehicle (RB03), and a pending
  * complaint does not stop it (RB05). The app only gives feedback; the server refuses a return km
  * that is not greater, and a route that is no longer open (closed by the supervisor, RB15) opens
- * a notice and goes back. On success it shows a toast and goes back.
+ * a notice and goes back. On success it shows a toast and goes back. A button under the form opens
+ * the km complaint (RF14), for the driver who finds the km of the departure wrong.
  */
-export default function RouteReturnScreen({ route }: RouteReturnScreenProps) {
+export default function RouteReturnScreen({ route, complaintKm }: RouteReturnScreenProps) {
     const navigation = useNavigation<RootNavigation>();
     const toast = useToast();
     const [failure, setFailure] = useState({ visible: false, title: '', message: '' });
@@ -50,11 +58,16 @@ export default function RouteReturnScreen({ route }: RouteReturnScreenProps) {
     const [saving, setSaving] = useState(false);
     const [confirmed, setConfirmed] = useState<RouteReturnValues | null>(null);
     const [closedNotice, setClosedNotice] = useState(false);
-    const schema = useMemo(() => createRouteReturnSchema(route.kmDeparture), [route.kmDeparture]);
+    const [reviewNotice, setReviewNotice] = useState(false);
+    const schema = useMemo(
+        () => createRouteReturnSchema(route.kmDeparture, complaintKm),
+        [route.kmDeparture, complaintKm],
+    );
     const {
         control,
         handleSubmit,
         setError,
+        getValues,
         formState: { errors },
     } = useForm<RouteReturnInput, unknown, RouteReturnValues>({
         resolver: zodResolver(schema),
@@ -66,10 +79,21 @@ export default function RouteReturnScreen({ route }: RouteReturnScreenProps) {
      * once the dialog is gone (onHidden), because a failure opens another dialog and iOS cannot
      * present one over a Modal that is still on its way out.
      */
-    const review = handleSubmit((values) => {
-        setConfirmed(values);
-        setConfirmOpen(true);
-    });
+    const review = handleSubmit(
+        (values) => {
+            setConfirmed(values);
+            setConfirmOpen(true);
+        },
+        /*
+         * The field error is the usual one; when the departure km may be wrong (a pending
+         * complaint says it is lower), a notice also tells the driver to wait for the review.
+         */
+        () => {
+            if (waitsForReview(route.kmDeparture, complaintKm, getValues('km_return'))) {
+                setReviewNotice(true);
+            }
+        },
+    );
 
     async function perform(values: RouteReturnValues) {
         setSaving(true);
@@ -85,7 +109,7 @@ export default function RouteReturnScreen({ route }: RouteReturnScreenProps) {
 
             const message = applyServerError(error, setError, FIELDS, {
                 km_return: {
-                    km_return_not_greater: kmNotGreaterMessage(route.kmDeparture),
+                    km_return_not_greater: kmNotGreaterMessage(route.kmDeparture, complaintKm),
                 },
             });
             if (!message) {
@@ -116,30 +140,7 @@ export default function RouteReturnScreen({ route }: RouteReturnScreenProps) {
     return (
         <View style={styles.screen}>
             <FormScrollView contentContainerStyle={styles.content}>
-                <Card>
-                    <View style={styles.summaryTop}>
-                        <CardHeader style={styles.summaryTitle}>
-                            <CardTitle>Rota aberta</CardTitle>
-                            <CardDescription>
-                                {route.vehicle.plate} · {route.vehicle.model}
-                            </CardDescription>
-                        </CardHeader>
-                        <Badge label="Aberta" variant="outline" />
-                    </View>
-
-                    <View style={styles.separator} />
-
-                    <View style={styles.grid}>
-                        <Fact label="Km de saída" value={formatKm(route.kmDeparture)} />
-                        <Fact label="Saída" value={formatDateTime(route.dateDeparture)} />
-                        <Fact label="Itinerário" value={route.itinerary} wide />
-                        <CollapsibleFact
-                            label="Observação"
-                            value={route.obsDeparture}
-                            emptyText="Nenhuma observação"
-                        />
-                    </View>
-                </Card>
+                <OpenRouteCard route={route} />
 
                 <Card>
                     <CardHeader>
@@ -188,6 +189,13 @@ export default function RouteReturnScreen({ route }: RouteReturnScreenProps) {
                         />
                     </CardContent>
                 </Card>
+
+                <Button
+                    variant="outline"
+                    title="Denunciar divergência de km"
+                    onPress={() => navigation.navigate('complaint')}
+                    disabled={saving}
+                />
             </FormScrollView>
 
             <ActionBar>
@@ -211,6 +219,12 @@ export default function RouteReturnScreen({ route }: RouteReturnScreenProps) {
                 onClose={() => setFailure((previous) => ({ ...previous, visible: false }))}
             />
             <NoticeDialog
+                visible={reviewNotice}
+                title="Aguarde a revisão"
+                message="Você denunciou uma divergência no km de saída. Enquanto o supervisor não revisar a denúncia, o retorno precisa ser maior que a saída. Se ela for aprovada, o km é corrigido e você poderá registrar o retorno com o km real."
+                onClose={() => setReviewNotice(false)}
+            />
+            <NoticeDialog
                 visible={closedNotice}
                 title="Rota já encerrada"
                 message="Esta rota não está mais aberta. O supervisor pode ter encerrado a rota."
@@ -230,24 +244,6 @@ const styles = StyleSheet.create({
     content: {
         flexGrow: 1,
         padding: spacing.lg,
-        gap: spacing.lg,
-    },
-    summaryTop: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        justifyContent: 'space-between',
-        gap: spacing.md,
-    },
-    summaryTitle: {
-        flex: 1,
-    },
-    separator: {
-        height: 1,
-        backgroundColor: colors.border,
-    },
-    grid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
         gap: spacing.lg,
     },
 });

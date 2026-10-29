@@ -72,13 +72,28 @@ onRecordCreate((e) => {
 
 /*
  * A finalized route has a return km greater than the departure km (RB13). Checked on every save of
- * a `finalizada` route, so a later correction of either km (I-30) cannot break it either.
+ * a `finalizada` route, so a later correction of either km (I-30) cannot break it either. While the
+ * route has a `pendente` complaint (RB05), the return km must also be greater than the complaint km:
+ * whichever way the review goes, the route then stays consistent (approving moves the departure km
+ * to the complaint km, rejecting leaves it where it is).
  */
 onRecordValidate((e) => {
-    if (e.record.getString("status") === "finalizada" && e.record.getFloat("km_return") <= e.record.getFloat("km_departure")) {
-        throw new BadRequestError("Failed to validate record.", {
-            km_return: new ValidationError("km_return_not_greater", "The return km must be greater than the departure km."),
-        });
+    if (e.record.getString("status") === "finalizada") {
+        const kmReturn = e.record.getFloat("km_return");
+        let floor = e.record.getFloat("km_departure");
+
+        if (kmReturn > floor) {
+            const pending = e.app.findRecordsByFilter("complaints", "route_current = {:route} && status = 'pendente'", "", 1, 0, { route: e.record.id });
+            if (pending.length > 0) {
+                floor = Math.max(floor, pending[0].getFloat("km_complaint"));
+            }
+        }
+
+        if (kmReturn <= floor) {
+            throw new BadRequestError("Failed to validate record.", {
+                km_return: new ValidationError("km_return_not_greater", "The return km must be greater than the departure km."),
+            });
+        }
     }
 
     e.next();

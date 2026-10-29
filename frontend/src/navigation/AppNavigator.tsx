@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../contexts/AuthContext';
 import { useBottomBar } from '../contexts/ToastContext';
 import ChangePasswordScreen from '../screens/ChangePasswordScreen';
+import ComplaintScreen from '../screens/ComplaintScreen';
 import DriverDetailScreen from '../screens/DriverDetailScreen';
 import DriverFormScreen from '../screens/DriverFormScreen';
 import DriversScreen from '../screens/DriversScreen';
@@ -139,6 +140,8 @@ export default function AppNavigator() {
                             switch (module.key) {
                                 case 'routes':
                                     return <RouteScreen />;
+                                case 'complaint':
+                                    return <ComplaintScreen />;
                                 case 'fuel':
                                     return <FuelScreen />;
                                 case 'oil':
