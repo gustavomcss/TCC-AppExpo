@@ -20,6 +20,11 @@ export function Fact({ label, value, wide }: { label: string; value: string; wid
     );
 }
 
+/** An empty cell of the facts row, to keep the next fact in the second column. */
+export function FactSpacer() {
+    return <View style={styles.fact} />;
+}
+
 /**
  * Label with a chevron that opens and closes its text, closed at first. The text is always laid
  * out, in a box that is measured and kept out of the flow; what the card sees is a clipped box

@@ -8,7 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { modulesFor } from '../navigation/modules';
 import type { ServiceModule } from '../navigation/modules';
 import type { RootNavigation } from '../navigation/types';
-import { getOpenRouteComplaint } from '../services/complaints';
+import { countPendingComplaints, getOpenRouteComplaint } from '../services/complaints';
 import type { ComplaintStatus } from '../services/complaints';
 import { countOpenRoutes, hasOpenRoute } from '../services/routes';
 import { colors, fontFamily, fontSize, palette, radius, sizes, spacing } from '../theme';
@@ -31,13 +31,15 @@ const COMPLAINT_BADGES: Record<ComplaintStatus, string> = {
  * outline and muted badges that state a situation inside the screens. The "Denúncia de km" card
  * carries the situation of the complaint on the open route, in the same corner: "Pendente" is a
  * notification, black, and "Aprovada" and "Reprovada" are outcomes, muted, told apart by their
- * text. The other badge of the prototype (pending reviews) comes with the issue that has that data.
+ * text. A supervisor's "Revisão de denúncias" card carries the count of pending complaints of
+ * every driver, black like the one of the closure card.
  */
 export default function ServicesScreen() {
     const { user } = useAuth();
     const navigation = useNavigation<RootNavigation>();
     const [routeOpen, setRouteOpen] = useState(false);
     const [openCount, setOpenCount] = useState(0);
+    const [pendingCount, setPendingCount] = useState(0);
     const [complaintStatus, setComplaintStatus] = useState<ComplaintStatus | null>(null);
     const userId = user?.id;
     const isSupervisor = user?.role === 'supervisor';
@@ -61,6 +63,10 @@ export default function ServicesScreen() {
                 countOpenRoutes()
                     .then(setOpenCount)
                     .catch(() => setOpenCount(0));
+
+                countPendingComplaints()
+                    .then(setPendingCount)
+                    .catch(() => setPendingCount(0));
             }
         }, [userId, isSupervisor]),
     );
@@ -104,6 +110,11 @@ export default function ServicesScreen() {
                             label={COMPLAINT_BADGES[complaintStatus]}
                             variant={complaintStatus === 'pendente' ? 'default' : 'secondary'}
                         />
+                    </View>
+                )}
+                {module.key === 'complaintReview' && pendingCount > 0 && (
+                    <View pointerEvents="none" style={styles.corner}>
+                        <Badge label={String(pendingCount)} />
                     </View>
                 )}
                 {module.key === 'routeClosure' && openCount > 0 && (

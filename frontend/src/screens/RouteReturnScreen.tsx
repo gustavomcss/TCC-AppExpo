@@ -221,7 +221,7 @@ export default function RouteReturnScreen({ route, complaintKm }: RouteReturnScr
             <NoticeDialog
                 visible={reviewNotice}
                 title="Aguarde a revisão"
-                message="Você denunciou uma divergência no km de saída. Enquanto o supervisor não revisar a denúncia, o retorno precisa ser maior que a saída. Se ela for aprovada, o km é corrigido e você poderá registrar o retorno com o km real."
+                message="Você denunciou uma divergência no km de saída. O km de retorno informado não é maior que o km de saída. O retorno só pode ser registrado depois da revisão do supervisor, se o km de saída for corrigido."
                 onClose={() => setReviewNotice(false)}
             />
             <NoticeDialog

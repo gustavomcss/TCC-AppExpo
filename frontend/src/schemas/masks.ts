@@ -84,6 +84,14 @@ export function formatDateTime(value: string): string {
     return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${pad(date.getFullYear() % 100)}, ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
+/** Formats a date from the server as the user reads it in Brazil, without the time: "22/10/2026". */
+export function formatDate(value: string): string {
+    const date = parseServerDate(value);
+    const pad = (number: number) => String(number).padStart(2, '0');
+
+    return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
+}
+
 /** Formats the size of a file the way the user reads it: "1,2 MB" from 1 MB up, "340 KB" below. */
 export function formatFileSize(bytes: number): string {
     if (bytes >= 1024 * 1024) {
