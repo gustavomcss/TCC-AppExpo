@@ -3,7 +3,7 @@ import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Badge } from '../components/Badge';
 import type { BadgeVariant } from '../components/Badge';
 import { Card, CardHeader, CardTitle } from '../components/Card';
-import { Fact } from '../components/Fact';
+import { Fact, FactSpacer } from '../components/Fact';
 import { NoticeCard } from '../components/NoticeCard';
 import type { NoticeCardProps } from '../components/NoticeCard';
 import { OpenRouteCard } from '../components/OpenRouteCard';
@@ -80,9 +80,15 @@ export default function ComplaintSentScreen({ route, complaint }: ComplaintSentS
                 <View style={styles.grid}>
                     <Fact label="Km informado" value={formatKm(complaint.kmComplaint)} />
                     <Fact label="Registrado" value={formatDateTime(complaint.created)} />
+                    {complaint.reviewed !== '' && (
+                        <>
+                            <FactSpacer />
+                            <Fact label="Revisado" value={formatDateTime(complaint.reviewed)} />
+                        </>
+                    )}
                     {complaint.photoUrl !== '' && (
                         <View style={styles.photo}>
-                            <Text style={styles.photoLabel}>Foto</Text>
+                            <Text style={styles.photoLabel}>Foto do painel</Text>
                             <Image
                                 accessibilityLabel="Foto do painel enviada na denúncia"
                                 source={{ uri: complaint.photoUrl }}

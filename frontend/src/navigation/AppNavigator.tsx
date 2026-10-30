@@ -9,6 +9,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../contexts/AuthContext';
 import { useBottomBar } from '../contexts/ToastContext';
 import ChangePasswordScreen from '../screens/ChangePasswordScreen';
+import ComplaintReviewDetailScreen from '../screens/ComplaintReviewDetailScreen';
+import ComplaintReviewScreen from '../screens/ComplaintReviewScreen';
 import ComplaintScreen from '../screens/ComplaintScreen';
 import DriverDetailScreen from '../screens/DriverDetailScreen';
 import DriverFormScreen from '../screens/DriverFormScreen';
@@ -152,6 +154,8 @@ export default function AppNavigator() {
                                     return <DriversScreen />;
                                 case 'vehicles':
                                     return <VehiclesScreen />;
+                                case 'complaintReview':
+                                    return <ComplaintReviewScreen />;
                                 case 'routeClosure':
                                     return <RouteClosureScreen />;
                                 default:
@@ -187,6 +191,11 @@ export default function AppNavigator() {
                             name="RouteClosureDetail"
                             component={RouteClosureDetailScreen}
                             options={{ title: 'Rota aberta' }}
+                        />
+                        <Stack.Screen
+                            name="ComplaintReviewDetail"
+                            component={ComplaintReviewDetailScreen}
+                            options={{ title: 'Denúncia de km' }}
                         />
                     </>
                 )}

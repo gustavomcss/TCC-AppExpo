@@ -395,6 +395,76 @@ describe("the app reads the complaint of the open route (I-28)", () => {
     });
 });
 
+describe("the supervisor reads the complaints to review (I-29)", () => {
+    /* The queries of src/services/complaints.ts: the list with everything the review shows, and the pending count. */
+    const EXPAND = "route_current.user,route_current.vehicle,route_previous";
+    const reviewList = `${PATH}?perPage=500&sort=created&expand=${EXPAND}`;
+    const pendingCount = `${PATH}?perPage=1&filter=${encodeURIComponent("status = 'pendente'")}`;
+
+    test("the list carries the driver, the vehicle, the km, the photo and the previous route", async () => {
+        const user = await make.user();
+        const vehicle = await make.vehicle({ odometer: 1000 });
+        const previous = await make.route({ user, vehicle, status: "finalizada", km_departure: 900, km_return: 1000 });
+        const route = await make.route({ user, vehicle, km_departure: 1000 });
+        const complaint = await fileOk(await signIn(user), route);
+
+        const { status, body } = await asSupervisor.get(reviewList);
+
+        assert.equal(status, 200, JSON.stringify(body));
+        const item = body.items.find((candidate) => candidate.id === complaint.id);
+        assert.equal(item.status, "pendente");
+        assert.equal(item.km_complaint, 990);
+        assert.ok(item.photo);
+        assert.equal(item.expand.route_current.km_departure, 1000);
+        assert.equal(item.expand.route_current.expand.user.name, user.name);
+        assert.equal(item.expand.route_current.expand.vehicle.plate, vehicle.plate);
+        assert.equal(item.expand.route_previous.id, previous.id);
+        assert.equal(item.expand.route_previous.status, "finalizada");
+        assert.equal(item.expand.route_previous.km_departure, 900);
+        assert.equal(item.expand.route_previous.km_return, 1000);
+    });
+
+    test("a complaint on the first route of a vehicle comes without a previous route", async () => {
+        const { route, session } = await driverWithRoute();
+        const complaint = await fileOk(session, route);
+
+        const item = (await asSupervisor.get(reviewList)).body.items.find((candidate) => candidate.id === complaint.id);
+
+        assert.equal(item.route_previous, "");
+        assert.equal(item.expand.route_previous, undefined);
+    });
+
+    test("the supervisor sees the complaints of every driver, the pending count follows the reviews, and the review date is read back", async () => {
+        const first = await driverWithRoute();
+        const second = await driverWithRoute();
+        const complaintA = await fileOk(first.session, first.route);
+        const complaintB = await fileOk(second.session, second.route);
+        const pendingBefore = (await asSupervisor.get(pendingCount)).body.totalItems;
+
+        const ids = (await asSupervisor.get(reviewList)).body.items.map((item) => item.id);
+        assert.ok(ids.includes(complaintA.id) && ids.includes(complaintB.id));
+
+        assert.equal((await review(asSupervisor, complaintA, { status: "reprovada" })).status, 200);
+
+        assert.equal((await asSupervisor.get(pendingCount)).body.totalItems, pendingBefore - 1);
+        const reviewed = (await asSupervisor.get(`${PATH}/${complaintA.id}`)).body;
+        assert.equal(reviewed.status, "reprovada");
+        assert.ok(Date.parse(reviewed.reviewed.replace(" ", "T")) > 0);
+    });
+
+    test("a driver reading the same list gets only their own complaint", async () => {
+        const mine = await driverWithRoute();
+        const other = await driverWithRoute();
+        const complaintMine = await fileOk(mine.session, mine.route);
+        const complaintOther = await fileOk(other.session, other.route);
+
+        const ids = (await mine.session.get(reviewList)).body.items.map((item) => item.id);
+
+        assert.ok(ids.includes(complaintMine.id));
+        assert.ok(!ids.includes(complaintOther.id));
+    });
+});
+
 describe("a complaint changes only by the review of a supervisor (RB17, RB08)", () => {
     test("the author cannot edit the complaint after filing it, whatever the field", async () => {
         const { route, session } = await driverWithRoute();
