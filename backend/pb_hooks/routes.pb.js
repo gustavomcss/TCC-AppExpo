@@ -104,15 +104,30 @@ onRecordValidate((e) => {
  * whatever the request sent, and makes the return km the current km of the vehicle (RB03). The
  * route and the vehicle are saved in one transaction, so if the vehicle cannot be saved the route
  * stays open and the odometer is never out of step with the last finalized route. Closing a route
- * administratively (`encerrada`, RB15) touches no km, so the odometer stays. The odometer is never
- * written by a request (RB09); only this hook writes it. Runs on every request, superuser included.
+ * administratively (`encerrada`, RB15) touches no km, so the odometer stays, and it is refused while
+ * the route has a pending complaint (RB21, I-30). The odometer is never written by a request
+ * (RB09); this hook and the approval of a complaint (complaints.pb.js) are the only writers. Runs
+ * on every request, superuser included.
  *
  * The record is saved by the default handler that `e.next()` runs, with `e.app`. PocketBase does
  * not open a transaction around it, so `e.app` is swapped for the transactional app while the
  * handler runs and put back afterwards.
  */
 onRecordUpdateRequest((e) => {
-    const finalizing = e.record.original().getString("status") === "aberta" && e.record.getString("status") === "finalizada";
+    const original = e.record.original();
+    const finalizing = original.getString("status") === "aberta" && e.record.getString("status") === "finalizada";
+    const closing = original.getString("status") === "aberta" && e.record.getString("status") === "encerrada";
+
+    /*
+     * A route with a pending complaint is not closed (RB21): the complaint is reviewed first, so
+     * no pending complaint is left on a closed route and the review queue holds no route without
+     * a return. Rejecting is always possible while the route is open, so there is no dead end.
+     */
+    if (closing && e.app.countRecords("complaints", $dbx.hashExp({ route_current: e.record.id, status: "pendente" })) > 0) {
+        throw new BadRequestError("Failed to update record.", {
+            status: new ValidationError("route_has_pending_complaint", "The route has a pending complaint. Review it before closing the route."),
+        });
+    }
 
     if (!finalizing) {
         e.next();

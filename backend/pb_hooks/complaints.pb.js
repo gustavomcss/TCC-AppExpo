@@ -3,8 +3,8 @@
 /*
  * Complaint rules that the API Rules of `complaints` cannot express (I-27). Who may file one and
  * who may review it is in the rules (migration set_complaint_rules); the hooks below hold what
- * needs the database or the server clock. The km corrections made when a complaint is approved
- * are I-30.
+ * needs the database or the server clock, and the km corrections made when a complaint is
+ * approved (I-30).
  */
 
 /*
@@ -53,11 +53,101 @@ onRecordCreate((e) => {
  * Reviewing a complaint (`pendente` to `aprovada` or `reprovada`) stamps `reviewed` with the server
  * clock, whatever the request sent. The rules only let a supervisor send the new status, so this
  * runs once per complaint. Runs on every request, superuser included.
+ *
+ * Rejecting changes no km (RB07). Approving corrects the km in the same transaction as the review,
+ * so the approval and its corrections happen together or not at all (I-30):
+ *  - the departure km of the route of the complaint becomes the km of the complaint (RB06);
+ *  - when `route_previous` is `finalizada`, its return km becomes the same value (RB06); when there
+ *    is no previous route or it is `encerrada`, no other route changes;
+ *  - when that previous route is the last `finalizada` route of the vehicle, the odometer becomes
+ *    the new return km (RB03, RB07).
+ * A correction that would leave a route inconsistent is refused as a whole with the one code
+ * `km_correction_inconsistent` on `status` (RB14), and nothing is saved: the previous route would
+ * end with a return km that is not greater than its departure km (RB13), or than the km of a
+ * complaint of its own that is still pending. The message says when that complaint exists, so the
+ * supervisor reviews it first.
+ *
+ * The record is saved by the default handler that `e.next()` runs, with `e.app`. PocketBase does
+ * not open a transaction around it, so `e.app` is swapped for the transactional app while the
+ * handler runs and put back afterwards (the same as the finalization of a route, routes.pb.js).
+ * The corrections run after the review is saved, and the refusal rolls the review back with them.
  */
 onRecordUpdateRequest((e) => {
-    if (e.record.original().getString("status") === "pendente" && e.record.getString("status") !== "pendente") {
-        e.record.set("reviewed", new DateTime());
+    const reviewing = e.record.original().getString("status") === "pendente" && e.record.getString("status") !== "pendente";
+
+    if (!reviewing) {
+        e.next();
+        return;
     }
 
-    e.next();
+    e.record.set("reviewed", new DateTime());
+
+    if (e.record.getString("status") !== "aprovada") {
+        e.next();
+        return;
+    }
+
+    /* Applies the corrections of an approved complaint with the transactional app. */
+    const correctKm = (txApp, complaint) => {
+        const kmComplaint = complaint.getFloat("km_complaint");
+        const route = txApp.findRecordById("routes", complaint.getString("route_current"));
+        const previousId = complaint.getString("route_previous");
+        const previous = previousId ? txApp.findRecordById("routes", previousId) : null;
+        const correctsPrevious = previous !== null && previous.getString("status") === "finalizada";
+
+        const refuse = (message) => {
+            throw new BadRequestError("Failed to update record.", {
+                status: new ValidationError("km_correction_inconsistent", message),
+            });
+        };
+
+        /* The route of the complaint, when already finalized, keeps a return km above the new departure km. */
+        if (route.getString("status") === "finalizada" && route.getFloat("km_return") <= kmComplaint) {
+            refuse("The correction would leave the return km of the route not greater than its departure km.");
+        }
+
+        if (correctsPrevious) {
+            /* The return km of the previous route stays above its departure km and above its own pending complaint. */
+            let floor = previous.getFloat("km_departure");
+            const pending = txApp.findRecordsByFilter("complaints", "route_current = {:route} && status = 'pendente'", "", 1, 0, { route: previous.id });
+            if (pending.length > 0) {
+                floor = Math.max(floor, pending[0].getFloat("km_complaint"));
+            }
+
+            if (kmComplaint <= floor) {
+                refuse(
+                    "The correction would leave the return km of the previous route not greater than its departure km." +
+                        (pending.length > 0 ? " The previous route has a pending complaint: review it first." : ""),
+                );
+            }
+        }
+
+        route.set("km_departure", kmComplaint);
+        txApp.save(route);
+
+        if (correctsPrevious) {
+            previous.set("km_return", kmComplaint);
+            txApp.save(previous);
+
+            const lastFinalized = txApp.findRecordsByFilter("routes", "vehicle = {:vehicle} && status = 'finalizada'", "-date_departure", 1, 0, {
+                vehicle: previous.getString("vehicle"),
+            });
+            if (lastFinalized.length > 0 && lastFinalized[0].id === previous.id) {
+                const vehicle = txApp.findRecordById("vehicles", previous.getString("vehicle"));
+                vehicle.set("odometer", kmComplaint);
+                txApp.save(vehicle);
+            }
+        }
+    };
+
+    const requestApp = e.app;
+    try {
+        requestApp.runInTransaction((txApp) => {
+            e.app = txApp;
+            e.next();
+            correctKm(txApp, e.record);
+        });
+    } finally {
+        e.app = requestApp;
+    }
 }, "complaints");

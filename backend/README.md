@@ -108,6 +108,7 @@ A migração `1793049600_set_route_rules.js` e o hook `pb_hooks/routes.pb.js` (I
 - **Km de saída:** é obrigatório e numérico na criação (o campo não é `required` porque o PocketBase rejeitaria o 0), com duas casas (RB16).
 - **Retorno maior que a saída (RB13):** vale em todo salvamento de rota `finalizada`, inclusive de uma correção futura (I-30): `400` com `data.km_return.code = "km_return_not_greater"`.
 - **Finalização:** `date_return` é gravada pelo servidor e o `odometer` do veículo passa a ser o `km_return` (RB03), na mesma transação da rota (se o veículo não puder ser salvo, a rota continua aberta). O `odometer` só muda por esse hook (RB09). O encerramento não mexe em km nem no `odometer`, e rota `encerrada` não entra na conta.
+- **Encerrar só sem denúncia pendente (RB21, I-30):** o hook recusa o encerramento de rota com denúncia `pendente` com `400` e `data.status.code = "route_has_pending_complaint"`, para o superuser também. O supervisor revisa a denúncia e depois encerra; com a rota aberta, reprovar é sempre possível, então não há impasse. A denúncia nunca é excluída (RB17), e a pendente fica só em rota aberta ou finalizada. Depois de aprovada ou reprovada, o encerramento funciona como antes (RB15).
 - **Campos fixos:** `user`, `vehicle`, `itinerary`, `km_departure`, `obs_departure`, `date_departure` e `date_return` não mudam por pedido. O pedido de edição precisa trazer o `status`.
 - Uma edição recusada pela regra responde com o erro de regra do PocketBase (sem `code` de campo): o app mostra "Ação não permitida". O superuser não passa pelas regras e pode reabrir ou corrigir uma rota pelo painel, mas a recusa de duas rotas abertas e o `km_return` maior que a saída valem também para ele.
 
@@ -126,11 +127,23 @@ A migração `1793196483_set_complaint_rules.js` e o hook `pb_hooks/complaints.p
 - **Só com a rota aberta (RB11):** o hook recusa com `data.route_current.code = "route_not_open"` quando a rota está `finalizada` ou `encerrada`, para o superuser também. Quem não é o autor da rota é barrado pela regra (`400` sem `code` de campo).
 - **Km diferente do de saída (RB11):** `data.km_complaint.code = "km_equals_departure"`. As duas casas e o intervalo (RB16) são os dos outros decimais.
 - **`route_previous` é do servidor (RB06):** o hook grava a rota imediatamente anterior do mesmo veículo, seja qual for o status, ou deixa vazio se não houver. O pedido não pode enviá-lo, para a denúncia não apontar para uma rota de outro veículo (a correção da I-30 usa esse campo).
-- **Revisão:** `reviewed` é gravado pelo servidor com o relógio dele quando o `status` sai de `pendente`; o pedido não pode enviá-lo. Os outros campos (`route_current`, `route_previous`, `km_complaint`, `photo`) ficam fixos. Esta issue não corrige nenhum km: isso é a I-30, que vai estender o `onRecordUpdateRequest` deste mesmo hook para fazer a aprovação em transação.
-- **Não bloqueia a rota (RB05):** a denúncia pendente não impede finalizar a rota, e o supervisor revisa depois da finalização.
-- Os códigos novos ainda não estão traduzidos em `serverErrors.ts`: entram na tela de denúncia (I-28).
+- **Revisão:** `reviewed` é gravado pelo servidor com o relógio dele quando o `status` sai de `pendente`; o pedido não pode enviá-lo. Os outros campos (`route_current`, `route_previous`, `km_complaint`, `photo`) ficam fixos.
+- **Aprovar corrige os km, em uma transação (RB06, RB07, I-30):** o `onRecordUpdateRequest` do mesmo hook salva a revisão e as correções juntas, ou nada. A reprovação não altera km nenhum.
 
-Testes em `tests/complaint-rules.test.js`. Como o hook vale para o superuser também, um teste que precisa de denúncia numa rota já finalizada cria a denúncia com a rota aberta e finaliza a rota depois.
+| Situação ao aprovar                                          | Rota da denúncia      | Rota anterior (`route_previous`)    | `odometer` do veículo                       |
+| ------------------------------------------------------------ | --------------------- | ----------------------------------- | ------------------------------------------- |
+| Anterior `finalizada` e é a última `finalizada` do veículo   | `km_departure` = km informado | `km_return` = km informado  | = km informado                              |
+| Anterior `finalizada`, mas a rota da denúncia (ou outra mais nova) já foi finalizada | `km_departure` = km informado | `km_return` = km informado | não muda (a última `finalizada` é outra rota) |
+| Anterior `encerrada` ou sem rota anterior                    | `km_departure` = km informado | não muda                    | não muda                                    |
+| Correção inconsistente (RB14)                                | recusada, nada muda   | recusada, nada muda                 | não muda                                    |
+| Reprovação                                                   | não muda              | não muda                            | não muda                                    |
+
+- **Inconsistência (RB14):** se a correção deixasse o `km_return` da rota anterior menor ou igual ao `km_departure` dela, ou ao km de uma denúncia `pendente` dessa rota (o piso da RB13), o servidor responde `400` com `data.status.code = "km_correction_inconsistent"` e nada é salvo, nem a revisão. É um código só; a mensagem em inglês diz quando a rota anterior tem denúncia pendente (revise-a primeiro). Vale para o superuser também. Reprovar nunca é recusado. Não há regra de ordem de revisão: com duas denúncias enfileiradas no mesmo veículo, a RB14 protege os dados em qualquer ordem (cenários nos testes).
+- **Rota da denúncia:** o `km_departure` é corrigido seja qual for o status dela. Se ela já foi finalizada, o `km_return` precisa continuar maior que o novo `km_departure`, senão é a mesma recusa (a RB13 vale em todo salvamento de rota `finalizada`).
+- A transação troca o `e.app` do evento pelo `txApp`, como a finalização da rota; a recusa depois de salva a revisão desfaz a revisão junto, provado forçando a falha do último passo (o salvamento do veículo).
+- **Não bloqueia a rota (RB05):** a denúncia pendente não impede finalizar a rota, e o supervisor revisa depois da finalização.
+
+Testes em `tests/complaint-rules.test.js` (ciclo de vida) e `tests/complaint-correction.test.js` (correções de km, RB14 e RB21). Como o hook vale para o superuser também, um teste que precisa de denúncia numa rota já finalizada cria a denúncia com a rota aberta e finaliza a rota depois.
 
 ### Registros de serviço (RB04, RB09, RB12, RB17, RNF05)
 
