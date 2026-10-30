@@ -90,9 +90,10 @@ export default function RouteClosureDetailScreen({
                 afterConfirm.current = () =>
                     setFailure({
                         visible: true,
-                        title: isRuleError(error)
-                            ? 'Ação não permitida'
-                            : 'Não foi possível salvar',
+                        title:
+                            isRuleError(error) || Object.keys(fields).length > 0
+                                ? 'Ação não permitida'
+                                : 'Não foi possível salvar',
                         message:
                             form ??
                             Object.values(fields)[0] ??

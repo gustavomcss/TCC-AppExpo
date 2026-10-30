@@ -56,6 +56,10 @@ const FIELD_MESSAGES: Record<string, (params: Record<string, unknown>) => string
     vehicle_inactive: () => 'Este veículo está inativo e não pode receber registros.',
     route_not_open: () => 'Esta rota não está mais aberta.',
     km_equals_departure: () => 'O km informado deve ser diferente do km de saída.',
+    km_correction_inconsistent: () =>
+        'A correção de km deixaria o km de retorno da rota anterior do veículo menor ou igual ao seu km de saída (ou ao km de uma denúncia pendente dela). Revise antes a denúncia da rota anterior, se houver, ou reprove esta denúncia.',
+    route_has_pending_complaint: () =>
+        'Esta rota tem uma denúncia de km pendente. Revise a denúncia em "Revisão de denúncias" antes de encerrar a rota.',
 };
 
 /** Translates the error of one field, preferring the override for that field and code. */
