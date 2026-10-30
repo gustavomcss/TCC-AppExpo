@@ -83,7 +83,7 @@ A migração `1792601121_set_base_api_rules.js` (I-05) é a linha de base de ace
 | `users`                                | o próprio usuário; supervisor: todos | supervisor, só `motorista` (RB19)     | veja [Usuários](#usuários-rb19) (I-11)    | supervisor, só `motorista` sem registros (I-15) |
 | `vehicles`                             | qualquer usuário autenticado      | supervisor                               | supervisor, sem alterar o `odometer` (RB09) | supervisor |
 | `routes`                               | o autor; supervisor: todos        | autenticado, rota `aberta` e sem dados de retorno (I-18) | veja [Rotas](#rotas-rb01-rb02-rb03-rb13-rb15-rb17) (I-18) | `null` (RB17) |
-| `fuels`, `oils`, `repairs`             | o autor; supervisor: todos        | autenticado, veículo ativo, autor definido pelo servidor (I-19) | `null` (I-31)                            | `null` (RB17) |
+| `fuels`, `oils`, `repairs`             | o autor; supervisor: todos        | autenticado, veículo ativo, autor definido pelo servidor (I-19) | só o autor, sem mudar veículo, km nem autor (I-31) | `null` (RB17) |
 | `complaints`                           | o autor da `route_current`; supervisor: todos | só quem é o usuário da `route_current`, `pendente` (I-27) | só o supervisor, para revisar (I-27) | `null` (RB17) |
 
 - O autor de `routes`, `fuels`, `oils` e `repairs` é gravado por `pb_hooks/author.pb.js` a partir do usuário autenticado. O `user` enviado no corpo é descartado.
@@ -151,9 +151,10 @@ As regras de `fuels`, `oils` e `repairs` vêm da I-05 e da I-07, sem migração 
 
 - **Veículo inativo (RB12):** a criação é recusada com `400` e `data.vehicle.code = "vehicle_inactive"`, para o superuser também. Os registros já salvos continuam no histórico, e reativar o veículo libera a criação de novo.
 - **Km informativo (RB04, RB09):** o `km_fuel`, o `km_oil` e o `km_repair` não alteram o `odometer`, seja o km maior, menor ou igual a ele.
-- **Edição:** segue `null` até a I-31, que libera ao autor só os campos não sensíveis.
+- **Edição (I-31, RB17):** a migração `1793388044_set_service_record_edit_rules.js` libera o update só ao autor (`user = @request.auth.id`, nem o supervisor edita registro alheio), com a condição de usuário ativo (RB18). Mudam só os campos não sensíveis: tipo, litros e valor em `fuels`; tipo e valor em `oils`; descrição e valor em `repairs`. `user`, `vehicle` e o km (`km_fuel`, `km_oil`, `km_repair`) ficam fixos por `:changed = false`, então um pedido que mude um deles é recusado por inteiro (`403` ou `404`, sem `code` de campo: o app mostra "Ação não permitida"), e um formulário que devolva o valor já salvo é aceito. `created` é autodate só de criação: um `created` no corpo é ignorado, não recusado, e a data fica a do servidor (RNF05). Os decimais e os obrigatórios valem na edição como na criação (valor, litros e km positivos, até 999.999,99, duas casas, RB16). A edição não toca o `odometer` (RB04) e continua possível depois que o veículo é inativado, porque o veículo não muda. O delete segue `null` (RB17).
+- **Rotas e denúncias (RB17):** não ganharam regra nova. Já mudam só pelos fluxos previstos (finalização pelo autor, encerramento, revisão e correção de km), e `tests/service-record-edit.test.js` confere que nenhum outro caminho de edição ou de exclusão existe.
 
-Testes em `tests/service-records.test.js`. A recusa vale para o superuser também, então um teste que precisa de histórico num veículo inativo cria o registro antes de inativar o veículo.
+Testes de criação em `tests/service-records.test.js` e de edição em `tests/service-record-edit.test.js`. A recusa vale para o superuser também, então um teste que precisa de histórico num veículo inativo cria o registro antes de inativar o veículo.
 
 ### Usuários (RB19)
 
