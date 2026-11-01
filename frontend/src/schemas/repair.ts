@@ -37,3 +37,16 @@ export type RepairInput = z.input<typeof repairSchema>;
 
 /** Values of the repair form once validated and converted. */
 export type RepairValues = z.output<typeof repairSchema>;
+
+/**
+ * Edit form of a repair (RF21): only the description and the cost, with the rules of the
+ * creation. The vehicle, the km, the author and the date are fixed after the record exists
+ * (RB17), so they are not on the form.
+ */
+export const repairEditSchema = repairSchema.pick({ description: true, cost: true });
+
+/** What the repair edit form holds while it is being filled in. */
+export type RepairEditInput = z.input<typeof repairEditSchema>;
+
+/** Values of the repair edit form once validated and converted. */
+export type RepairEditValues = z.output<typeof repairEditSchema>;

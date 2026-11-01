@@ -51,6 +51,11 @@ export function formatDecimalInput(text: string, previous = ''): string {
     return `${integer},${padded.slice(-2)}`;
 }
 
+/** Formats a km or money value read from the server in the input mask: 1234.5 is "1.234,50". */
+export function formatDecimal(value: number): string {
+    return formatDecimalInput(String(Math.round(value * 100)));
+}
+
 /**
  * Removes leading spaces and makes the first letter of every word uppercase, leaving the rest as
  * typed, so "onix plus" becomes "Onix Plus" and "hb20" becomes "Hb20". A trailing space is kept

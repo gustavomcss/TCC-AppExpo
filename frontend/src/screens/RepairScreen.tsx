@@ -166,7 +166,7 @@ export default function RepairScreen() {
                 <Card>
                     <CardHeader>
                         <CardTitle>Dados da manutenção</CardTitle>
-                        <CardDescription>O km informado é apenas informativo.</CardDescription>
+                        <CardDescription>O km registrado é apenas informativo.</CardDescription>
                     </CardHeader>
 
                     <CardContent>

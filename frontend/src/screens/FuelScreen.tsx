@@ -166,7 +166,7 @@ export default function FuelScreen() {
                 <Card>
                     <CardHeader>
                         <CardTitle>Dados do abastecimento</CardTitle>
-                        <CardDescription>O km informado é apenas informativo.</CardDescription>
+                        <CardDescription>O km registrado é apenas informativo.</CardDescription>
                     </CardHeader>
 
                     <CardContent>
