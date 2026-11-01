@@ -34,3 +34,16 @@ export type OilInput = z.input<typeof oilSchema>;
 
 /** Values of the oil change form once validated and converted. */
 export type OilValues = z.output<typeof oilSchema>;
+
+/**
+ * Edit form of an oil change (RF21): only the oil type and the cost, with the rules of the
+ * creation. The vehicle, the km, the author and the date are fixed after the record exists
+ * (RB17), so they are not on the form.
+ */
+export const oilEditSchema = oilSchema.pick({ type: true, cost: true });
+
+/** What the oil change edit form holds while it is being filled in. */
+export type OilEditInput = z.input<typeof oilEditSchema>;
+
+/** Values of the oil change edit form once validated and converted. */
+export type OilEditValues = z.output<typeof oilEditSchema>;

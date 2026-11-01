@@ -166,7 +166,7 @@ export default function OilScreen() {
                 <Card>
                     <CardHeader>
                         <CardTitle>Dados da troca de óleo</CardTitle>
-                        <CardDescription>O km informado é apenas informativo.</CardDescription>
+                        <CardDescription>O km registrado é apenas informativo.</CardDescription>
                     </CardHeader>
 
                     <CardContent>

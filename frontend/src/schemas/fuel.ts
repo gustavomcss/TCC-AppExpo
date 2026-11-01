@@ -42,3 +42,16 @@ export type FuelInput = z.input<typeof fuelSchema>;
 
 /** Values of the fueling form once validated and converted. */
 export type FuelValues = z.output<typeof fuelSchema>;
+
+/**
+ * Edit form of a fueling (RF21): only the fuel type, the liters and the cost, with the rules of
+ * the creation. The vehicle, the km, the author and the date are fixed after the record exists
+ * (RB17), so they are not on the form.
+ */
+export const fuelEditSchema = fuelSchema.pick({ type: true, liters: true, cost: true });
+
+/** What the fueling edit form holds while it is being filled in. */
+export type FuelEditInput = z.input<typeof fuelEditSchema>;
+
+/** Values of the fueling edit form once validated and converted. */
+export type FuelEditValues = z.output<typeof fuelEditSchema>;

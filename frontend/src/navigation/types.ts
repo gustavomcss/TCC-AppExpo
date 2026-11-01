@@ -1,12 +1,13 @@
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
+import type { ServiceKind } from '../services/serviceRecords';
 import type { ModuleKey } from './modules';
 
 /**
  * Screens of the root stack: the tabs, the password change opened from the User tab, one screen
  * per service module and the screens opened from a module's list (`DriverNew` and `VehicleNew`,
  * the registration forms, and `DriverDetail` and `VehicleDetail`, the edit of one driver or vehicle, and `RouteClosureDetail`,
- * the closing of one route, and `ComplaintReviewDetail`, the review of one complaint). The admin modules and their forms are only registered for a supervisor, so a driver has no route to them.
+ * the closing of one route, and `ComplaintReviewDetail`, the review of one complaint). The admin modules and their forms are only registered for a supervisor, so a driver has no route to them. `ServiceRecordEdit`, the edit of one fueling, oil change or repair, is for both roles: each one edits only their own records.
  */
 export type RootStackParamList = {
     Tabs: undefined;
@@ -17,6 +18,7 @@ export type RootStackParamList = {
     VehicleDetail: { vehicleId: string };
     RouteClosureDetail: { routeId: string };
     ComplaintReviewDetail: { complaintId: string };
+    ServiceRecordEdit: { kind: ServiceKind; recordId: string };
 } & Record<ModuleKey, undefined>;
 
 /** Navigation prop of the root stack, for the screens that open a module. */

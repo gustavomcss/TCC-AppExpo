@@ -23,6 +23,7 @@ import RepairScreen from '../screens/RepairScreen';
 import RouteClosureDetailScreen from '../screens/RouteClosureDetailScreen';
 import RouteClosureScreen from '../screens/RouteClosureScreen';
 import RouteScreen from '../screens/RouteScreen';
+import ServiceRecordEditScreen, { EDIT_TITLES } from '../screens/ServiceRecordEditScreen';
 import ServicesScreen from '../screens/ServicesScreen';
 import UserScreen from '../screens/UserScreen';
 import VehicleDetailScreen from '../screens/VehicleDetailScreen';
@@ -130,6 +131,12 @@ export default function AppNavigator() {
                     name="ChangePassword"
                     component={ChangePasswordScreen}
                     options={{ title: 'Trocar senha' }}
+                />
+
+                <Stack.Screen
+                    name="ServiceRecordEdit"
+                    component={ServiceRecordEditScreen}
+                    options={({ route }) => ({ title: EDIT_TITLES[route.params.kind] })}
                 />
 
                 {modules.map((module) => (
