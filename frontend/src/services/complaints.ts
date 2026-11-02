@@ -28,7 +28,7 @@ export type Complaint = {
 };
 
 /** Maps a `complaints` record to the complaint the screens show. */
-function toComplaint(record: RecordModel): Complaint {
+export function toComplaint(record: RecordModel): Complaint {
     return {
         id: record.id,
         status: record.status,

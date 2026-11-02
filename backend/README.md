@@ -156,6 +156,17 @@ As regras de `fuels`, `oils` e `repairs` vêm da I-05 e da I-07, sem migração 
 
 Testes de criação em `tests/service-records.test.js` e de edição em `tests/service-record-edit.test.js`. A recusa vale para o superuser também, então um teste que precisa de histórico num veículo inativo cria o registro antes de inativar o veículo.
 
+### Consultas do histórico (RF17, RB10)
+
+A aba Histórico (I-33) não tem regra, hook nem migração própria: ela lê `routes`, `complaints`, `fuels`, `oils` e `repairs` pelas listRules que já existem, então o motorista recebe só os próprios registros e o supervisor os de todos, qualquer que seja o filtro. O app manda o filtro ao servidor (`buildHistoryFilter`, em `frontend/src/services/history.ts`) e lê uma página de 10 por vez, do mais recente ao mais antigo:
+
+- **Veículo:** `vehicle.model ~ ...`, `vehicle.plate ~ ...` (o app põe o hífen de volta depois do 3º caractere, então "abc1d" acha `ABC-1D23`) e `vehicle.type = ...`. Em `complaints` o caminho passa pela rota: `route_current.vehicle.*`.
+- **Motorista (só na busca do supervisor):** `user.name ~ ...` (em `complaints`, `route_current.user.name`), como mais uma alternativa do mesmo texto de busca. Para o motorista a busca não inclui o nome, porque ele só lê os próprios registros.
+- **Período:** `created >= ... && created < ...` (em `routes`, `date_return`), com os limites do mês no fuso do aparelho. Rotas só entram com `status = "finalizada"` (RB10).
+- **Ordem e páginas:** `-created` (em `routes`, `-date_return`), `page` e `perPage`; uma página além do fim responde `200` vazia.
+
+Testes em `tests/history-queries.test.js`: quem lê o quê em cada módulo, os filtros de veículo e de motorista (inclusive pela rota da denúncia, que não alarga o que o motorista lê), o período (início incluído, fim excluído), os filtros combinados, as páginas sem lacuna nem repetição e os `expand` que os cards leem.
+
 ### Usuários (RB19)
 
 A migração `1792705420_set_user_edit_rules.js` (I-11) define quem cria e quem edita `users`. Todas as regras começam com a condição de usuário ativo (RB18). Os campos são protegidos com `:changed`, então um formulário que devolve um valor igual ao salvo é aceito.
