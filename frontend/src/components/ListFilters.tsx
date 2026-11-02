@@ -12,7 +12,7 @@ export type StatusOption<T extends string> = { value: T; label: string };
 
 /**
  * Props of ListFilters: the search text and the situation filter, both held by the screen, and
- * optional extra chips that a list adds after the situation ones (the vehicle types). The
+ * an optional second row of chips for a filter that combines with it (the vehicle types). The
  * situation options default to Todos, Ativos and Inativos; a list whose items have another
  * situation (the routes: open or closed) gives its own `statusOptions`.
  */
@@ -24,7 +24,7 @@ export type ListFiltersProps<T extends string = StatusFilter> = {
     status: T;
     onStatusChange: (status: T) => void;
     statusOptions?: readonly StatusOption<T>[];
-    extraChips?: ReactNode;
+    extraRow?: ReactNode;
 };
 
 /** Options of the default situation filter, in the order the chips appear. */
@@ -36,8 +36,9 @@ const ACTIVE_FILTERS: readonly StatusOption<StatusFilter>[] = [
 
 /**
  * Search field (with a button to clear it) over the chips Todos, Ativos and Inativos (or the
- * given situation options), shared by the lists, with room for more chips after them. The row of chips scrolls sideways
- * when they do not fit. It only holds the controls: each screen narrows its own list with them.
+ * given situation options), shared by the lists, and an optional second row for another filter,
+ * so filters that combine sit on separate rows. Each row of chips scrolls sideways when they do
+ * not fit. It only holds the controls: each screen narrows its own list with them.
  */
 export function ListFilters<T extends string = StatusFilter>({
     searchLabel,
@@ -47,7 +48,7 @@ export function ListFilters<T extends string = StatusFilter>({
     status,
     onStatusChange,
     statusOptions = ACTIVE_FILTERS as readonly StatusOption<string>[] as readonly StatusOption<T>[],
-    extraChips,
+    extraRow,
 }: ListFiltersProps<T>) {
     return (
         <View style={styles.filters}>
@@ -88,14 +89,24 @@ export function ListFilters<T extends string = StatusFilter>({
                         onPress={() => onStatusChange(filter.value)}
                     />
                 ))}
-                {extraChips}
             </ScrollView>
+            {extraRow && (
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                    style={styles.chipsScroll}
+                    contentContainerStyle={styles.chips}
+                >
+                    {extraRow}
+                </ScrollView>
+            )}
         </View>
     );
 }
 
 /**
- * Styles of the filters: the search field over a row of chips, with the list's side padding. The
+ * Styles of the filters: the search field over the rows of chips, with the list's side padding. The
  * bottom padding is the gap to the list, which has none at the top: it stays between them while
  * the cards scroll under the edge of the list.
  */

@@ -36,17 +36,17 @@ export type RepairRecord = BaseRecord & { kind: 'repair'; description: string };
 export type ServiceRecord = FuelRecord | OilRecord | RepairRecord;
 
 /** Collection and km field of each kind, in the names the server uses. */
-const COLLECTIONS = {
+export const COLLECTIONS = {
     fuel: { name: 'fuels', km: 'km_fuel' },
     oil: { name: 'oils', km: 'km_oil' },
     repair: { name: 'repairs', km: 'km_repair' },
 } as const;
 
 /** Relations read with every record: the vehicle and the author. */
-const EXPAND = 'vehicle,user';
+export const EXPAND = 'vehicle,user';
 
 /** Maps a record of `fuels`, `oils` or `repairs`, read with `EXPAND`, to the app's shape. */
-function toServiceRecord(kind: ServiceKind, record: RecordModel): ServiceRecord {
+export function toServiceRecord(kind: ServiceKind, record: RecordModel): ServiceRecord {
     const base: BaseRecord = {
         id: record.id,
         userId: record.user,
@@ -75,24 +75,4 @@ export async function getServiceRecord(kind: ServiceKind, id: string): Promise<S
     const record = await pb.collection(COLLECTIONS[kind].name).getOne(id, { expand: EXPAND });
 
     return toServiceRecord(kind, record);
-}
-
-/**
- * Lists the fuelings, oil changes and repairs the user can read, the latest first: a driver gets
- * only their own, a supervisor everyone's (RF17). Provisional, until the history lists (I-33 and
- * I-35) bring the filters and the incremental loading.
- */
-export async function listServiceRecords(): Promise<ServiceRecord[]> {
-    const kinds = Object.keys(COLLECTIONS) as ServiceKind[];
-    const lists = await Promise.all(
-        kinds.map(async (kind) => {
-            const records = await pb
-                .collection(COLLECTIONS[kind].name)
-                .getFullList({ expand: EXPAND, sort: '-created' });
-
-            return records.map((record) => toServiceRecord(kind, record));
-        }),
-    );
-
-    return lists.flat().sort((a, b) => b.created.localeCompare(a.created));
 }

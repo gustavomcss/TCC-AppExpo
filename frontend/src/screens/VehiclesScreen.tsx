@@ -103,7 +103,7 @@ export default function VehiclesScreen() {
                     onQueryChange={setQuery}
                     status={status}
                     onStatusChange={setStatus}
-                    extraChips={VEHICLE_TYPES.map((item) => (
+                    extraRow={VEHICLE_TYPES.map((item) => (
                         <Chip
                             key={item.value}
                             label={item.label}
