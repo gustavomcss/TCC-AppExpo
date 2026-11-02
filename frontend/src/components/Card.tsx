@@ -35,7 +35,7 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: colors.border,
         borderRadius: radius.xl,
-        padding: spacing.lg,
+        padding: spacing.md,
         gap: spacing.lg,
     },
     header: {

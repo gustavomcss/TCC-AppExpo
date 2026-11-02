@@ -11,6 +11,7 @@ import { EmptyState } from '../components/EmptyState';
 import { ListFilters } from '../components/ListFilters';
 import type { StatusOption } from '../components/ListFilters';
 import { PagedList } from '../components/PagedList';
+import { RouteHistoryCard } from '../components/RouteHistoryCard';
 import { useAuth } from '../contexts/AuthContext';
 import type { RootNavigation } from '../navigation/types';
 import { FUEL_TYPES } from '../schemas/fuel';
@@ -22,6 +23,7 @@ import type {
     HistoryItem,
     HistoryModule,
     HistoryPeriod,
+    HistoryRoute,
 } from '../services/history';
 import type { ServiceRecord } from '../services/serviceRecords';
 import { colors, fontFamily, fontSize, palette, radius, sizes, spacing } from '../theme';
@@ -113,22 +115,11 @@ type CardContent = {
 };
 
 /**
- * The text of the card of an item. Provisional until the definitive cards (I-34 for routes, I-35
- * for the other modules) replace it; `showDriver` adds who did it, for the supervisor.
+ * The text of the card of a complaint or a service record. Provisional until the definitive cards
+ * (I-35) replace it; `showDriver` adds who did it, for the supervisor. Routes have their own card.
  */
-function describe(item: HistoryItem, showDriver: boolean): CardContent {
+function describe(item: Exclude<HistoryItem, HistoryRoute>, showDriver: boolean): CardContent {
     switch (item.kind) {
-        case 'route':
-            return {
-                icon: Route,
-                title: `${item.vehicle.plate} · ${item.vehicle.model}`,
-                lines: [
-                    item.itinerary,
-                    `Saída ${formatDateTime(item.dateDeparture)} · Retorno ${formatDateTime(item.dateReturn)}`,
-                    `Km ${formatKm(item.kmDeparture)} → ${formatKm(item.kmReturn)}`,
-                    ...(showDriver ? [item.driverName] : []),
-                ],
-            };
         case 'complaint':
             return {
                 icon: TriangleAlert,
@@ -168,8 +159,9 @@ function describe(item: HistoryItem, showDriver: boolean): CardContent {
  * selected means everything, and they stay when the module changes. The filtering is the server's and the list loads a page at a time as it is
  * scrolled (`PagedList`), so a long history is never read whole. A driver sees only their own
  * records and a supervisor everyone's, by the API rules; the routes are only the finalized ones
- * (RB10). The cards are provisional until the I-34 (routes) and I-35 (the other modules); the
- * pencil of a service record, only on the signed-in user's own (RB17), opens the edit screen.
+ * (RB10) and have their own card (`RouteHistoryCard`, RF18 and RF19). The other cards are
+ * provisional until the I-35; the pencil of a service record, only on the signed-in user's own
+ * (RB17), opens the edit screen.
  */
 export default function HistoryScreen() {
     const navigation = useNavigation<RootNavigation>();
@@ -189,11 +181,15 @@ export default function HistoryScreen() {
     }, [query]);
 
     function renderItem(item: HistoryItem) {
+        if (item.kind === 'route') {
+            return <RouteHistoryCard route={item} />;
+        }
+
         const { icon: Icon, title, lines, badge } = describe(item, isSupervisor);
-        const record = item.kind === 'route' || item.kind === 'complaint' ? null : item;
+        const record = item.kind === 'complaint' ? null : item;
 
         return (
-            <Card style={styles.card}>
+            <Card>
                 <View style={styles.top}>
                     <View style={styles.iconBox}>
                         <Icon color={palette.g20} size={sizes.icon} />
@@ -318,9 +314,6 @@ const styles = StyleSheet.create({
     chips: {
         gap: spacing.sm,
         paddingHorizontal: spacing.lg,
-    },
-    card: {
-        padding: spacing.md,
     },
     edit: {
         width: sizes.iconButton,
