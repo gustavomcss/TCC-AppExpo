@@ -1,7 +1,7 @@
 import type { RecordModel } from 'pocketbase';
 
 import { toComplaint } from './complaints';
-import type { Complaint } from './complaints';
+import type { Complaint, ComplaintStatus } from './complaints';
 import { pb } from './pocketbase';
 import { COLLECTIONS, EXPAND, toServiceRecord } from './serviceRecords';
 import type { ServiceKind, ServiceRecord } from './serviceRecords';
@@ -44,6 +44,8 @@ export type HistoryRoute = {
     kmReturn: number;
     driverName: string;
     vehicle: Vehicle;
+    /** Situation of the complaint filed on the route, or null when there is none (RF19). */
+    complaintStatus: ComplaintStatus | null;
 };
 
 /** A complaint as the history lists it: what was reported on which route and vehicle, and by whom. */
@@ -155,7 +157,13 @@ export function buildHistoryFilter(
     return parts.join(' && ');
 }
 
-/** Maps a `routes` record, read with `user` and `vehicle` expanded, to the route the history shows. */
+/**
+ * Relations read with a route: the driver, the vehicle and the complaint filed on it. The last is
+ * a back-relation of `complaints.route_current`, which is unique, so it comes as one record.
+ */
+const ROUTE_EXPAND = 'user,vehicle,complaints_via_route_current';
+
+/** Maps a `routes` record, read with `ROUTE_EXPAND`, to the route the history shows. */
 function toHistoryRoute(record: RecordModel): HistoryRoute {
     return {
         kind: 'route',
@@ -167,6 +175,7 @@ function toHistoryRoute(record: RecordModel): HistoryRoute {
         kmReturn: record.km_return,
         driverName: record.expand?.user?.name ?? '',
         vehicle: toVehicle(record.expand?.vehicle),
+        complaintStatus: record.expand?.complaints_via_route_current?.status ?? null,
     };
 }
 
@@ -214,7 +223,7 @@ export async function listHistory(
         const result = await pb.collection('routes').getList(page, HISTORY_PAGE_SIZE, {
             filter,
             sort: '-date_return',
-            expand: 'user,vehicle',
+            expand: ROUTE_EXPAND,
         });
 
         return { items: result.items.map(toHistoryRoute), hasMore: page < result.totalPages };

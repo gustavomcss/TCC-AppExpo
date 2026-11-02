@@ -199,7 +199,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'flex-start',
         gap: spacing.md,
-        padding: spacing.md,
     },
     iconBox: {
         width: sizes.iconBox,

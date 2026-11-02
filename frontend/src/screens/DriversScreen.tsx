@@ -176,7 +176,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'flex-start',
         gap: spacing.md,
-        padding: spacing.md,
     },
     texts: {
         flex: 1,

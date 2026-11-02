@@ -364,3 +364,62 @@ describe("what the cards read from the expanded relations", () => {
         }
     });
 });
+
+describe("the complaint indicator of a route card (RF19, RB06)", () => {
+    const EXPAND = "user,vehicle,complaints_via_route_current";
+
+    /* A driver with three finalized routes: no complaint, a pending one and one that is approved. */
+    let driver;
+    let session;
+    let routes;
+
+    before(async () => {
+        driver = await make.user();
+        session = await signIn(driver);
+        const plain = await make.vehicle({ type: "carro" });
+        const pending = await make.vehicle({ type: "van" });
+        const approved = await make.vehicle({ type: "moto" });
+
+        routes = {
+            plain: await finalize(await make.route({ user: driver, vehicle: plain, km_departure: 500 }), 600),
+        };
+        const pendingRoute = await make.route({ user: driver, vehicle: pending, km_departure: 500 });
+        await make.complaint({ route_current: pendingRoute.id, km_complaint: 520 });
+        routes.pending = await finalize(pendingRoute, 600);
+        const approvedRoute = await make.route({ user: driver, vehicle: approved, km_departure: 500 });
+        routes.complaint = await make.complaint({ route_current: approvedRoute.id, km_complaint: 520 });
+        routes.approved = await finalize(approvedRoute, 600);
+    });
+
+    /** The finalized routes of the driver, as the app reads them. */
+    const readRoutes = (reader) =>
+        list(reader, "routes", { filter: 'status = "finalizada"', sort: "-date_return", expand: EXPAND });
+
+    /** One route of a list response. */
+    const find = (response, route) => response.body.items.find((item) => item.id === route.id);
+
+    test("a route without a complaint carries no complaint", async () => {
+        const item = find(await readRoutes(session), routes.plain);
+
+        assert.equal(item.expand.complaints_via_route_current, undefined);
+    });
+
+    test("a route with a pending complaint carries it, to its driver and to a supervisor", async () => {
+        for (const reader of [session, asSupervisor]) {
+            const item = find(await readRoutes(reader), routes.pending);
+
+            assert.equal(item.expand.complaints_via_route_current.status, "pendente");
+        }
+    });
+
+    test("after the approval the card reads the corrected departure km and the approved complaint (RB06)", async () => {
+        const review = await asSupervisor.patch(`/api/collections/complaints/records/${routes.complaint.id}`, { status: "aprovada" });
+        assert.equal(review.status, 200, JSON.stringify(review.body));
+
+        const item = find(await readRoutes(session), routes.approved);
+
+        assert.equal(item.km_departure, 520);
+        assert.equal(item.km_return, 600);
+        assert.equal(item.expand.complaints_via_route_current.status, "aprovada");
+    });
+});
