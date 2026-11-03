@@ -229,9 +229,7 @@ export default function ComplaintReviewDetailScreen({
                     <View style={styles.separator} />
 
                     <View style={styles.grid}>
-                        <Fact label="Km de saída" value={formatKm(complaint.kmDeparture)} />
                         <Fact label="Registrado" value={formatDateTime(complaint.created)} />
-                        <Fact label="Km informado" value={formatKm(complaint.kmComplaint)} />
                         {complaint.reviewed !== '' ? (
                             <Fact label="Revisado" value={formatDateTime(complaint.reviewed)} />
                         ) : (
@@ -242,6 +240,8 @@ export default function ComplaintReviewDetailScreen({
                                 )}
                             />
                         )}
+                        <Fact label="Km de saída" value={formatKm(complaint.kmDeparture)} />
+                        <Fact label="Km informado" value={formatKm(complaint.kmComplaint)} />
                     </View>
 
                     {complaint.photoUrl !== '' && (

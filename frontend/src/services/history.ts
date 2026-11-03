@@ -11,14 +11,15 @@ import type { Vehicle } from './vehicles';
 /** The five modules of the history tab (RF17), in the order the chips appear. */
 export type HistoryModule = 'routes' | 'complaints' | 'fuels' | 'oils' | 'repairs';
 
-/** Period shortcuts of the history filter: this month, last month or the last 3 months. */
-export type HistoryPeriod = 'month' | 'previous' | 'quarter';
+/** Period shortcuts of the history filter: this month, last month or the last 3 or 6 months. */
+export type HistoryPeriod = 'month' | 'previous' | 'quarter' | 'semester';
 
-/** Options of the period filter, in the order the chips appear. */
+/** Options of the period filter, in the order the select lists them. */
 export const HISTORY_PERIODS: readonly { value: HistoryPeriod; label: string }[] = [
     { value: 'month', label: 'Este mês' },
     { value: 'previous', label: 'Mês anterior' },
     { value: 'quarter', label: 'Últimos 3 meses' },
+    { value: 'semester', label: 'Últimos 6 meses' },
 ];
 
 /**
@@ -84,8 +85,8 @@ const DATE_FIELDS: Record<HistoryModule, string> = {
 
 /**
  * Bounds of a period in the device's time zone, as dates to give the server: `from` is included
- * and `to` is not, and a missing bound is open. "Últimos 3 meses" counts back from today, the
- * others are whole calendar months.
+ * and `to` is not, and a missing bound is open. "Últimos 3 meses" and "Últimos 6 meses" count
+ * back from today, the others are whole calendar months.
  */
 export function periodRange(
     period: HistoryPeriod | null,
@@ -101,6 +102,8 @@ export function periodRange(
             return { from: new Date(year, month - 1, 1), to: new Date(year, month, 1) };
         case 'quarter':
             return { from: new Date(year, month - 3, now.getDate()) };
+        case 'semester':
+            return { from: new Date(year, month - 6, now.getDate()) };
         case null:
             return {};
     }
