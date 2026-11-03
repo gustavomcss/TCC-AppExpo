@@ -167,6 +167,17 @@ A aba Histórico (I-33) não tem regra, hook nem migração própria: ela lê `r
 
 Testes em `tests/history-queries.test.js`: quem lê o quê em cada módulo, os filtros de veículo e de motorista (inclusive pela rota da denúncia, que não alarga o que o motorista lê), o período (início incluído, fim excluído), os filtros combinados, as páginas sem lacuna nem repetição e os `expand` que os cards leem.
 
+### Consultas do relatório financeiro (RF22)
+
+O relatório financeiro (I-36) também não tem regra, hook nem migração própria. **Decisão: a soma é feita no app.** O servidor só filtra (`buildReportFilter`, em `frontend/src/services/reports.ts`) e devolve, de cada serviço, o `cost` e o veículo expandido; o app agrupa por veículo e soma em centavos (`buildReport`, em `frontend/src/services/reportTotals.ts`). Os totais saem dos mesmos registros que o Histórico lista, e nenhum endpoint novo precisa de regra de acesso própria: `fuels`, `oils` e `repairs` seguem as listRules da #5, então o motorista que fizesse a mesma consulta receberia só os próprios registros.
+
+- **Campos lidos:** `fields=id,cost,vehicle,expand.vehicle` com `expand=vehicle`, sem página (o SDK lê em blocos até acabar).
+- **Período:** `created >= ... && created < ...`, o início incluído e o fim excluído; num período personalizado o último dia digitado entra, então o fim é o começo do dia seguinte. Os atalhos têm os mesmos limites do Histórico, e sem período nenhum ("Todo o período") o filtro não tem data.
+- **Veículo:** `vehicle.model ~ ...` ou `vehicle.plate ~ ...` (com o hífen de volta depois do 3º caractere) e `vehicle.type = ...`. Veículo inativo com registros no período aparece (RB12).
+- **Serviço:** o app só lê a coleção escolhida; sem escolha, lê as três.
+
+Testes em `tests/report-queries.test.js`: os campos devolvidos, os totais por serviço, por veículo e geral conferidos em centavos contra os registros criados, o veículo inativo, o período (início incluído, fim excluído), os filtros de tipo e de busca (e a combinação deles) e o motorista que lê só o que criou.
+
 ### Usuários (RB19)
 
 A migração `1792705420_set_user_edit_rules.js` (I-11) define quem cria e quem edita `users`. Todas as regras começam com a condição de usuário ativo (RB18). Os campos são protegidos com `:changed`, então um formulário que devolve um valor igual ao salvo é aceito.

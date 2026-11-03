@@ -3,12 +3,20 @@ import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useCallback, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { ActionBar } from '../components/ActionBar';
 import { Badge } from '../components/Badge';
+import { IdentityHero } from '../components/IdentityHero';
 import { Button } from '../components/Button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/Card';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardSeparator,
+    CardTitle,
+} from '../components/Card';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ErrorState } from '../components/ErrorState';
 import { FormScrollView } from '../components/FormScrollView';
@@ -33,7 +41,7 @@ import {
     updateVehicle,
 } from '../services/vehicles';
 import type { Vehicle } from '../services/vehicles';
-import { colors, fontFamily, fontSize, palette, radius, sizes, spacing } from '../theme';
+import { colors, palette, radius, sizes, spacing } from '../theme';
 
 /** Fields of the form, in the names the server uses, so its field errors can be matched. */
 const FIELDS = ['plate', 'type', 'model'] as const;
@@ -244,23 +252,21 @@ export default function VehicleDetailScreen({
     return (
         <View style={styles.screen}>
             <FormScrollView contentContainerStyle={styles.content}>
-                <Card>
-                    <View style={styles.hero}>
+                <IdentityHero
+                    lead={
                         <View style={styles.iconBox}>
                             <TypeIcon color={palette.g20} size={sizes.icon} />
                         </View>
-                        <View style={styles.texts}>
-                            <Text style={styles.plate}>{vehicle.plate}</Text>
-                            <Text style={styles.detail}>
-                                {vehicle.model} · {typeLabel(vehicle.type)}
-                            </Text>
-                            <Badge
-                                label={vehicle.active ? 'Ativo' : 'Inativo'}
-                                variant={vehicle.active ? 'outline' : 'secondary'}
-                            />
-                        </View>
-                    </View>
-                </Card>
+                    }
+                    title={vehicle.plate}
+                    subtitle={`${vehicle.model} · ${typeLabel(vehicle.type)}`}
+                    badge={
+                        <Badge
+                            label={vehicle.active ? 'Ativo' : 'Inativo'}
+                            variant={vehicle.active ? 'outline' : 'secondary'}
+                        />
+                    }
+                />
 
                 <Card>
                     <CardHeader>
@@ -269,6 +275,8 @@ export default function VehicleDetailScreen({
                             O km atual é atualizado pelas rotas e não pode ser editado.
                         </CardDescription>
                     </CardHeader>
+
+                    <CardSeparator />
 
                     <CardContent>
                         <Controller
@@ -405,11 +413,6 @@ const styles = StyleSheet.create({
         gap: spacing.lg,
         padding: spacing.lg,
     },
-    hero: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.lg,
-    },
     iconBox: {
         width: sizes.avatar,
         height: sizes.avatar,
@@ -417,22 +420,5 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         borderRadius: radius.md,
         backgroundColor: palette.gE0,
-    },
-    texts: {
-        flex: 1,
-        gap: spacing.xs,
-        alignItems: 'flex-start',
-    },
-    plate: {
-        color: colors.foreground,
-        fontFamily: fontFamily.semibold,
-        fontSize: fontSize.lg,
-        lineHeight: 24,
-    },
-    detail: {
-        color: colors.mutedForeground,
-        fontFamily: fontFamily.normal,
-        fontSize: fontSize.sm,
-        lineHeight: 20,
     },
 });

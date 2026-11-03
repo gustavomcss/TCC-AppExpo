@@ -6,6 +6,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 
 import { Avatar } from '../components/Avatar';
 import { Badge } from '../components/Badge';
+import { IdentityHero } from '../components/IdentityHero';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { ConfirmDialog } from '../components/ConfirmDialog';
@@ -141,18 +142,12 @@ export default function UserScreen() {
 
     return (
         <View style={styles.screen}>
-            <Card>
-                <View style={styles.hero}>
-                    <Avatar name={name} uri={user?.photoUrl} />
-                    <View style={styles.texts}>
-                        <View style={styles.identity}>
-                            <Text style={styles.name}>{name}</Text>
-                            <Text style={styles.email}>{user?.email}</Text>
-                        </View>
-                        {user && <Badge variant="secondary" label={ROLE_LABELS[user.role]} />}
-                    </View>
-                </View>
-            </Card>
+            <IdentityHero
+                lead={<Avatar name={name} size={sizes.profileAvatar} uri={user?.photoUrl} />}
+                title={name}
+                subtitle={user?.email}
+                badge={user && <Badge variant="outline" label={ROLE_LABELS[user.role]} />}
+            />
 
             <Card style={styles.menu}>
                 <MenuRow
@@ -213,33 +208,6 @@ const styles = StyleSheet.create({
         gap: spacing.lg,
         backgroundColor: colors.muted,
         padding: spacing.lg,
-    },
-    hero: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.lg,
-    },
-    texts: {
-        flex: 1,
-        gap: spacing.sm,
-        alignItems: 'flex-start',
-    },
-    identity: {
-        gap: 2,
-    },
-    name: {
-        color: colors.foreground,
-        fontFamily: fontFamily.semibold,
-        fontSize: fontSize.lg,
-        lineHeight: 24,
-        includeFontPadding: false,
-    },
-    email: {
-        color: colors.mutedForeground,
-        fontFamily: fontFamily.normal,
-        fontSize: fontSize.sm,
-        lineHeight: 20,
-        includeFontPadding: false,
     },
     menu: {
         gap: 0,

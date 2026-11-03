@@ -52,7 +52,7 @@ export const SERVICE_MODULES: readonly ServiceModule[] = [
         key: 'complaint',
         icon: TriangleAlert,
         title: 'Denúncia de km',
-        description: 'Registrar divergência entre o km do veículo e o km real.',
+        description: 'Registrar divergência de km do veículo.',
         adminOnly: false,
     },
     {

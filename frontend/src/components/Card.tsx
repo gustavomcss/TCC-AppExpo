@@ -28,6 +28,11 @@ export function CardContent({ style, ...props }: ViewProps) {
     return <View style={[styles.content, style]} {...props} />;
 }
 
+/** Thin line between the header of a Card and what follows it. */
+export function CardSeparator({ style, ...props }: ViewProps) {
+    return <View style={[styles.separator, style]} {...props} />;
+}
+
 /** Styles of the Card parts. */
 const styles = StyleSheet.create({
     card: {
@@ -53,5 +58,9 @@ const styles = StyleSheet.create({
     },
     content: {
         gap: spacing.lg,
+    },
+    separator: {
+        height: 1,
+        backgroundColor: colors.border,
     },
 });

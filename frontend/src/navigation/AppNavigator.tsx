@@ -21,6 +21,7 @@ import HistoryScreen from '../screens/HistoryScreen';
 import ModuleScreen from '../screens/ModuleScreen';
 import RepairScreen from '../screens/RepairScreen';
 import RouteClosureDetailScreen from '../screens/RouteClosureDetailScreen';
+import ReportsScreen from '../screens/ReportsScreen';
 import RouteClosureScreen from '../screens/RouteClosureScreen';
 import RouteScreen from '../screens/RouteScreen';
 import ServiceRecordEditScreen, { EDIT_TITLES } from '../screens/ServiceRecordEditScreen';
@@ -165,6 +166,8 @@ export default function AppNavigator() {
                                     return <ComplaintReviewScreen />;
                                 case 'routeClosure':
                                     return <RouteClosureScreen />;
+                                case 'reports':
+                                    return <ReportsScreen />;
                                 default:
                                     return <ModuleScreen moduleKey={module.key} />;
                             }
@@ -197,7 +200,7 @@ export default function AppNavigator() {
                         <Stack.Screen
                             name="RouteClosureDetail"
                             component={RouteClosureDetailScreen}
-                            options={{ title: 'Rota aberta' }}
+                            options={{ title: 'Rota' }}
                         />
                         <Stack.Screen
                             name="ComplaintReviewDetail"

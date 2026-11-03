@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
     },
     content: {
         padding: spacing.lg,
-        gap: spacing.lg,
+        gap: spacing.xl,
     },
     group: {
         gap: spacing.sm,

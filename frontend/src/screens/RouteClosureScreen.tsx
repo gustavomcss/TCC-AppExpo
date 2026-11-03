@@ -35,8 +35,8 @@ const STATUS_OPTIONS: readonly StatusOption<ClosureStatusFilter>[] = [
  * the ones already closed (RB10: finalized routes belong to the history, not here), each with its
  * situation badge: "Aberta" outline and "Encerrada" muted, like "Ativo" and "Inativo".
  * A search field (driver, plate or model) and the chips Todas, Abertas and Encerradas narrow the
- * list on the device, without a new request. An open route opens its detail, where it can be
- * closed; a closed one is only shown. The list is loaded again each time the screen gets focus,
+ * list on the device, without a new request. Every route opens its detail: an open one can be
+ * closed there, a closed one is only shown. The list is loaded again each time the screen gets focus,
  * so a route just closed, or one the driver finalized in the meantime, is up to date when the
  * detail goes back.
  */
@@ -91,15 +91,11 @@ export default function RouteClosureScreen() {
             </Card>
         );
 
-        if (!open) {
-            return <View key={route.id}>{card}</View>;
-        }
-
         return (
             <Pressable
                 key={route.id}
                 accessibilityRole="button"
-                accessibilityLabel={`Rota aberta de ${route.driverName}`}
+                accessibilityLabel={`Rota ${open ? 'aberta' : 'encerrada'} de ${route.driverName}`}
                 onPress={() => navigation.navigate('RouteClosureDetail', { routeId: route.id })}
                 style={({ pressed }) => pressed && styles.pressed}
             >

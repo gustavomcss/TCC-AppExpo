@@ -4,18 +4,15 @@ import { useCallback, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { ActionBar } from '../components/ActionBar';
-import { Badge } from '../components/Badge';
 import { Button } from '../components/Button';
-import { Card, CardDescription, CardHeader, CardTitle } from '../components/Card';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ErrorState } from '../components/ErrorState';
-import { CollapsibleFact, Fact } from '../components/Fact';
 import { LoadingState } from '../components/LoadingState';
 import { NoticeCard } from '../components/NoticeCard';
 import { NoticeDialog } from '../components/NoticeDialog';
+import { RouteSummaryCard } from '../components/RouteSummaryCard';
 import { useToast } from '../contexts/ToastContext';
 import type { RootStackParamList } from '../navigation/types';
-import { formatDateTime, formatKm } from '../schemas/masks';
 import { closeRoute, getClosureRoute } from '../services/routes';
 import type { ClosureRoute } from '../services/routes';
 import { isNotFoundError, isRuleError, parseServerError } from '../services/serverErrors';
@@ -33,8 +30,9 @@ type State =
 
 /**
  * Route closure detail (RF10), opened from the closure list. Shows the route in the same card as
- * the return screen (driver as the title) and, when it is still open, a notice card and the fixed bar
- * "Encerrar rota". Closing asks for a confirmation and sends no km: the
+ * the return screen, with the driver among its data. An open route has a notice card and the fixed
+ * bar "Encerrar rota"; a closed one is only shown, with a notice that says the vehicle and the
+ * driver were freed. Closing asks for a confirmation and sends no km: the
  * route becomes `encerrada`, the current km of the vehicle stays and the vehicle and the driver
  * are free again (RB15). The server is the rule: only a supervisor closes, and only an open
  * route, so a route the driver finalized while the screen was open answers 404 and the app says
@@ -138,35 +136,17 @@ export default function RouteClosureDetailScreen({
     return (
         <View style={styles.screen}>
             <ScrollView contentContainerStyle={styles.content}>
-                <Card>
-                    <View style={styles.top}>
-                        <CardHeader style={styles.title}>
-                            <CardTitle>{loaded.driverName}</CardTitle>
-                            <CardDescription>
-                                {loaded.vehicle.plate} · {loaded.vehicle.model}
-                            </CardDescription>
-                        </CardHeader>
-                        <Badge
-                            label={open ? 'Aberta' : 'Encerrada'}
-                            variant={open ? 'outline' : 'secondary'}
-                        />
-                    </View>
+                <RouteSummaryCard route={loaded} />
 
-                    <View style={styles.separator} />
-
-                    <View style={styles.grid}>
-                        <Fact label="Km de saída" value={formatKm(loaded.kmDeparture)} />
-                        <Fact label="Saída" value={formatDateTime(loaded.dateDeparture)} />
-                        <Fact label="Itinerário" value={loaded.itinerary} wide />
-                        <CollapsibleFact
-                            label="Observação"
-                            value={loaded.obsDeparture}
-                            emptyText="Nenhuma observação"
-                        />
-                    </View>
-                </Card>
-
-                {open && <NoticeCard title="Encerrar sem retorno" message={CLOSE_MESSAGE} />}
+                {open ? (
+                    <NoticeCard title="Encerrar sem retorno" message={CLOSE_MESSAGE} />
+                ) : (
+                    <NoticeCard
+                        variant="destructive"
+                        title="Rota encerrada"
+                        message="Esta rota foi encerrada. O veículo e o motorista foram liberados."
+                    />
+                )}
             </ScrollView>
 
             {open && (
@@ -206,7 +186,7 @@ export default function RouteClosureDetailScreen({
     );
 }
 
-/** Styles of the closure detail: the route card and the warning, on the same gray background as the other screens. */
+/** Styles of the closure detail: the route card and the notice, on the same gray background as the other screens. */
 const styles = StyleSheet.create({
     screen: {
         flex: 1,
@@ -215,24 +195,6 @@ const styles = StyleSheet.create({
     content: {
         flexGrow: 1,
         padding: spacing.lg,
-        gap: spacing.lg,
-    },
-    top: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        justifyContent: 'space-between',
-        gap: spacing.md,
-    },
-    title: {
-        flex: 1,
-    },
-    separator: {
-        height: 1,
-        backgroundColor: colors.border,
-    },
-    grid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
         gap: spacing.lg,
     },
 });

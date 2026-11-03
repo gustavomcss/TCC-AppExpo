@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { FormScrollView } from '../components/FormScrollView';
 import { NoticeDialog } from '../components/NoticeDialog';
-import { OpenRouteCard } from '../components/OpenRouteCard';
+import { RouteSummaryCard } from '../components/RouteSummaryCard';
 import { TextField } from '../components/TextField';
 import { useToast } from '../contexts/ToastContext';
 import type { RootNavigation } from '../navigation/types';
@@ -140,7 +140,7 @@ export default function RouteReturnScreen({ route, complaintKm }: RouteReturnScr
     return (
         <View style={styles.screen}>
             <FormScrollView contentContainerStyle={styles.content}>
-                <OpenRouteCard route={route} />
+                <RouteSummaryCard route={route} />
 
                 <Card>
                     <CardHeader>

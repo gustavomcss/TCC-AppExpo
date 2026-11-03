@@ -3,13 +3,21 @@ import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useCallback, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { ActionBar } from '../components/ActionBar';
 import { Avatar } from '../components/Avatar';
 import { Badge } from '../components/Badge';
+import { IdentityHero } from '../components/IdentityHero';
 import { Button } from '../components/Button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/Card';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardSeparator,
+    CardTitle,
+} from '../components/Card';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ErrorState } from '../components/ErrorState';
 import { FormScrollView } from '../components/FormScrollView';
@@ -34,7 +42,7 @@ import {
 import type { Driver } from '../services/drivers';
 import { CAMERA_DENIED_MESSAGE, pickImage } from '../services/photoPicker';
 import { applyServerError, isRuleError, parseServerError } from '../services/serverErrors';
-import { colors, fontFamily, fontSize, spacing } from '../theme';
+import { colors, spacing } from '../theme';
 
 /** What the screen is showing: the request in progress, its failure, or the driver. */
 type State =
@@ -273,23 +281,27 @@ export default function DriverDetailScreen({
     return (
         <View style={styles.screen}>
             <FormScrollView contentContainerStyle={styles.content}>
-                <Card>
-                    <View style={styles.hero}>
-                        <Avatar name={driver.name} uri={driver.photoUrl} />
-                        <View style={styles.texts}>
-                            <Text style={styles.name}>{driver.name}</Text>
-                            <Badge
-                                label={driver.active ? 'Ativo' : 'Inativo'}
-                                variant={driver.active ? 'outline' : 'secondary'}
-                            />
-                        </View>
-                    </View>
-                </Card>
+                <IdentityHero
+                    lead={<Avatar name={driver.name} uri={driver.photoUrl} />}
+                    title={driver.name}
+                    badge={
+                        <Badge
+                            label={driver.active ? 'Ativo' : 'Inativo'}
+                            variant={driver.active ? 'outline' : 'secondary'}
+                        />
+                    }
+                />
 
                 <Card>
                     <CardHeader>
                         <CardTitle>Dados do motorista</CardTitle>
+                        <CardDescription>
+                            O e-mail e o cargo são definidos pelo administrador e não podem ser
+                            editados.
+                        </CardDescription>
                     </CardHeader>
+
+                    <CardSeparator />
 
                     <CardContent>
                         <Controller
@@ -315,7 +327,7 @@ export default function DriverDetailScreen({
                         <TextField label="Cargo" value="Motorista" editable={false} />
 
                         <Button
-                            variant="secondary"
+                            variant="outline"
                             title="Trocar foto"
                             onPress={() => setSheetOpen(true)}
                             loading={busy === 'photo'}
@@ -355,7 +367,7 @@ export default function DriverDetailScreen({
                         />
 
                         <Button
-                            variant="outline"
+                            variant="secondary"
                             title="Redefinir senha"
                             onPress={() => savePassword()}
                             loading={passwordForm.formState.isSubmitting}
@@ -433,21 +445,5 @@ const styles = StyleSheet.create({
         flexGrow: 1,
         gap: spacing.lg,
         padding: spacing.lg,
-    },
-    hero: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.lg,
-    },
-    texts: {
-        flex: 1,
-        gap: spacing.sm,
-        alignItems: 'flex-start',
-    },
-    name: {
-        color: colors.foreground,
-        fontFamily: fontFamily.semibold,
-        fontSize: fontSize.lg,
-        lineHeight: 24,
     },
 });

@@ -13,6 +13,7 @@ import { ErrorState } from '../components/ErrorState';
 import { Fact } from '../components/Fact';
 import { LoadingState } from '../components/LoadingState';
 import { NoticeCard } from '../components/NoticeCard';
+import type { NoticeCardProps } from '../components/NoticeCard';
 import { NoticeDialog } from '../components/NoticeDialog';
 import { useToast } from '../contexts/ToastContext';
 import type { RootStackParamList } from '../navigation/types';
@@ -64,6 +65,23 @@ const BADGES: Record<ComplaintStatus, { label: string; variant: BadgeVariant }> 
     pendente: { label: 'Pendente', variant: 'outline' },
     aprovada: { label: 'Aprovada', variant: 'secondary' },
     reprovada: { label: 'Reprovada', variant: 'secondary' },
+};
+
+/** The notice of each situation: its color and what it means for the km of the route. */
+const SITUATIONS: Record<ComplaintStatus, { tone: NoticeCardProps['variant']; message: string }> = {
+    pendente: {
+        tone: 'warning',
+        message:
+            'Aprovar corrige os km da rota com base no km informado. Reprovar não altera nenhum km.',
+    },
+    aprovada: {
+        tone: 'success',
+        message: 'Os km da rota foram corrigidos de acordo com o km informado.',
+    },
+    reprovada: {
+        tone: 'destructive',
+        message: 'Nenhum km da rota foi alterado.',
+    },
 };
 
 /** What the screen is showing: the request in progress, its failure, or the complaint. */
@@ -256,19 +274,19 @@ export default function ComplaintReviewDetailScreen({
                     )}
                 </Card>
 
-                {pending &&
-                    (blockedReason ? (
-                        <NoticeCard
-                            variant="destructive"
-                            title="Aprovação indisponível"
-                            message={blockedReason}
-                        />
-                    ) : (
-                        <NoticeCard
-                            title="O que acontece ao decidir"
-                            message="Aprovar corrige os km da rota com base no km informado. Reprovar não altera nenhum km."
-                        />
-                    ))}
+                {blockedReason ? (
+                    <NoticeCard
+                        variant="destructive"
+                        title="Aprovação indisponível"
+                        message={blockedReason}
+                    />
+                ) : (
+                    <NoticeCard
+                        variant={SITUATIONS[complaint.status].tone}
+                        title={`Situação: ${badge.label.toLowerCase()}`}
+                        message={SITUATIONS[complaint.status].message}
+                    />
+                )}
             </ScrollView>
 
             {pending && (

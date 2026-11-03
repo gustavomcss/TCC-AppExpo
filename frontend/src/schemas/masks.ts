@@ -89,12 +89,16 @@ export function formatDateTime(value: string): string {
     return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${pad(date.getFullYear() % 100)}, ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
-/** Formats a date from the server as the user reads it in Brazil, without the time: "22/10/2026". */
-export function formatDate(value: string): string {
-    const date = parseServerDate(value);
+/** Formats a date as the user reads it in Brazil, without the time: "22/10/2026". */
+export function formatDay(date: Date): string {
     const pad = (number: number) => String(number).padStart(2, '0');
 
     return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
+}
+
+/** Formats a date from the server as the user reads it in Brazil, without the time: "22/10/2026". */
+export function formatDate(value: string): string {
+    return formatDay(parseServerDate(value));
 }
 
 /** Formats the size of a file the way the user reads it: "1,2 MB" from 1 MB up, "340 KB" below. */
@@ -104,4 +108,30 @@ export function formatFileSize(bytes: number): string {
     }
 
     return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+}
+
+/**
+ * Formats a sum of money for display, with the thousands separator and no upper limit (a report
+ * adds records past the 999.999,99 of one field): 1234.5 is "R$ 1.234,50".
+ */
+export function formatCurrency(value: number): string {
+    const cents = Math.round(Math.abs(value) * 100);
+    const integer = String(Math.trunc(cents / 100)).replace(/\B(?=(\d{3})+$)/g, '.');
+    const decimals = String(cents % 100).padStart(2, '0');
+
+    return `${value < 0 ? '-' : ''}R$ ${integer},${decimals}`;
+}
+
+/**
+ * Date mask, DD/MM/AAAA: keeps only the digits (at most eight) and adds the bars after the day
+ * and the month as they are typed, so 2210 shows "22/10" and 22102026 shows "22/10/2026".
+ */
+export function formatDateInput(text: string): string {
+    const digits = text.replace(/\D/g, '').slice(0, 8);
+
+    if (digits.length > 4) {
+        return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+    }
+
+    return digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits;
 }
