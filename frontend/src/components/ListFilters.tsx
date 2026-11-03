@@ -21,10 +21,11 @@ export type ListFiltersProps<T extends string = StatusFilter> = {
     searchPlaceholder: string;
     query: string;
     onQueryChange: (query: string) => void;
-    status: T;
-    onStatusChange: (status: T) => void;
+    status?: T;
+    onStatusChange?: (status: T) => void;
     statusOptions?: readonly StatusOption<T>[];
     extraRow?: ReactNode;
+    extraControls?: ReactNode;
 };
 
 /** Options of the default situation filter, in the order the chips appear. */
@@ -38,7 +39,10 @@ const ACTIVE_FILTERS: readonly StatusOption<StatusFilter>[] = [
  * Search field (with a button to clear it) over the chips Todos, Ativos and Inativos (or the
  * given situation options), shared by the lists, and an optional second row for another filter,
  * so filters that combine sit on separate rows. Each row of chips scrolls sideways when they do
- * not fit. It only holds the controls: each screen narrows its own list with them.
+ * not fit. `extraControls` adds a row of the screen's own controls right under the search field,
+ * side by side and sharing the width equally (the selects of the history). A screen that keeps
+ * the situation chips elsewhere (the history, in its list) leaves out `onStatusChange`, and they
+ * are not drawn. It only holds the controls: each screen narrows its own list with them.
  */
 export function ListFilters<T extends string = StatusFilter>({
     searchLabel,
@@ -49,6 +53,7 @@ export function ListFilters<T extends string = StatusFilter>({
     onStatusChange,
     statusOptions = ACTIVE_FILTERS as readonly StatusOption<string>[] as readonly StatusOption<T>[],
     extraRow,
+    extraControls,
 }: ListFiltersProps<T>) {
     return (
         <View style={styles.filters}>
@@ -74,22 +79,25 @@ export function ListFilters<T extends string = StatusFilter>({
                     </Pressable>
                 )}
             </View>
-            <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
-                style={styles.chipsScroll}
-                contentContainerStyle={styles.chips}
-            >
-                {statusOptions.map((filter) => (
-                    <Chip
-                        key={filter.value}
-                        label={filter.label}
-                        selected={status === filter.value}
-                        onPress={() => onStatusChange(filter.value)}
-                    />
-                ))}
-            </ScrollView>
+            {extraControls && <View style={styles.controls}>{extraControls}</View>}
+            {onStatusChange && (
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                    style={styles.chipsScroll}
+                    contentContainerStyle={styles.chips}
+                >
+                    {statusOptions.map((filter) => (
+                        <Chip
+                            key={filter.value}
+                            label={filter.label}
+                            selected={status === filter.value}
+                            onPress={() => onStatusChange(filter.value)}
+                        />
+                    ))}
+                </ScrollView>
+            )}
             {extraRow && (
                 <ScrollView
                     horizontal
@@ -136,5 +144,9 @@ const styles = StyleSheet.create({
     chips: {
         gap: spacing.sm,
         paddingHorizontal: spacing.lg,
+    },
+    controls: {
+        flexDirection: 'row',
+        gap: spacing.sm,
     },
 });

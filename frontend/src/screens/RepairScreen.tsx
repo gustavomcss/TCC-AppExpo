@@ -45,8 +45,8 @@ type State =
     | { status: 'ready'; vehicles: Vehicle[] };
 
 /**
- * Repair record (RF13), the "Manutenção" module. Asks for the vehicle, the km, the description
- * (free text) and the cost, validated with Zod before sending (RB16: up to 999.999,99, two
+ * Repair record (RF13), the "Manutenção" module. Asks for the vehicle, the km, the total cost
+ * and the description (free text), validated with Zod before sending (RB16: up to 999.999,99, two
  * decimals, greater than zero). The vehicle field lists only the active vehicles (RB12), loaded
  * again with each focus; the choice is dropped when that vehicle stops being active. The km is
  * only informative and does not change the current km of the vehicle (RB04). The author and the
@@ -184,7 +184,6 @@ export default function RepairScreen() {
                                 />
                             )}
                         />
-
                         <Controller
                             control={control}
                             name="km_repair"
@@ -204,7 +203,25 @@ export default function RepairScreen() {
                                 />
                             )}
                         />
-
+                        <Controller
+                            control={control}
+                            name="cost"
+                            render={({ field: { onChange, onBlur, value } }) => (
+                                <TextField
+                                    label="Valor total"
+                                    placeholder="0,00"
+                                    value={value}
+                                    onChangeText={(text) =>
+                                        onChange(formatDecimalInput(text, value))
+                                    }
+                                    onBlur={onBlur}
+                                    error={errors.cost?.message}
+                                    keyboardType="number-pad"
+                                    prefix="R$"
+                                    editable={!isSubmitting}
+                                />
+                            )}
+                        />
                         <Controller
                             control={control}
                             name="description"
@@ -220,27 +237,6 @@ export default function RepairScreen() {
                                     maxLength={REPAIR_DESCRIPTION_MAX}
                                     showCount
                                     autoCapitalize="sentences"
-                                    editable={!isSubmitting}
-                                />
-                            )}
-                        />
-
-                        <Controller
-                            control={control}
-                            name="cost"
-                            render={({ field: { onChange, onBlur, value } }) => (
-                                <TextField
-                                    label="Valor"
-                                    placeholder="0,00"
-                                    value={value}
-                                    onChangeText={(text) =>
-                                        onChange(formatDecimalInput(text, value))
-                                    }
-                                    onBlur={onBlur}
-                                    onSubmitEditing={() => submit()}
-                                    error={errors.cost?.message}
-                                    keyboardType="number-pad"
-                                    prefix="R$"
                                     editable={!isSubmitting}
                                 />
                             )}

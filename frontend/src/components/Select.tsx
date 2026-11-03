@@ -30,12 +30,18 @@ export type SelectProps<T extends string> = {
     placeholder?: string;
     error?: string;
     disabled?: boolean;
+    /** Leaves the label out of the screen (it stays the sheet title and the accessibility label). */
+    hideLabel?: boolean;
+    /** For a filter: pressing the chosen option again clears it, and this runs instead of `onChange`. */
+    onClear?: () => void;
 };
 
 /**
  * Form field for choosing one option from a short list: label, a field that looks like an Input
  * and, when there is one, the validation error under it. Pressing it opens the options in a
- * BottomSheet, which also works for lists too long to show inline.
+ * BottomSheet, which also works for lists too long to show inline. As a filter (`onClear`), the
+ * chosen option can be pressed again to go back to nothing chosen, and `hideLabel` drops the label
+ * so the field fits in a row of controls, with `placeholder` saying what the field is.
  */
 export function Select<T extends string>({
     label,
@@ -45,18 +51,24 @@ export function Select<T extends string>({
     placeholder = 'Selecione',
     error,
     disabled = false,
+    hideLabel = false,
+    onClear,
 }: SelectProps<T>) {
     const [open, setOpen] = useState(false);
     const selected = options.find((option) => option.value === value);
 
     const choose = (next: T) => {
-        onChange(next);
+        if (onClear && next === value) {
+            onClear();
+        } else {
+            onChange(next);
+        }
         setOpen(false);
     };
 
     return (
         <View style={styles.field}>
-            <Label>{label}</Label>
+            {!hideLabel && <Label>{label}</Label>}
             <Pressable
                 accessibilityRole="combobox"
                 accessibilityLabel={label}

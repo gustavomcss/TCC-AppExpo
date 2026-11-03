@@ -213,7 +213,7 @@ function EditLayout({
 /** Fields of the fueling edit form, in the names the server uses. */
 const FUEL_FIELDS = ['type', 'liters', 'cost'] as const;
 
-/** Edit form of a fueling: fuel type, liters and total cost. */
+/** Edit form of a fueling: total cost, fuel type and liters. */
 function FuelEditForm({ record }: { record: FuelRecord }) {
     const navigation = useNavigation();
     const toast = useToast();
@@ -256,6 +256,24 @@ function FuelEditForm({ record }: { record: FuelRecord }) {
         >
             <Controller
                 control={control}
+                name="cost"
+                render={({ field: { onChange, onBlur, value } }) => (
+                    <TextField
+                        label="Valor total"
+                        placeholder="0,00"
+                        value={value}
+                        onChangeText={(text) => onChange(formatDecimalInput(text, value))}
+                        onBlur={onBlur}
+                        error={errors.cost?.message}
+                        keyboardType="number-pad"
+                        prefix="R$"
+                        editable={!isSubmitting}
+                    />
+                )}
+            />
+
+            <Controller
+                control={control}
                 name="type"
                 render={({ field: { onChange, value } }) => (
                     <Select
@@ -279,28 +297,10 @@ function FuelEditForm({ record }: { record: FuelRecord }) {
                         value={value}
                         onChangeText={(text) => onChange(formatDecimalInput(text, value))}
                         onBlur={onBlur}
+                        onSubmitEditing={() => submit()}
                         error={errors.liters?.message}
                         keyboardType="number-pad"
                         suffix="L"
-                        editable={!isSubmitting}
-                    />
-                )}
-            />
-
-            <Controller
-                control={control}
-                name="cost"
-                render={({ field: { onChange, onBlur, value } }) => (
-                    <TextField
-                        label="Valor total"
-                        placeholder="0,00"
-                        value={value}
-                        onChangeText={(text) => onChange(formatDecimalInput(text, value))}
-                        onBlur={onBlur}
-                        onSubmitEditing={() => submit()}
-                        error={errors.cost?.message}
-                        keyboardType="number-pad"
-                        prefix="R$"
                         editable={!isSubmitting}
                     />
                 )}
@@ -312,7 +312,7 @@ function FuelEditForm({ record }: { record: FuelRecord }) {
 /** Fields of the oil change edit form, in the names the server uses. */
 const OIL_FIELDS = ['type', 'cost'] as const;
 
-/** Edit form of an oil change: oil type and cost. */
+/** Edit form of an oil change: total cost and oil type. */
 function OilEditForm({ record }: { record: OilRecord }) {
     const navigation = useNavigation();
     const toast = useToast();
@@ -351,6 +351,24 @@ function OilEditForm({ record }: { record: OilRecord }) {
         >
             <Controller
                 control={control}
+                name="cost"
+                render={({ field: { onChange, onBlur, value } }) => (
+                    <TextField
+                        label="Valor total"
+                        placeholder="0,00"
+                        value={value}
+                        onChangeText={(text) => onChange(formatDecimalInput(text, value))}
+                        onBlur={onBlur}
+                        error={errors.cost?.message}
+                        keyboardType="number-pad"
+                        prefix="R$"
+                        editable={!isSubmitting}
+                    />
+                )}
+            />
+
+            <Controller
+                control={control}
                 name="type"
                 render={({ field: { onChange, onBlur, value } }) => (
                     <TextField
@@ -359,28 +377,10 @@ function OilEditForm({ record }: { record: OilRecord }) {
                         value={value}
                         onChangeText={onChange}
                         onBlur={onBlur}
+                        onSubmitEditing={() => submit()}
                         error={errors.type?.message}
                         maxLength={OIL_TYPE_MAX}
                         autoCapitalize="sentences"
-                        editable={!isSubmitting}
-                    />
-                )}
-            />
-
-            <Controller
-                control={control}
-                name="cost"
-                render={({ field: { onChange, onBlur, value } }) => (
-                    <TextField
-                        label="Valor"
-                        placeholder="0,00"
-                        value={value}
-                        onChangeText={(text) => onChange(formatDecimalInput(text, value))}
-                        onBlur={onBlur}
-                        onSubmitEditing={() => submit()}
-                        error={errors.cost?.message}
-                        keyboardType="number-pad"
-                        prefix="R$"
                         editable={!isSubmitting}
                     />
                 )}
@@ -392,7 +392,7 @@ function OilEditForm({ record }: { record: OilRecord }) {
 /** Fields of the repair edit form, in the names the server uses. */
 const REPAIR_FIELDS = ['description', 'cost'] as const;
 
-/** Edit form of a repair: description and cost. */
+/** Edit form of a repair: total cost and description. */
 function RepairEditForm({ record }: { record: RepairRecord }) {
     const navigation = useNavigation();
     const toast = useToast();
@@ -431,6 +431,24 @@ function RepairEditForm({ record }: { record: RepairRecord }) {
         >
             <Controller
                 control={control}
+                name="cost"
+                render={({ field: { onChange, onBlur, value } }) => (
+                    <TextField
+                        label="Valor total"
+                        placeholder="0,00"
+                        value={value}
+                        onChangeText={(text) => onChange(formatDecimalInput(text, value))}
+                        onBlur={onBlur}
+                        error={errors.cost?.message}
+                        keyboardType="number-pad"
+                        prefix="R$"
+                        editable={!isSubmitting}
+                    />
+                )}
+            />
+
+            <Controller
+                control={control}
                 name="description"
                 render={({ field: { onChange, onBlur, value } }) => (
                     <TextField
@@ -444,25 +462,6 @@ function RepairEditForm({ record }: { record: RepairRecord }) {
                         maxLength={REPAIR_DESCRIPTION_MAX}
                         showCount
                         autoCapitalize="sentences"
-                        editable={!isSubmitting}
-                    />
-                )}
-            />
-
-            <Controller
-                control={control}
-                name="cost"
-                render={({ field: { onChange, onBlur, value } }) => (
-                    <TextField
-                        label="Valor"
-                        placeholder="0,00"
-                        value={value}
-                        onChangeText={(text) => onChange(formatDecimalInput(text, value))}
-                        onBlur={onBlur}
-                        onSubmitEditing={() => submit()}
-                        error={errors.cost?.message}
-                        keyboardType="number-pad"
-                        prefix="R$"
                         editable={!isSubmitting}
                     />
                 )}

@@ -45,8 +45,8 @@ type State =
     | { status: 'ready'; vehicles: Vehicle[] };
 
 /**
- * Oil change record (RF12), the "Troca de óleo" module. Asks for the vehicle, the km, the oil type
- * (free text) and the cost, validated with Zod before sending (RB16: up to 999.999,99, two
+ * Oil change record (RF12), the "Troca de óleo" module. Asks for the vehicle, the km, the total cost
+ * and the oil type (free text), validated with Zod before sending (RB16: up to 999.999,99, two
  * decimals, greater than zero). The vehicle field lists only the active vehicles (RB12), loaded
  * again with each focus; the choice is dropped when that vehicle stops being active. The km is
  * only informative and does not change the current km of the vehicle (RB04). The author and the
@@ -184,7 +184,6 @@ export default function OilScreen() {
                                 />
                             )}
                         />
-
                         <Controller
                             control={control}
                             name="km_oil"
@@ -204,7 +203,25 @@ export default function OilScreen() {
                                 />
                             )}
                         />
-
+                        <Controller
+                            control={control}
+                            name="cost"
+                            render={({ field: { onChange, onBlur, value } }) => (
+                                <TextField
+                                    label="Valor total"
+                                    placeholder="0,00"
+                                    value={value}
+                                    onChangeText={(text) =>
+                                        onChange(formatDecimalInput(text, value))
+                                    }
+                                    onBlur={onBlur}
+                                    error={errors.cost?.message}
+                                    keyboardType="number-pad"
+                                    prefix="R$"
+                                    editable={!isSubmitting}
+                                />
+                            )}
+                        />
                         <Controller
                             control={control}
                             name="type"
@@ -215,30 +232,10 @@ export default function OilScreen() {
                                     value={value}
                                     onChangeText={onChange}
                                     onBlur={onBlur}
+                                    onSubmitEditing={() => submit()}
                                     error={errors.type?.message}
                                     maxLength={OIL_TYPE_MAX}
                                     autoCapitalize="sentences"
-                                    editable={!isSubmitting}
-                                />
-                            )}
-                        />
-
-                        <Controller
-                            control={control}
-                            name="cost"
-                            render={({ field: { onChange, onBlur, value } }) => (
-                                <TextField
-                                    label="Valor"
-                                    placeholder="0,00"
-                                    value={value}
-                                    onChangeText={(text) =>
-                                        onChange(formatDecimalInput(text, value))
-                                    }
-                                    onBlur={onBlur}
-                                    onSubmitEditing={() => submit()}
-                                    error={errors.cost?.message}
-                                    keyboardType="number-pad"
-                                    prefix="R$"
                                     editable={!isSubmitting}
                                 />
                             )}

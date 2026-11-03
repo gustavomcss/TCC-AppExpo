@@ -45,8 +45,8 @@ type State =
     | { status: 'ready'; vehicles: Vehicle[] };
 
 /**
- * Fueling record (RF11), the "Abastecimento" module. Asks for the vehicle, the km, the fuel type,
- * the liters and the total cost, validated with Zod before sending (RB16: up to 999.999,99, two
+ * Fueling record (RF11), the "Abastecimento" module. Asks for the vehicle, the km, the total cost,
+ * the fuel type and the liters, validated with Zod before sending (RB16: up to 999.999,99, two
  * decimals, greater than zero). The vehicle field lists only the active vehicles (RB12), loaded
  * again with each focus; the choice is dropped when that vehicle stops being active. The km is
  * only informative and does not change the current km of the vehicle (RB04). The author and the
@@ -184,7 +184,6 @@ export default function FuelScreen() {
                                 />
                             )}
                         />
-
                         <Controller
                             control={control}
                             name="km_fuel"
@@ -204,7 +203,25 @@ export default function FuelScreen() {
                                 />
                             )}
                         />
-
+                        <Controller
+                            control={control}
+                            name="cost"
+                            render={({ field: { onChange, onBlur, value } }) => (
+                                <TextField
+                                    label="Valor total"
+                                    placeholder="0,00"
+                                    value={value}
+                                    onChangeText={(text) =>
+                                        onChange(formatDecimalInput(text, value))
+                                    }
+                                    onBlur={onBlur}
+                                    error={errors.cost?.message}
+                                    keyboardType="number-pad"
+                                    prefix="R$"
+                                    editable={!isSubmitting}
+                                />
+                            )}
+                        />
                         <Controller
                             control={control}
                             name="type"
@@ -219,7 +236,6 @@ export default function FuelScreen() {
                                 />
                             )}
                         />
-
                         <Controller
                             control={control}
                             name="liters"
@@ -232,30 +248,10 @@ export default function FuelScreen() {
                                         onChange(formatDecimalInput(text, value))
                                     }
                                     onBlur={onBlur}
+                                    onSubmitEditing={() => submit()}
                                     error={errors.liters?.message}
                                     keyboardType="number-pad"
                                     suffix="L"
-                                    editable={!isSubmitting}
-                                />
-                            )}
-                        />
-
-                        <Controller
-                            control={control}
-                            name="cost"
-                            render={({ field: { onChange, onBlur, value } }) => (
-                                <TextField
-                                    label="Valor total"
-                                    placeholder="0,00"
-                                    value={value}
-                                    onChangeText={(text) =>
-                                        onChange(formatDecimalInput(text, value))
-                                    }
-                                    onBlur={onBlur}
-                                    onSubmitEditing={() => submit()}
-                                    error={errors.cost?.message}
-                                    keyboardType="number-pad"
-                                    prefix="R$"
                                     editable={!isSubmitting}
                                 />
                             )}
