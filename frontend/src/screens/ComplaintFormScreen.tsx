@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { FormScrollView } from '../components/FormScrollView';
 import { NoticeDialog } from '../components/NoticeDialog';
-import { OpenRouteCard } from '../components/OpenRouteCard';
+import { RouteSummaryCard } from '../components/RouteSummaryCard';
 import { PhotoField } from '../components/PhotoField';
 import { PhotoSheet } from '../components/PhotoSheet';
 import type { PhotoSource } from '../components/PhotoSheet';
@@ -192,7 +192,7 @@ export default function ComplaintFormScreen({ route, onChanged }: ComplaintFormS
     return (
         <View style={styles.screen}>
             <FormScrollView contentContainerStyle={styles.content}>
-                <OpenRouteCard route={route} />
+                <RouteSummaryCard route={route} />
 
                 <Card>
                     <CardHeader>

@@ -1,5 +1,5 @@
 import { CircleAlert, CircleCheck, Info } from 'lucide-react-native';
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import type { ViewProps } from 'react-native';
 
 import { colors, fontFamily, fontSize, palette, sizes, spacing } from '../theme';
@@ -15,7 +15,7 @@ export type NoticeCardProps = ViewProps & {
     variant?: 'warning' | 'success' | 'destructive';
 };
 
-/** Color of the icon and of the border, and the icon, of each variant. */
+/** Color of the icon and of the line on top, and the icon, of each variant. */
 const tones = {
     warning: { color: colors.warning, Icon: Info },
     success: { color: colors.success, Icon: CircleCheck },
@@ -25,8 +25,8 @@ const tones = {
 /**
  * Notice that stays on the screen, for what the user should read before an action, such as what
  * closing a route does. It has the look of NoticeDialog without being a dialog: an icon over a
- * centered title and text, in a Card, and no button, since nothing is asked of the user. The
- * border has the color of the icon. It is announced to screen readers like an alert.
+ * centered title and text, in a Card, and no button, since nothing is asked of the user. A thin
+ * line along the top edge has the color of the icon. It is announced to screen readers like an alert.
  */
 export function NoticeCard({
     title,
@@ -38,11 +38,8 @@ export function NoticeCard({
     const { color, Icon } = tones[variant];
 
     return (
-        <Card
-            accessibilityRole="alert"
-            style={[styles.card, { borderColor: color }, style]}
-            {...props}
-        >
+        <Card accessibilityRole="alert" style={[styles.card, style]} {...props}>
+            <View style={[styles.line, { backgroundColor: color }]} />
             <Icon color={color} size={sizes.icon} />
             <Text style={styles.title}>{title}</Text>
             <Text style={styles.message}>{message}</Text>
@@ -56,6 +53,14 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: spacing.sm,
         padding: spacing.xl,
+        overflow: 'hidden',
+    },
+    line: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 4,
     },
     title: {
         color: colors.foreground,

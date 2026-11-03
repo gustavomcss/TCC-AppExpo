@@ -59,8 +59,8 @@ export const spacing = {
 
 /**
  * Fixed sizes in dp that are not spacing: the button and form control heights (the multiline one
- * is the minimum), icons, the box around a module icon, the square icon-only button, the avatar and
- * the icon of the tab bar.
+ * is the minimum), icons, the box around a module icon, the square icon-only button, the avatar,
+ * the larger photo of the profile and the icon of the tab bar.
  */
 export const sizes = {
     button: 40,
@@ -71,6 +71,7 @@ export const sizes = {
     iconBox: 44,
     iconButton: 32,
     avatar: 64,
+    profileAvatar: 80,
 } as const;
 
 /** Font sizes in dp. */

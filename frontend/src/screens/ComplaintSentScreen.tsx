@@ -2,11 +2,11 @@ import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Badge } from '../components/Badge';
 import type { BadgeVariant } from '../components/Badge';
-import { Card, CardHeader, CardTitle } from '../components/Card';
-import { Fact, FactSpacer } from '../components/Fact';
+import { Card, CardDescription, CardHeader, CardSeparator, CardTitle } from '../components/Card';
+import { Fact } from '../components/Fact';
 import { NoticeCard } from '../components/NoticeCard';
 import type { NoticeCardProps } from '../components/NoticeCard';
-import { OpenRouteCard } from '../components/OpenRouteCard';
+import { RouteSummaryCard } from '../components/RouteSummaryCard';
 import { formatDateTime, formatKm } from '../schemas/masks';
 import type { Complaint, ComplaintStatus } from '../services/complaints';
 import type { OpenRoute } from '../services/routes';
@@ -65,27 +65,26 @@ export default function ComplaintSentScreen({ route, complaint }: ComplaintSentS
 
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-            <OpenRouteCard route={route} />
+            <RouteSummaryCard route={route} />
 
             <Card>
                 <View style={styles.top}>
                     <CardHeader style={styles.title}>
                         <CardTitle>Denúncia registrada</CardTitle>
+                        <CardDescription>Dados enviados para revisão.</CardDescription>
                     </CardHeader>
                     <Badge label={situation.label} variant={situation.variant} />
                 </View>
 
-                <View style={styles.separator} />
+                <CardSeparator />
 
                 <View style={styles.grid}>
-                    <Fact label="Km informado" value={formatKm(complaint.kmComplaint)} />
                     <Fact label="Registrado" value={formatDateTime(complaint.created)} />
-                    {complaint.reviewed !== '' && (
-                        <>
-                            <FactSpacer />
-                            <Fact label="Revisado" value={formatDateTime(complaint.reviewed)} />
-                        </>
-                    )}
+                    <Fact
+                        label="Revisado"
+                        value={complaint.reviewed !== '' ? formatDateTime(complaint.reviewed) : '-'}
+                    />
+                    <Fact label="Km informado" value={formatKm(complaint.kmComplaint)} />
                     {complaint.photoUrl !== '' && (
                         <View style={styles.photo}>
                             <Text style={styles.photoLabel}>Foto do painel</Text>
@@ -126,10 +125,6 @@ const styles = StyleSheet.create({
     },
     title: {
         flex: 1,
-    },
-    separator: {
-        height: 1,
-        backgroundColor: colors.border,
     },
     grid: {
         flexDirection: 'row',

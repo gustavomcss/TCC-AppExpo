@@ -110,11 +110,28 @@ export function periodRange(
 }
 
 /**
+ * Alternatives of a vehicle search: the text must appear in the model or in the plate, found at
+ * `vehicle` (the path to the relation). The plate is looked up with its hyphen put back after the
+ * third character, so "abc1d" finds ABC-1D23. Shared with the report, which searches the same way.
+ */
+export function vehicleSearchMatches(vehicle: string, term: string): string[] {
+    const code = term.replace(/[^a-z0-9]/gi, '').toUpperCase();
+    const plate = code.length > 3 ? `${code.slice(0, 3)}-${code.slice(3)}` : code;
+    const matches = [pb.filter(`${vehicle}.model ~ {:term}`, { term })];
+
+    if (plate !== '') {
+        matches.push(pb.filter(`${vehicle}.plate ~ {:plate}`, { plate }));
+    }
+
+    return matches;
+}
+
+/**
  * Builds the server filter of a history list. The path to the vehicle depends on the module: a
  * complaint reaches it through its route. The search text must appear in the model, in the
- * plate or, when `byDriver` is on, in the name of the driver; the plate is looked up with its
- * hyphen put back after the third character, so "abc1d" finds ABC-1D23. Routes are always only the finalized ones (RB10). Who may read what is not
- * decided here: the API rules show a driver only their own records (RF17).
+ * plate or, when `byDriver` is on, in the name of the driver (see `vehicleSearchMatches`). Routes
+ * are always only the finalized ones (RB10). Who may read what is not decided here: the API rules
+ * show a driver only their own records (RF17).
  */
 export function buildHistoryFilter(
     module: HistoryModule,
@@ -131,16 +148,10 @@ export function buildHistoryFilter(
 
     const term = query.trim();
     if (term !== '') {
-        const code = term.replace(/[^a-z0-9]/gi, '').toUpperCase();
-        const plate = code.length > 3 ? `${code.slice(0, 3)}-${code.slice(3)}` : code;
-        const matches = [pb.filter(`${vehicle}.model ~ {:term}`, { term })];
+        const matches = vehicleSearchMatches(vehicle, term);
 
         if (byDriver) {
             matches.push(pb.filter(`${driver}.name ~ {:term}`, { term }));
-        }
-
-        if (plate !== '') {
-            matches.push(pb.filter(`${vehicle}.plate ~ {:plate}`, { plate }));
         }
         parts.push(`(${matches.join(' || ')})`);
     }
