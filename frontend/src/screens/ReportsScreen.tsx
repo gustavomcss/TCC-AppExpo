@@ -1,4 +1,12 @@
-import { CircleAlert, Droplets, FileText, Fuel, Wrench } from 'lucide-react-native';
+import {
+    CircleDollarSign,
+    Droplets,
+    FileText,
+    Fuel,
+    Gauge,
+    TriangleAlert,
+    Wrench,
+} from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -7,42 +15,125 @@ import { ActionBar } from '../components/ActionBar';
 import { Button } from '../components/Button';
 import { ChartView } from '../components/ChartView';
 import { Card, CardDescription, CardHeader, CardSeparator, CardTitle } from '../components/Card';
+import { ComplaintReportView } from '../components/ComplaintReportView';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorState } from '../components/ErrorState';
 import { FormScrollView } from '../components/FormScrollView';
+import { KmReportView } from '../components/KmReportView';
 import { LoadingState } from '../components/LoadingState';
 import { NoticeDialog } from '../components/NoticeDialog';
+import {
+    InactiveNote,
+    ProportionBar,
+    ReportGroup,
+    ReportLine,
+    ReportLines,
+    TotalBox,
+    VehicleHead,
+} from '../components/ReportParts';
 import { Select } from '../components/Select';
 import type { SelectOption } from '../components/Select';
 import { TextField } from '../components/TextField';
-import { VEHICLE_TYPE_ICONS, VEHICLE_TYPE_OPTIONS } from '../components/vehicleTypeOptions';
+import { VEHICLE_TYPE_OPTIONS } from '../components/vehicleTypeOptions';
 import type { VehicleType } from '../components/vehicleTypeOptions';
 import { formatCurrency, formatDateInput } from '../schemas/masks';
 import { reportPeriodSchema } from '../schemas/report';
-import { buildCharts } from '../services/reportCharts';
-import { SharingUnavailableError, shareReportPdf } from '../services/reportPdf';
+import type { ComplaintReport } from '../services/complaintTotals';
+import type { KmReport } from '../services/kmTotals';
+import { buildCharts, SERVICE_COLORS } from '../services/reportCharts';
+import {
+    SharingUnavailableError,
+    shareComplaintReportPdf,
+    shareKmReportPdf,
+    shareReportPdf,
+} from '../services/reportPdf';
 import {
     customRange,
     describeFilters,
+    describeKmFilters,
     formatRange,
+    loadComplaintReport,
+    loadKmReport,
     loadReport,
     REPORT_PERIODS,
     REPORT_SERVICES,
     shortcutRange,
 } from '../services/reports';
-import type { ReportPeriod, ReportQuery, ReportRange } from '../services/reports';
+import type { ReportKind, ReportPeriod, ReportRange } from '../services/reports';
 import { countLabel } from '../services/reportTotals';
 import type { Report, ServiceTotal, VehicleTotals } from '../services/reportTotals';
 import { parseServerError } from '../services/serverErrors';
 import type { ServiceKind } from '../services/serviceRecords';
-import { typeLabel } from '../services/vehicles';
-import { colors, fontFamily, fontSize, palette, radius, sizes, spacing } from '../theme';
+import { colors, fontFamily, fontSize, spacing } from '../theme';
 
-/** A request for the report: what it is about and which attempt it is, so that a retry is a new one. */
-type Request = ReportQuery & { attempt: number };
+/** The report asked for: which one, what it is about, and which attempt it is, so that a retry is a new one. */
+type Request = {
+    kind: ReportKind;
+    range: ReportRange | null;
+    type: VehicleType | null;
+    /** The service of the financial report, or `null` for all; always `null` in the others. */
+    service: ServiceKind | null;
+    attempt: number;
+};
+
+/** A report that came back, whichever of the three it is. */
+type Loaded =
+    | { kind: 'financial'; report: Report }
+    | { kind: 'km'; report: KmReport }
+    | { kind: 'complaints'; report: ComplaintReport };
 
 /** How a request ended: with the report, or with the message of its failure. */
-type Outcome = { status: 'error'; message: string } | { status: 'ready'; report: Report };
+type Outcome = { status: 'error'; message: string } | { status: 'ready'; loaded: Loaded };
+
+/** Options of the report select, each with its icon. */
+const REPORT_OPTIONS: readonly SelectOption<ReportKind>[] = [
+    { value: 'financial', label: 'Financeiro', icon: CircleDollarSign },
+    { value: 'km', label: 'Km rodados', icon: Gauge },
+    { value: 'complaints', label: 'Denúncias', icon: TriangleAlert },
+];
+
+/** Reads the report a request asks for. */
+async function load(request: Request): Promise<Loaded> {
+    switch (request.kind) {
+        case 'financial':
+            return { kind: 'financial', report: await loadReport(request) };
+        case 'km':
+            return { kind: 'km', report: await loadKmReport(request) };
+        case 'complaints':
+            return {
+                kind: 'complaints',
+                report: await loadComplaintReport(request),
+            };
+    }
+}
+
+/** How many records the report on the screen has: none means there is nothing to print. */
+function recordCount(loaded: Loaded): number {
+    switch (loaded.kind) {
+        case 'financial':
+            return loaded.report.count;
+        case 'km':
+            return loaded.report.routes;
+        case 'complaints':
+            return loaded.report.total;
+    }
+}
+
+/** What the empty state says for each report: nothing in the period and the filters. */
+const EMPTY: Record<ReportKind, { title: string; description: string }> = {
+    financial: {
+        title: 'Sem registros',
+        description: 'Mude o período ou os filtros para ver os totais.',
+    },
+    km: {
+        title: 'Sem rotas',
+        description: 'Nenhuma rota finalizada neste período. Mude o período ou o tipo de veículo.',
+    },
+    complaints: {
+        title: 'Sem denúncias',
+        description: 'Nenhuma denúncia neste período. Mude o período ou os filtros.',
+    },
+};
 
 /** Icon of the module of each service, as in the Services tab. */
 const SERVICE_ICONS: Record<ServiceKind, LucideIcon> = {
@@ -60,81 +151,53 @@ const SERVICE_OPTIONS: readonly SelectOption<ServiceKind>[] = REPORT_SERVICES.ma
 /** Width of the drawing of a chart until the screen is measured: about the inside of a card on a phone. */
 const CHART_WIDTH = 320;
 
-/** Color of each service in the proportion bar and in the dots next to its line. */
-const SERVICE_COLORS: Record<ServiceKind, string> = {
-    fuel: palette.g20,
-    oil: palette.g80,
-    repair: palette.gC0,
-};
-
 /** One line of a card: the service with its color, how many records and what they add up to. */
 function ServiceLine({ kind, total }: { kind: ServiceKind; total: ServiceTotal }) {
-    const label = REPORT_SERVICES.find((service) => service.value === kind)?.label;
-
     return (
-        <View style={styles.line}>
-            <View style={[styles.dot, { backgroundColor: SERVICE_COLORS[kind] }]} />
-            <View style={styles.lineTexts}>
-                <Text style={styles.lineName}>{label}</Text>
-                <Text style={styles.lineCount}>{countLabel(total.count)}</Text>
-            </View>
-            <Text style={styles.lineValue}>{formatCurrency(total.total)}</Text>
-        </View>
+        <ReportLine
+            color={SERVICE_COLORS[kind]}
+            name={REPORT_SERVICES.find((service) => service.value === kind)?.label ?? ''}
+            detail={countLabel(total.count)}
+            value={formatCurrency(total.total)}
+        />
     );
 }
 
 /** A vehicle of the report: who it is, its total, and the total of each service (RF22). */
 function VehicleCard({ line, kinds }: { line: VehicleTotals; kinds: readonly ServiceKind[] }) {
-    const Icon = VEHICLE_TYPE_ICONS[line.vehicle.type];
-
     return (
         <Card>
-            <View style={styles.vehicleTop}>
-                <View style={styles.iconBox}>
-                    <Icon color={palette.g20} size={sizes.icon} />
-                </View>
-                <View style={styles.lineTexts}>
-                    <Text style={styles.vehiclePlate}>{line.vehicle.plate}</Text>
-                    <Text style={styles.lineCount}>
-                        {line.vehicle.model} · {typeLabel(line.vehicle.type)}
-                    </Text>
-                </View>
-                <View style={styles.vehicleTotal}>
-                    <Text style={styles.vehicleValue}>{formatCurrency(line.total)}</Text>
-                </View>
-            </View>
+            <VehicleHead vehicle={line.vehicle} value={formatCurrency(line.total)} />
             <CardSeparator />
-            <View style={styles.lines}>
+            <ReportLines>
                 {kinds.map((kind) => (
                     <ServiceLine key={kind} kind={kind} total={line.services[kind]} />
                 ))}
-            </View>
-            {!line.vehicle.active && (
-                <View style={styles.inactive}>
-                    <CircleAlert color={colors.mutedForeground} size={16} />
-                    <Text style={styles.inactiveText}>Veículo inativo</Text>
-                </View>
-            )}
+            </ReportLines>
+            {!line.vehicle.active && <InactiveNote />}
         </Card>
     );
 }
 
 /**
- * Financial report (RF22), a module of the supervisor. Groups the costs by vehicle, adding up the
- * fuelings, oil changes and repairs of the period: for each vehicle the total of each service and
- * its own total, and over them the general total, the sum of the vehicles. The period is a
- * shortcut (this month, last month, the last 3 or 6 months) or a custom one, with a first and a
- * last day typed as DD/MM/AAAA. The vehicles are narrowed by type and the services by choosing
- * one; nothing chosen in the period, in the type or in the service means all of them (the whole
- * history, every vehicle, every service), and pressing the chosen option again clears it. All
- * filters combine. The server filters and the sum is made on the device (see `loadReport`), so the totals
- * come from the same records the history lists. A vehicle appears whenever it has records in the
- * period, active or not (RB12). Between the total and the vehicles come the charts of the cost
- * by vehicle (two vehicles or more) and by month (three months or more), also on the PDF. The bar below has "Gerar PDF", which makes the PDF of the report
- * on the screen and opens the share sheet, with a spinner on the button while it works; it is
- * off while there is no report with records to print.
+ * Reports of the supervisor (RF22, RF23), one module with three reports chosen in a select: the
+ * financial one, the km driven and the complaints. They share the period (a shortcut, or a custom
+ * one with a first and a last day typed as DD/MM/AAAA) and the vehicle type; the financial report
+ * adds the service. Nothing chosen in the period, the type or the service means all of them, and pressing the chosen option again clears it. The
+ * server filters and the sums are made on the device (see `loadReport`, `loadKmReport` and
+ * `loadComplaintReport`), from the same records the history lists, so the numbers match it.
+ *
+ * Financial: the cost of the fuelings, oil changes and repairs, with the total of each service,
+ * the general total, the charts (cost by vehicle with two vehicles or more, by month with three
+ * months or more) and a card per vehicle. Km: the km driven by the finalized routes and a card per
+ * vehicle. Complaints: how many are pending, approved and rejected, and a card per vehicle and per
+ * driver. A vehicle appears whenever it has records in the period, active or not (RB12). The bar
+ * below has "Gerar PDF", which makes the PDF of the report on the screen with the same shell and
+ * opens the share sheet, with a spinner on the button while it works; it is off while there is
+ * no report with records to print.
  */
 export default function ReportsScreen() {
+    const [kind, setKind] = useState<ReportKind>('financial');
     const [period, setPeriod] = useState<ReportPeriod | null>('month');
     const [fromText, setFromText] = useState('');
     const [toText, setToText] = useState('');
@@ -170,10 +233,23 @@ export default function ReportsScreen() {
             ? custom.error?.issues.find((issue) => issue.path[0] === name)?.message
             : undefined;
 
-    /* A new object whenever something that changes the report changes, so an answer to an older request is told apart. */
+    /*
+     * A new object whenever something that changes the report changes, so an answer to an older
+     * request is told apart. The service only counts in the financial report, so changing it in
+     * another one does not read anything again.
+     */
     const request = useMemo<Request | null>(
-        () => (waitingForDates ? null : { range, type, service, attempt }),
-        [waitingForDates, range, type, service, attempt],
+        () =>
+            waitingForDates
+                ? null
+                : {
+                      kind,
+                      range,
+                      type,
+                      service: kind === 'financial' ? service : null,
+                      attempt,
+                  },
+        [waitingForDates, kind, range, type, service, attempt],
     );
 
     useEffect(() => {
@@ -183,8 +259,8 @@ export default function ReportsScreen() {
 
         let current = true;
 
-        loadReport(request).then(
-            (report) => current && setResult({ request, outcome: { status: 'ready', report } }),
+        load(request).then(
+            (loaded) => current && setResult({ request, outcome: { status: 'ready', loaded } }),
             (error) =>
                 current &&
                 setResult({
@@ -205,22 +281,39 @@ export default function ReportsScreen() {
     const kinds = services.map((item) => item.value);
 
     /* The PDF is made from the report on the screen, so it has the same numbers; the button is off otherwise. */
-    const printable = request && outcome?.status === 'ready' && outcome.report.count > 0;
+    const printable = request && outcome?.status === 'ready' && recordCount(outcome.loaded) > 0;
 
     async function generatePdf() {
         if (!request || outcome?.status !== 'ready' || generating) {
             return;
         }
 
+        const { loaded } = outcome;
+        const issuedAt = new Date();
+
         setGenerating(true);
 
         try {
-            await shareReportPdf({
-                report: outcome.report,
-                filters: describeFilters(period, request),
-                services,
-                issuedAt: new Date(),
-            });
+            if (loaded.kind === 'financial') {
+                await shareReportPdf({
+                    report: loaded.report,
+                    filters: describeFilters(period, request),
+                    services,
+                    issuedAt,
+                });
+            } else if (loaded.kind === 'km') {
+                await shareKmReportPdf({
+                    report: loaded.report,
+                    filters: describeKmFilters(period, request),
+                    issuedAt,
+                });
+            } else {
+                await shareComplaintReportPdf({
+                    report: loaded.report,
+                    filters: describeKmFilters(period, request),
+                    issuedAt,
+                });
+            }
         } catch (error) {
             setFailure({
                 visible: true,
@@ -234,17 +327,7 @@ export default function ReportsScreen() {
         }
     }
 
-    function renderReport(report: Report) {
-        if (report.count === 0) {
-            return (
-                <EmptyState
-                    icon={FileText}
-                    title="Sem registros"
-                    description="Mude o período ou os filtros para ver os totais."
-                />
-            );
-        }
-
+    function renderFinancial(report: Report) {
         /* The drawing is as wide as the inside of a card (the border and the padding come off), so its text keeps the size of the app. */
         const chartWidth = contentWidth > 0 ? contentWidth - 2 * (1 + spacing.md) : CHART_WIDTH;
         const charts = buildCharts(report, services, chartWidth, fontSize.sm);
@@ -253,58 +336,60 @@ export default function ReportsScreen() {
         return (
             <>
                 <Card>
-                    <View style={styles.totalBox}>
-                        <Text style={styles.totalLabel}>Total no período</Text>
-                        <Text style={styles.total}>{formatCurrency(report.total)}</Text>
-                    </View>
+                    <TotalBox label="Total no período" value={formatCurrency(report.total)} />
                     {kinds.length > 1 && report.total > 0 && (
-                        <View style={styles.stack}>
-                            {kinds.map((kind) => (
-                                <View
-                                    key={kind}
-                                    style={{
-                                        flex: report.services[kind].total,
-                                        backgroundColor: SERVICE_COLORS[kind],
-                                    }}
-                                />
-                            ))}
-                        </View>
+                        <ProportionBar
+                            parts={kinds.map((item) => ({
+                                key: item,
+                                color: SERVICE_COLORS[item],
+                                weight: report.services[item].total,
+                            }))}
+                        />
                     )}
-                    <View style={styles.lines}>
-                        {kinds.map((kind) => (
-                            <ServiceLine key={kind} kind={kind} total={report.services[kind]} />
+                    <ReportLines>
+                        {kinds.map((item) => (
+                            <ServiceLine key={item} kind={item} total={report.services[item]} />
                         ))}
-                    </View>
+                    </ReportLines>
                 </Card>
 
                 {drawn.length > 0 && (
-                    <View style={styles.group}>
-                        <Text style={styles.section}>Gráficos</Text>
-                        <View style={styles.list}>
-                            {drawn.map((chart) => (
-                                <Card key={chart.title}>
-                                    <CardHeader>
-                                        <CardTitle>{chart.title}</CardTitle>
-                                        <CardDescription>{chart.description}</CardDescription>
-                                    </CardHeader>
-                                    <CardSeparator />
-                                    <ChartView chart={chart} />
-                                </Card>
-                            ))}
-                        </View>
-                    </View>
+                    <ReportGroup title="Gráficos">
+                        {drawn.map((chart) => (
+                            <Card key={chart.title}>
+                                <CardHeader>
+                                    <CardTitle>{chart.title}</CardTitle>
+                                    <CardDescription>{chart.description}</CardDescription>
+                                </CardHeader>
+                                <CardSeparator />
+                                <ChartView chart={chart} />
+                            </Card>
+                        ))}
+                    </ReportGroup>
                 )}
 
-                <View style={styles.group}>
-                    <Text style={styles.section}>Por veículo</Text>
-                    <View style={styles.list}>
-                        {report.vehicles.map((line) => (
-                            <VehicleCard key={line.vehicle.id} line={line} kinds={kinds} />
-                        ))}
-                    </View>
-                </View>
+                <ReportGroup title="Por veículo">
+                    {report.vehicles.map((line) => (
+                        <VehicleCard key={line.vehicle.id} line={line} kinds={kinds} />
+                    ))}
+                </ReportGroup>
             </>
         );
+    }
+
+    function renderLoaded(loaded: Loaded) {
+        if (recordCount(loaded) === 0) {
+            return <EmptyState icon={FileText} {...EMPTY[loaded.kind]} />;
+        }
+
+        switch (loaded.kind) {
+            case 'financial':
+                return renderFinancial(loaded.report);
+            case 'km':
+                return <KmReportView report={loaded.report} />;
+            case 'complaints':
+                return <ComplaintReportView report={loaded.report} />;
+        }
     }
 
     function renderResult() {
@@ -323,7 +408,7 @@ export default function ReportsScreen() {
         }
 
         /* A failure is drawn by the screen itself, without the filters. */
-        return outcome.status === 'ready' ? renderReport(outcome.report) : null;
+        return outcome.status === 'ready' ? renderLoaded(outcome.loaded) : null;
     }
 
     if (outcome?.status === 'error') {
@@ -345,11 +430,18 @@ export default function ReportsScreen() {
                     <CardHeader>
                         <CardTitle>Filtros</CardTitle>
                         <CardDescription>
-                            Escolha o período, o tipo de veículo e o serviço.
+                            Escolha o relatório, o período e os filtros.
                         </CardDescription>
                     </CardHeader>
 
                     <CardSeparator />
+
+                    <Select
+                        label="Relatório"
+                        options={REPORT_OPTIONS}
+                        value={kind}
+                        onChange={setKind}
+                    />
 
                     <View style={styles.field}>
                         <Select
@@ -404,17 +496,19 @@ export default function ReportsScreen() {
                                 onClear={() => setType(null)}
                             />
                         </View>
-                        <View style={styles.control}>
-                            <Select
-                                label="Tipo de serviço"
-                                placeholder="Todos os serviços"
-                                hideLabel
-                                options={SERVICE_OPTIONS}
-                                value={service ?? undefined}
-                                onChange={setService}
-                                onClear={() => setService(null)}
-                            />
-                        </View>
+                        {kind === 'financial' && (
+                            <View style={styles.control}>
+                                <Select
+                                    label="Tipo de serviço"
+                                    placeholder="Todos os serviços"
+                                    hideLabel
+                                    options={SERVICE_OPTIONS}
+                                    value={service ?? undefined}
+                                    onChange={setService}
+                                    onClear={() => setService(null)}
+                                />
+                            </View>
+                        )}
                     </View>
                 </Card>
 
@@ -447,7 +541,7 @@ export default function ReportsScreen() {
     );
 }
 
-/** Styles of the report: the filters card over the totals, on the same gray background as the other screens. */
+/** Styles of the screen: the filters card over the report, on the same gray background as the other screens. */
 const styles = StyleSheet.create({
     screen: {
         flex: 1,
@@ -477,115 +571,5 @@ const styles = StyleSheet.create({
     result: {
         flex: 1,
         gap: spacing.xl,
-    },
-    group: {
-        gap: spacing.sm,
-    },
-    list: {
-        gap: spacing.md,
-    },
-    totalBox: {
-        alignItems: 'center',
-    },
-    totalLabel: {
-        color: colors.mutedForeground,
-        fontFamily: fontFamily.medium,
-        fontSize: fontSize.xs,
-        lineHeight: 16,
-    },
-    total: {
-        color: colors.foreground,
-        fontFamily: fontFamily.bold,
-        fontSize: fontSize.xl,
-        lineHeight: 32,
-    },
-    stack: {
-        flexDirection: 'row',
-        height: 8,
-        borderRadius: radius.full,
-        overflow: 'hidden',
-        backgroundColor: palette.gE0,
-        marginVertical: spacing.sm,
-    },
-    lines: {
-        gap: spacing.md,
-    },
-    line: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        gap: spacing.md,
-    },
-    dot: {
-        width: 10,
-        height: 10,
-        borderRadius: radius.full,
-        marginTop: 5,
-    },
-    lineTexts: {
-        flex: 1,
-    },
-    lineName: {
-        color: colors.foreground,
-        fontFamily: fontFamily.medium,
-        fontSize: fontSize.sm,
-        lineHeight: 20,
-    },
-    lineCount: {
-        color: colors.mutedForeground,
-        fontFamily: fontFamily.normal,
-        fontSize: fontSize.sm,
-        lineHeight: 20,
-    },
-    lineValue: {
-        color: colors.foreground,
-        fontFamily: fontFamily.semibold,
-        fontSize: fontSize.sm,
-        lineHeight: 20,
-        textAlign: 'right',
-    },
-    section: {
-        color: colors.mutedForeground,
-        fontFamily: fontFamily.medium,
-        fontSize: fontSize.sm,
-        lineHeight: 20,
-    },
-    vehicleTop: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        gap: spacing.md,
-    },
-    iconBox: {
-        width: sizes.iconBox,
-        height: sizes.iconBox,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderRadius: radius.md,
-        backgroundColor: palette.gE0,
-    },
-    vehiclePlate: {
-        color: colors.foreground,
-        fontFamily: fontFamily.semibold,
-        fontSize: fontSize.base,
-        lineHeight: 24,
-    },
-    inactive: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.sm,
-    },
-    inactiveText: {
-        color: colors.mutedForeground,
-        fontFamily: fontFamily.normal,
-        fontSize: fontSize.sm,
-        lineHeight: 20,
-    },
-    vehicleTotal: {
-        alignItems: 'flex-end',
-    },
-    vehicleValue: {
-        color: colors.foreground,
-        fontFamily: fontFamily.semibold,
-        fontSize: fontSize.base,
-        lineHeight: 24,
     },
 });

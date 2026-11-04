@@ -1,13 +1,31 @@
-import { formatCurrency, formatDay, formatTime } from '../schemas/masks';
+import {
+    formatCurrency,
+    formatDay,
+    formatDistance,
+    formatInitials,
+    formatTime,
+} from '../schemas/masks';
 import { VEHICLE_TYPES } from '../schemas/vehicle';
-import { buildCharts, chartToSvg, SERVICE_COLORS } from './reportCharts';
+import { complaintsLabel, COMPLAINT_STATUSES, roleLabel } from './complaintTotals';
+import type {
+    ComplaintReport,
+    DriverComplaints,
+    StatusCounts,
+    VehicleComplaints,
+} from './complaintTotals';
+import type { KmReport, VehicleKm } from './kmTotals';
+import { buildCharts, chartToSvg, SERVICE_COLORS, STATUS_COLORS } from './reportCharts';
 import type { Chart } from './reportCharts';
+import { vehicleIconSvg } from './reportIcons';
 import { countLabel } from './reportTotals';
-import type { Report, ServiceTotal, VehicleTotals } from './reportTotals';
+import type { Report, ReportVehicle, ServiceTotal, VehicleTotals } from './reportTotals';
 import type { ServiceKind } from './serviceRecords';
 
-/** The filters of a report as the user reads them, one text each, to print under the title. */
-export type ReportFilters = { period: string; type: string; service: string };
+/** One filter of a report as the user reads it: its name and its text. A `wide` one takes the whole row. */
+export type ReportFilter = { label: string; text: string; wide?: boolean };
+
+/** The filters of a report, in the order they are printed under the title. */
+export type ReportFilters = readonly ReportFilter[];
 
 /** A font file of the document, as base64, for one weight. */
 export type ReportFontFace = { weight: number; base64: string };
@@ -43,33 +61,69 @@ function typeName(type: string): string {
     return VEHICLE_TYPES.find((item) => item.value === type)?.label ?? type;
 }
 
-/** One line of a block: the service with its color, how many records and what they add up to. */
-function serviceLine(kind: ServiceKind, label: string, total: ServiceTotal): string {
+/**
+ * A group of blocks under a title. The title is kept in one piece with the first block, so a page
+ * never ends on a title alone (`break-after: avoid` is not honored by every print engine when the
+ * block that follows must not be split either).
+ */
+function titled(title: string, blocks: readonly string[]): string {
+    const [first = '', ...rest] = blocks;
+
+    return `<div class="keep"><h2>${title}</h2>
+${first}</div>
+${rest.join('\n')}`;
+}
+
+/** One line of a block: a colored dot, a name with an optional line of detail under it, and a value at the end. */
+function line(color: string, name: string, detail: string | null, value: string): string {
     return `<div class="line">
-    <span class="dot" style="background:${SERVICE_COLORS[kind]}"></span>
-    <span class="grow"><span class="name">${escapeHtml(label)}</span><br><span class="muted">${countLabel(total.count)}</span></span>
-    <span class="value">${formatCurrency(total.total)}</span>
+    <span class="dot" style="background:${color}"></span>
+    <span class="grow"><span class="name">${escapeHtml(name)}</span>${detail === null ? '' : `<br><span class="muted">${escapeHtml(detail)}</span>`}</span>
+    <span class="value">${escapeHtml(value)}</span>
 </div>`;
 }
 
+/** One line of a block: the service with its color, how many records and what they add up to. */
+function serviceLine(kind: ServiceKind, label: string, total: ServiceTotal): string {
+    return line(SERVICE_COLORS[kind], label, countLabel(total.count), formatCurrency(total.total));
+}
+
+/** A plain row of a block: a label at the start and a value at the end, with no dot. */
+function fact(label: string, value: string): string {
+    return `<div class="fact"><span>${escapeHtml(label)}</span><span class="value">${escapeHtml(value)}</span></div>`;
+}
+
+/**
+ * The top of a vehicle block: the icon of its type in a gray box (as on screen), its plate and
+ * "model · type" next to it and a value at the end.
+ */
+function vehicleTop(vehicle: ReportVehicle, value: string): string {
+    return `<div class="vehicle-top">
+        <div class="icon-box">${vehicleIconSvg(vehicle.type, 20)}</div>
+        <div class="grow">
+            <div class="plate">${escapeHtml(vehicle.plate)}</div>
+            <div class="muted">${escapeHtml(vehicle.model)} · ${typeName(vehicle.type)}</div>
+        </div>
+        <div class="plate">${escapeHtml(value)}</div>
+    </div>`;
+}
+
+/** The note under an inactive vehicle, or nothing for an active one (RB12). */
+function inactiveNote(vehicle: ReportVehicle): string {
+    return vehicle.active ? '' : '<div class="note">Veículo inativo</div>';
+}
+
 /** The block of one vehicle: who it is, its total, the total of each service and, if inactive, a note (RB12). */
-function vehicleBlock(line: VehicleTotals, services: ReportDocumentInput['services']): string {
+function vehicleBlock(totals: VehicleTotals, services: ReportDocumentInput['services']): string {
     const lines = services
-        .map(({ value, label }) => serviceLine(value, label, line.services[value]))
+        .map(({ value, label }) => serviceLine(value, label, totals.services[value]))
         .join('\n');
-    const inactive = line.vehicle.active ? '' : '<div class="note">Veículo inativo</div>';
 
     return `<section class="card vehicle">
-    <div class="vehicle-top">
-        <div class="grow">
-            <div class="plate">${escapeHtml(line.vehicle.plate)}</div>
-            <div class="muted">${escapeHtml(line.vehicle.model)} · ${typeName(line.vehicle.type)}</div>
-        </div>
-        <div class="plate">${formatCurrency(line.total)}</div>
-    </div>
+    ${vehicleTop(totals.vehicle, formatCurrency(totals.total))}
     <hr>
     <div class="lines">${lines}</div>
-    ${inactive}
+    ${inactiveNote(totals.vehicle)}
 </section>`;
 }
 
@@ -132,6 +186,7 @@ hr { border: 0; border-top: 1px solid #E0E0E0; margin: 8px 0; }
 .filter.wide { grid-column: 1 / -1; }
 .filter .label { display: block; color: #606060; font-size: 11px; }
 .filter .text { font-weight: 500; }
+.keep { break-inside: avoid; page-break-inside: avoid; }
 .card { border: 1px solid #E0E0E0; border-radius: 8px; padding: 10px 12px; margin-top: 10px; break-inside: avoid; page-break-inside: avoid; }
 .total-box { text-align: center; }
 .total { font-size: 24px; font-weight: 700; }
@@ -144,9 +199,59 @@ hr { border: 0; border-top: 1px solid #E0E0E0; margin: 8px 0; }
 .value { font-weight: 600; text-align: right; }
 .vehicle-top { display: flex; align-items: flex-start; gap: 10px; }
 .plate { font-size: 14px; font-weight: 600; }
+.icon-box { flex: none; display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 8px; background: #E0E0E0; color: #202020; }
+.initials { flex: none; width: 34px; height: 34px; border-radius: 50%; background: #E0E0E0; color: #404040; font-size: 13px; font-weight: 600; line-height: 34px; text-align: center; }
 .chart-title { font-size: 13px; font-weight: 600; }
 .note { margin-top: 8px; color: #606060; }
+.fact { display: flex; justify-content: space-between; gap: 10px; margin-top: 8px; }
+.fact:first-child { margin-top: 0; }
 `;
+
+/** What every report document is made of: the title, the filters it was asked with, the body and when it was issued. */
+type DocumentShell = {
+    title: string;
+    filters: ReportFilters;
+    body: string;
+    issuedAt: Date;
+    fonts: readonly ReportFontFace[];
+};
+
+/**
+ * Wraps the body of a report in the page every report shares: the title and the date of issue on
+ * top, the filters under them, then the body. The same shell, fonts and styles make the three
+ * reports read as one family.
+ */
+function documentHtml({ title, filters, body, issuedAt, fonts }: DocumentShell): string {
+    const issued = `${formatDay(issuedAt)}, ${formatTime(issuedAt)}`;
+    const items = filters
+        .map(
+            ({ label, text, wide }) =>
+                `<div class="filter${wide ? ' wide' : ''}"><span class="label">${escapeHtml(label)}</span><span class="text">${escapeHtml(text)}</span></div>`,
+        )
+        .join('\n    ');
+
+    return `<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${escapeHtml(title)}</title>
+<style>${fontRules(fonts)}${STYLES}</style>
+</head>
+<body>
+<div class="head">
+    <h1>${escapeHtml(title)}</h1>
+    <div class="muted">TRACE · Emitido em ${issued}</div>
+</div>
+
+<section class="filters">
+    ${items}
+</section>
+
+${body}
+</body>
+</html>`;
+}
 
 /**
  * Builds the HTML the financial report is printed from (RF22). It has what the screen has, in the
@@ -164,36 +269,20 @@ export function buildReportHtml({
     issuedAt,
     fonts = [],
 }: ReportDocumentInput) {
-    const issued = `${formatDay(issuedAt)}, ${formatTime(issuedAt)}`;
     const general = services
         .map(({ value, label }) => serviceLine(value, label, report.services[value]))
         .join('\n');
-    const vehicles = report.vehicles.map((line) => vehicleBlock(line, services)).join('\n');
+    const vehicles = report.vehicles.map((totals) => vehicleBlock(totals, services));
     const charts = Object.values(buildCharts(report, services, CHART_WIDTH, CHART_TEXT)).filter(
         (chart): chart is Chart => chart !== null,
     );
 
-    return `<!doctype html>
-<html lang="pt-BR">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Relatório financeiro</title>
-<style>${fontRules(fonts)}${STYLES}</style>
-</head>
-<body>
-<div class="head">
-    <h1>Relatório financeiro</h1>
-    <div class="muted">TRACE · Emitido em ${issued}</div>
-</div>
-
-<section class="filters">
-    <div class="filter wide"><span class="label">Período</span><span class="text">${escapeHtml(filters.period)}</span></div>
-    <div class="filter"><span class="label">Tipo de veículo</span><span class="text">${escapeHtml(filters.type)}</span></div>
-    <div class="filter"><span class="label">Tipo de serviço</span><span class="text">${escapeHtml(filters.service)}</span></div>
-</section>
-
-<section class="card">
+    return documentHtml({
+        title: 'Relatório financeiro',
+        filters,
+        issuedAt,
+        fonts,
+        body: `<section class="card">
     <div class="total-box">
         <div class="muted">Total no período</div>
         <div class="total">${formatCurrency(report.total)}</div>
@@ -202,11 +291,137 @@ export function buildReportHtml({
     <div class="lines">${general}</div>
 </section>
 
-${charts.length > 0 ? '<h2>Gráficos</h2>' : ''}
-${charts.map(chartCard).join('\n')}
+${charts.length > 0 ? titled('Gráficos', charts.map(chartCard)) : ''}
 
-<h2>Por veículo</h2>
-${vehicles}
-</body>
-</html>`;
+${titled('Por veículo', vehicles)}`,
+    });
+}
+
+/** What the km report document is made of: the report, the filters it was asked with, and when it was issued. */
+export type KmDocumentInput = {
+    report: KmReport;
+    filters: ReportFilters;
+    issuedAt: Date;
+    fonts?: readonly ReportFontFace[];
+};
+
+/** The block of one vehicle in the km report: who it is, the km it drove and how many routes made them (RB12). */
+function kmVehicleBlock({ vehicle, routes, km }: VehicleKm): string {
+    return `<section class="card vehicle">
+    ${vehicleTop(vehicle, formatDistance(km))}
+    <hr>
+    ${fact('Rotas finalizadas', String(routes))}
+    ${inactiveNote(vehicle)}
+</section>`;
+}
+
+/**
+ * Builds the HTML the km report is printed from (RF23): the total km and routes of the period,
+ * then one block per vehicle. Same shell, styles and cards as the financial report, with the
+ * numbers of the screen.
+ */
+export function buildKmReportHtml({ report, filters, issuedAt, fonts = [] }: KmDocumentInput) {
+    return documentHtml({
+        title: 'Relatório de km rodados',
+        filters,
+        issuedAt,
+        fonts,
+        body: `<section class="card">
+    <div class="total-box">
+        <div class="muted">Km rodados no período</div>
+        <div class="total">${formatDistance(report.km)}</div>
+    </div>
+    <hr>
+    ${fact('Rotas finalizadas', String(report.routes))}
+    ${fact('Veículos', String(report.vehicles.length))}
+</section>
+
+${titled('Por veículo', report.vehicles.map(kmVehicleBlock))}`,
+    });
+}
+
+/** What the complaints report document is made of: the report, the filters it was asked with, and when it was issued. */
+export type ComplaintDocumentInput = {
+    report: ComplaintReport;
+    filters: ReportFilters;
+    issuedAt: Date;
+    fonts?: readonly ReportFontFace[];
+};
+
+/** The three lines of a block, one per situation, with its count. */
+function statusLines(counts: StatusCounts): string {
+    return COMPLAINT_STATUSES.map(({ value, label }) =>
+        line(STATUS_COLORS[value], label, null, String(counts[value])),
+    ).join('\n');
+}
+
+/** The block of one vehicle in the complaints report: who it is, its complaints and how they stand (RB12). */
+function complaintVehicleBlock({ vehicle, counts, total }: VehicleComplaints): string {
+    return `<section class="card vehicle">
+    ${vehicleTop(vehicle, complaintsLabel(total))}
+    <hr>
+    <div class="lines">${statusLines(counts)}</div>
+    ${inactiveNote(vehicle)}
+</section>`;
+}
+
+/** The block of one driver in the complaints report: their name, their complaints and how they stand. */
+function complaintDriverBlock({ driver, counts, total }: DriverComplaints): string {
+    return `<section class="card vehicle">
+    <div class="vehicle-top">
+        <div class="initials">${escapeHtml(formatInitials(driver.name))}</div>
+        <div class="grow">
+            <div class="plate">${escapeHtml(driver.name)}</div>
+            <div class="muted">${roleLabel(driver.role)}</div>
+        </div>
+        <div class="plate">${complaintsLabel(total)}</div>
+    </div>
+    <hr>
+    <div class="lines">${statusLines(counts)}</div>
+</section>`;
+}
+
+/** The bar that shows how the complaints split among the three situations, drawn only when there are any. */
+function statusBar(report: ComplaintReport): string {
+    if (report.total <= 0) {
+        return '';
+    }
+
+    const parts = COMPLAINT_STATUSES.map(
+        ({ value }) =>
+            `<div style="flex:${report.counts[value]};background:${STATUS_COLORS[value]}"></div>`,
+    ).join('');
+
+    return `<div class="stack">${parts}</div>`;
+}
+
+/**
+ * Builds the HTML the complaints report is printed from (RF23): the total and the count of each
+ * situation, then one block per vehicle and one per driver, each with its own count of each
+ * situation. Same shell, styles and cards as the financial report, with the numbers of the screen.
+ */
+export function buildComplaintReportHtml({
+    report,
+    filters,
+    issuedAt,
+    fonts = [],
+}: ComplaintDocumentInput) {
+    return documentHtml({
+        title: 'Relatório de denúncias',
+        filters,
+        issuedAt,
+        fonts,
+        body: `<section class="card">
+    <div class="total-box">
+        <div class="muted">Denúncias no período</div>
+        <div class="total">${report.total}</div>
+    </div>
+    ${statusBar(report)}
+    <div class="lines">${statusLines(report.counts)}</div>
+</section>
+
+${titled('Por veículo', report.vehicles.map(complaintVehicleBlock))}
+
+${titled('Por motorista', report.drivers.map(complaintDriverBlock))}`,
+    });
 }

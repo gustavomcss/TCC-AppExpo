@@ -178,6 +178,16 @@ O relatório financeiro (I-36) também não tem regra, hook nem migração próp
 
 Testes em `tests/report-queries.test.js`: os campos devolvidos, os totais por serviço, por veículo e geral conferidos em centavos contra os registros criados, o veículo inativo, o período (início incluído, fim excluído), os filtros de tipo e de busca (e a combinação deles) e o motorista que lê só o que criou.
 
+### Consultas dos relatórios adicionais (RF23)
+
+Os relatórios de km rodados e de denúncias (I-38) também não têm regra, hook nem migração própria, e seguem a mesma decisão do financeiro: o servidor só filtra e o app agrupa e soma (`loadKmReport` e `loadComplaintReport`, em `frontend/src/services/reports.ts`; `buildKmReport` e `buildComplaintReport`, em `kmTotals.ts` e `complaintTotals.ts`). Os dois leem `routes` e `complaints` pelas listRules que já existem, então o motorista que fizesse a mesma consulta receberia só as próprias rotas e as denúncias das próprias rotas.
+
+- **Km rodados:** `status = "finalizada"` (RB10) com `date_return >= ... && date_return < ...` (a rota entra no período pelo retorno, como no Histórico) e `vehicle.type = ...`, lendo `fields=id,km_departure,km_return,vehicle,expand.vehicle` com `expand=vehicle`. O km de uma rota é `km_return - km_departure`, o mesmo "X km rodados" do card do Histórico, somado em centésimos. Rota `aberta` e `encerrada` ficam de fora, e a rota de uma denúncia aprovada entra com o `km_departure` já corrigido (RB06).
+- **Denúncias:** `created >= ... && created < ...` e `route_current.vehicle.type = ...` (sem filtro de situação: o relatório mostra as três), lendo `fields=id,status,expand.route_current` com `expand=route_current.user,route_current.vehicle`. A denúncia não tem autor: o motorista é o `user` da rota (nome e `role`, que o PDF e a tela mostram sob o nome), e o veículo vem pela rota. O app conta cada denúncia uma vez por situação, por veículo e por motorista, então os totais dos veículos e dos motoristas fecham com o geral.
+- **Veículo inativo:** continua nos dois relatórios, com o aviso "Veículo inativo" (RB12).
+
+Testes em `tests/extra-report-queries.test.js`: os campos devolvidos, o km por veículo e geral conferido em centésimos contra as rotas criadas e contra a lista do Histórico, as rotas encerrada e aberta fora, o km corrigido depois de aprovar uma denúncia, o período e o tipo, as contagens por situação, veículo e motorista, a combinação de período e tipo, o veículo inativo e o motorista que lê só o que é dele.
+
 ### Usuários (RB19)
 
 A migração `1792705420_set_user_edit_rules.js` (I-11) define quem cria e quem edita `users`. Todas as regras começam com a condição de usuário ativo (RB18). Os campos são protegidos com `:changed`, então um formulário que devolve um valor igual ao salvo é aceito.

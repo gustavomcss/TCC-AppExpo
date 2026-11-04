@@ -108,7 +108,7 @@ export const SERVICE_MODULES: readonly ServiceModule[] = [
         key: 'reports',
         icon: FileText,
         title: 'Relatórios',
-        description: 'Gerar o relatório financeiro em PDF.',
+        description: 'Gerar relatórios em PDF.',
         adminOnly: true,
     },
 ];

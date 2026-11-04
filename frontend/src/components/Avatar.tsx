@@ -1,5 +1,6 @@
 import { Image, StyleSheet, Text, View } from 'react-native';
 
+import { formatInitials } from '../schemas/masks';
 import { colors, fontFamily, fontSize, palette, sizes } from '../theme';
 
 /**
@@ -7,17 +8,6 @@ import { colors, fontFamily, fontSize, palette, sizes } from '../theme';
  * address of the photo, when the person has one.
  */
 export type AvatarProps = { name: string; size?: number; uri?: string | null };
-
-/** Up to two initials of a name, in capitals. */
-function initials(name: string): string {
-    return name
-        .split(' ')
-        .filter(Boolean)
-        .slice(0, 2)
-        .map((word) => word[0])
-        .join('')
-        .toUpperCase();
-}
 
 /** Round photo of a person or, where there is none, a gray circle with their initials. */
 export function Avatar({ name, size = sizes.avatar, uri }: AvatarProps) {
@@ -29,7 +19,9 @@ export function Avatar({ name, size = sizes.avatar, uri }: AvatarProps) {
 
     return (
         <View accessibilityLabel={name} style={[styles.avatar, shape]}>
-            <Text style={[styles.text, size < sizes.avatar && styles.small]}>{initials(name)}</Text>
+            <Text style={[styles.text, size < sizes.avatar && styles.small]}>
+                {formatInitials(name)}
+            </Text>
         </View>
     );
 }
