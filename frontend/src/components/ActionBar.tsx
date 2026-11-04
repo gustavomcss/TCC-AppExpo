@@ -31,10 +31,10 @@ function useKeyboardVisible(): boolean {
 /**
  * Bar fixed at the bottom of a form screen that holds its main action, full width, in the place
  * the tab bar takes on the tab screens. It stays where it is when the keyboard opens: on iOS the
- * keyboard covers it (the form area above shrinks, see FormScrollView), so the action is not in
- * reach while typing and cannot be tapped by accident. On Android the window itself shrinks, which
- * would lift the bar above the keyboard, so there it is hidden while the keyboard is open. It
- * tells the toasts how tall it is, so they come out from behind it.
+ * keyboard covers it (the form area above keeps clear of the keyboard, see FormScrollView), so the
+ * action is not in reach while typing and cannot be tapped by accident. On Android it is hidden while the keyboard
+ * is open, so it cannot end up above the keyboard on a device whose window shrinks. It tells the
+ * toasts how tall it is, so they come out from behind it.
  */
 export function ActionBar({ style, onLayout, ...props }: ViewProps) {
     const { bottom } = useSafeAreaInsets();

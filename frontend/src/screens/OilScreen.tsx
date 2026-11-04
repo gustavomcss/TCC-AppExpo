@@ -235,8 +235,8 @@ export default function OilScreen() {
                                     onSubmitEditing={() => submit()}
                                     error={errors.type?.message}
                                     maxLength={OIL_TYPE_MAX}
-                                    autoCapitalize="sentences"
                                     editable={!isSubmitting}
+                                    capitalize="sentences"
                                 />
                             )}
                         />

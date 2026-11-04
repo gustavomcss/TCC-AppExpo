@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { decimalField } from './common';
+import { applyTextCase } from './masks';
 
 /** Longest description the server accepts (`repairs.description`), in characters. */
 export const REPAIR_DESCRIPTION_MAX = 500;
@@ -25,7 +26,8 @@ export const repairSchema = z.object({
         .max(
             REPAIR_DESCRIPTION_MAX,
             `A descrição deve ter no máximo ${REPAIR_DESCRIPTION_MAX} caracteres.`,
-        ),
+        )
+        .transform((text) => applyTextCase('sentences', text)),
     cost: decimalField('Informe o valor.').refine(
         (value) => value > 0,
         'O valor deve ser maior que zero.',

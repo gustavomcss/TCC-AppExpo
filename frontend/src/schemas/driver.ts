@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { applyTextCase } from './masks';
+
 /**
  * Driver registration form (RF03, RB19), with the field names of the `users` collection so the
  * server errors land on the right field. The e-mail is lowercased because PocketBase matches it
@@ -12,7 +14,8 @@ export const driverSchema = z.object({
         .string()
         .trim()
         .min(1, 'Informe o nome.')
-        .max(255, 'O nome deve ter no máximo 255 caracteres.'),
+        .max(255, 'O nome deve ter no máximo 255 caracteres.')
+        .transform((text) => applyTextCase('words', text)),
     email: z
         .string()
         .trim()

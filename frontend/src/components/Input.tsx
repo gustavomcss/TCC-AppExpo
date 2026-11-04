@@ -3,17 +3,21 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import type { TextInputProps } from 'react-native';
 
+import { applyTextCase } from '../schemas/masks';
+import type { TextCase } from '../schemas/masks';
 import { colors, fontFamily, fontSize, radius, sizes, spacing } from '../theme';
 
 /**
  * Props of Input. `invalid` paints the border with the error color, `suffix` is a short text
  * drawn inside the box, on the right, such as the unit of the value ("km"), and `prefix` is the
- * same on the left, such as the currency ("R$").
+ * same on the left, such as the currency ("R$"). `capitalize` is the one way to capitalize a
+ * free text: `words` (a model, a name) or `sentences` (a long note).
  */
 export type InputProps = TextInputProps & {
     invalid?: boolean;
     suffix?: string;
     prefix?: string;
+    capitalize?: TextCase;
 };
 
 /**
@@ -22,7 +26,9 @@ export type InputProps = TextInputProps & {
  * `suffix` shows the currency or the unit beside what is typed. With `multiline` the box grows
  * from 88 dp for free text, such as an observation. The caret is the native one, even in the
  * fields the app reformats on every key (km and money): a caret drawn by the input shifted the
- * text sideways as it moved.
+ * text sideways as it moved. With `capitalize`, the keyboard is asked to capitalize while typing
+ * and the text is capitalized when the field loses focus; it is not rewritten on every key, which
+ * duplicated the letter being typed ("Mm") while the keyboard composed it.
  */
 export function Input({
     invalid,
@@ -31,6 +37,7 @@ export function Input({
     multiline,
     suffix,
     prefix,
+    capitalize,
     style,
     onFocus,
     onBlur,
@@ -55,8 +62,17 @@ export function Input({
                 setFocused(true);
                 onFocus?.(event);
             }}
+            autoCapitalize={capitalize}
+            autoCorrect={capitalize === 'words' ? false : undefined}
             onBlur={(event) => {
                 setFocused(false);
+                if (capitalize && props.value !== undefined && props.onChangeText) {
+                    const text = applyTextCase(capitalize, props.value);
+
+                    if (text !== props.value) {
+                        props.onChangeText(text);
+                    }
+                }
                 onBlur?.(event);
             }}
             {...props}

@@ -380,8 +380,8 @@ function OilEditForm({ record }: { record: OilRecord }) {
                         onSubmitEditing={() => submit()}
                         error={errors.type?.message}
                         maxLength={OIL_TYPE_MAX}
-                        autoCapitalize="sentences"
                         editable={!isSubmitting}
+                        capitalize="sentences"
                     />
                 )}
             />
@@ -461,8 +461,8 @@ function RepairEditForm({ record }: { record: RepairRecord }) {
                         multiline
                         maxLength={REPAIR_DESCRIPTION_MAX}
                         showCount
-                        autoCapitalize="sentences"
                         editable={!isSubmitting}
+                        capitalize="sentences"
                     />
                 )}
             />

@@ -7,6 +7,7 @@ import {
 } from '@expo-google-fonts/geom';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View } from 'react-native';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { LoadingState } from './src/components/LoadingState';
@@ -43,17 +44,22 @@ function Routes() {
 /**
  * Root component. Every screen except login requires a signed-in user; toasts show over all.
  * The safe area provider is outside everything, because the toasts and the tab bar read the
- * insets.
+ * insets. The KeyboardProvider is what lets every screen follow the keyboard the same way, on
+ * Android and iOS (see FormScrollView and LoginScreen); the status and navigation bars are
+ * translucent because the app draws edge to edge. The app is light only, so the status bar icons are always dark, on Android and iOS:
+ * with `auto` they followed the phone's dark theme and turned white on the white header.
  */
 export default function App() {
     return (
         <SafeAreaProvider>
-            <AuthProvider>
-                <ToastProvider>
-                    <Routes />
-                </ToastProvider>
-                <StatusBar style="auto" />
-            </AuthProvider>
+            <KeyboardProvider statusBarTranslucent navigationBarTranslucent>
+                <AuthProvider>
+                    <ToastProvider>
+                        <Routes />
+                    </ToastProvider>
+                    <StatusBar style="dark" />
+                </AuthProvider>
+            </KeyboardProvider>
         </SafeAreaProvider>
     );
 }
