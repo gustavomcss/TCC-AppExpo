@@ -1,16 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import {
-    Animated,
-    Easing,
-    Keyboard,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
-} from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 import { Alert } from '../components/Alert';
 import { Button } from '../components/Button';
@@ -23,24 +15,18 @@ import type { LoginValues } from '../schemas/auth';
 import { describeLoginError } from '../services/auth';
 import { colors, fontFamily, fontSize, spacing } from '../theme';
 
-/** Curve that follows the keyboard of iOS closely enough for the screen to move with it. */
-const KEYBOARD_EASING = Easing.bezier(0.25, 0.46, 0.45, 0.94);
-
 /**
  * Login screen (RF01). There is no sign-up link: users are created by the supervisor or by the
  * superadmin, and a line under the card says so. The app name and tagline sit above the card,
  * which holds only the form. Field errors show under the field; a refused login opens the
  * NoticeDialog, since it concerns the whole action. A session ended by the server (I-07) shows
- * its notice above the card. When the keyboard opens on iOS, the whole content moves up as one
- * piece, by half the keyboard height so it stays centered in what is left, with the duration the
- * system gives. A KeyboardAvoidingView was tried first and left out: its padding animation ran
- * apart from the re-centering of the content, so the card and its fields moved out of step.
+ * its notice above the card. The keyboard is handled by the KeyboardAwareScrollView of
+ * react-native-keyboard-controller, the same as in the forms (FormScrollView), on iOS and Android:
+ * when the keyboard opens, the field in focus is scrolled above it, in step with the keyboard.
  */
 export default function LoginScreen() {
     const { signIn, notice } = useAuth();
     const [serverError, setServerError] = useState<string | null>(null);
-    const [lift] = useState(() => new Animated.Value(0));
-    const sizes = useRef({ screen: 0, content: 0 });
     const {
         control,
         handleSubmit,
@@ -49,32 +35,6 @@ export default function LoginScreen() {
         resolver: zodResolver(loginSchema),
         defaultValues: { email: '', password: '' },
     });
-
-    useEffect(() => {
-        if (Platform.OS !== 'ios') {
-            return;
-        }
-
-        const move = (toValue: number, duration: number) =>
-            Animated.timing(lift, {
-                toValue,
-                duration,
-                easing: KEYBOARD_EASING,
-                useNativeDriver: true,
-            }).start();
-
-        const show = Keyboard.addListener('keyboardWillShow', (event) => {
-            /* Never lift past the free space above the content, or its top would be cut off. */
-            const free = Math.max(0, (sizes.current.screen - sizes.current.content) / 2);
-            move(-Math.min(event.endCoordinates.height / 2, free), event.duration);
-        });
-        const hide = Keyboard.addListener('keyboardWillHide', (event) => move(0, event.duration));
-
-        return () => {
-            show.remove();
-            hide.remove();
-        };
-    }, [lift]);
 
     const submit = handleSubmit(async ({ email, password }) => {
         setServerError(null);
@@ -86,19 +46,13 @@ export default function LoginScreen() {
     });
 
     return (
-        <View
-            style={styles.screen}
-            onLayout={(event) => {
-                sizes.current.screen = event.nativeEvent.layout.height;
-            }}
-        >
-            <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-                <Animated.View
-                    style={[styles.content, { transform: [{ translateY: lift }] }]}
-                    onLayout={(event) => {
-                        sizes.current.content = event.nativeEvent.layout.height;
-                    }}
-                >
+        <View style={styles.screen}>
+            <KeyboardAwareScrollView
+                contentContainerStyle={styles.scroll}
+                keyboardShouldPersistTaps="handled"
+                bottomOffset={spacing.lg}
+            >
+                <View style={styles.content}>
                     <View style={styles.mark}>
                         <Text style={styles.brand}>TRACE</Text>
                         <Text style={styles.tagline}>Gestão operacional de frotas</Text>
@@ -162,8 +116,8 @@ export default function LoginScreen() {
                     <Text style={styles.footnote}>
                         O acesso é criado pelo supervisor da sua empresa.
                     </Text>
-                </Animated.View>
-            </ScrollView>
+                </View>
+            </KeyboardAwareScrollView>
 
             <NoticeDialog
                 visible={serverError !== null}

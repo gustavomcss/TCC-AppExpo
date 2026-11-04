@@ -316,9 +316,9 @@ export default function DriverDetailScreen({
                                     onBlur={onBlur}
                                     onSubmitEditing={() => saveName()}
                                     error={nameForm.formState.errors.name?.message}
-                                    autoCapitalize="words"
                                     autoComplete="name"
                                     editable={!saving}
+                                    capitalize="words"
                                 />
                             )}
                         />

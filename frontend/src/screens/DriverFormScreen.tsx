@@ -93,9 +93,9 @@ export default function DriverFormScreen() {
                                     onChangeText={onChange}
                                     onBlur={onBlur}
                                     error={errors.name?.message}
-                                    autoCapitalize="words"
                                     autoComplete="name"
                                     editable={!isSubmitting}
+                                    capitalize="words"
                                 />
                             )}
                         />

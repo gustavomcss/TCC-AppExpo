@@ -14,7 +14,7 @@ import { TextField } from '../components/TextField';
 import { VEHICLE_TYPE_OPTIONS } from '../components/vehicleTypeOptions';
 import { useToast } from '../contexts/ToastContext';
 import type { RootNavigation } from '../navigation/types';
-import { capitalizeWords, formatDecimalInput, formatPlate } from '../schemas/masks';
+import { formatDecimalInput, formatPlate } from '../schemas/masks';
 import { vehicleSchema } from '../schemas/vehicle';
 import type { VehicleInput, VehicleValues } from '../schemas/vehicle';
 import { applyServerError, isRuleError } from '../services/serverErrors';
@@ -131,11 +131,11 @@ export default function VehicleFormScreen() {
                                     label="Modelo"
                                     placeholder="Ex.: Onix Plus"
                                     value={value}
-                                    onChangeText={(text) => onChange(capitalizeWords(text))}
+                                    onChangeText={onChange}
                                     onBlur={onBlur}
                                     error={errors.model?.message}
-                                    autoCapitalize="sentences"
                                     editable={!isSubmitting}
+                                    capitalize="words"
                                 />
                             )}
                         />

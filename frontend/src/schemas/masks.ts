@@ -57,14 +57,42 @@ export function formatDecimal(value: number): string {
 }
 
 /**
+ * How a free-text field is capitalized: `words` makes the first letter of every word uppercase (a
+ * model, a name, an itinerary, an oil type) and `sentences` only the first letter of the text and of
+ * each sentence (a long note or description). It is also the `autoCapitalize` the keyboard gets.
+ */
+export type TextCase = 'words' | 'sentences';
+
+/**
  * Removes leading spaces and makes the first letter of every word uppercase, leaving the rest as
  * typed, so "onix plus" becomes "Onix Plus" and "hb20" becomes "Hb20". A trailing space is kept
- * so the next word can be typed.
+ * so the next word can be typed. Not for use on every keystroke: rewriting the letter being typed
+ * while the keyboard composes it duplicated it ("Mm"). See applyTextCase.
  */
 export function capitalizeWords(text: string): string {
     return text
         .trimStart()
         .replace(/(^|\s)(\S)/g, (_, space, letter) => space + letter.toUpperCase());
+}
+
+/**
+ * Removes leading spaces and makes the first letter of the text and of each sentence uppercase,
+ * leaving the rest as typed: "troca de óleo. revisão feita" becomes "Troca de óleo. Revisão feita".
+ */
+export function capitalizeSentences(text: string): string {
+    return text
+        .trimStart()
+        .replace(/(^|[.!?]\s+)(\p{L})/gu, (_, before, letter) => before + letter.toUpperCase());
+}
+
+/**
+ * Capitalizes a free text as the mode says. This is the one rule of every free-text field: the
+ * field asks the keyboard to capitalize while typing (`autoCapitalize`), the Input applies this
+ * when the field loses focus, and the schema applies it again on submit, because a tap on the
+ * submit button does not take the focus away first. It is never applied on every keystroke.
+ */
+export function applyTextCase(mode: TextCase, text: string): string {
+    return mode === 'words' ? capitalizeWords(text) : capitalizeSentences(text);
 }
 
 /**

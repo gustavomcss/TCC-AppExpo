@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { decimalField } from './common';
+import { applyTextCase } from './masks';
 
 /** Longest oil type the server accepts (`oils.type`), in characters. */
 export const OIL_TYPE_MAX = 100;
@@ -22,7 +23,8 @@ export const oilSchema = z.object({
         .string()
         .trim()
         .min(1, 'Informe o tipo do óleo.')
-        .max(OIL_TYPE_MAX, `O tipo do óleo deve ter no máximo ${OIL_TYPE_MAX} caracteres.`),
+        .max(OIL_TYPE_MAX, `O tipo do óleo deve ter no máximo ${OIL_TYPE_MAX} caracteres.`)
+        .transform((text) => applyTextCase('sentences', text)),
     cost: decimalField('Informe o valor.').refine(
         (value) => value > 0,
         'O valor deve ser maior que zero.',

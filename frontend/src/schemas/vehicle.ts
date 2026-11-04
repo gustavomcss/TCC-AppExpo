@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { decimalField } from './common';
-import { capitalizeWords } from './masks';
+import { applyTextCase } from './masks';
 
 /** Vehicle types as stored by the server (model data) and as the user sees them. */
 export const VEHICLE_TYPES = [
@@ -33,7 +33,7 @@ export const vehicleSchema = z.object({
         .trim()
         .min(1, 'Informe o modelo.')
         .max(100, 'O modelo deve ter no máximo 100 caracteres.')
-        .transform(capitalizeWords),
+        .transform((text) => applyTextCase('words', text)),
     odometer: decimalField('Informe o km atual.'),
 });
 

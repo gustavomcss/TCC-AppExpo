@@ -184,6 +184,7 @@ export default function RouteReturnScreen({ route, complaintKm }: RouteReturnScr
                                     maxLength={ROUTE_TEXT_MAX}
                                     showCount
                                     editable={!saving}
+                                    capitalize="sentences"
                                 />
                             )}
                         />

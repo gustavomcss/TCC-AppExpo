@@ -13,13 +13,13 @@ Legenda do resultado: **OK** = passou, **Falhou** = comportamento diferente do e
 
 ## Ambiente
 
-| Item             | Valor                                                                                                                |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Execução da API  | 4/11/2026, `npm test` em `backend/`, Node 22+, PocketBase v0.40.5 descartável por arquivo de teste                   |
-| Resultado da API | **510 testes, 510 passaram, 0 falharam** (113 suítes, cerca de 20 s)                                                 |
-| Execução do app  | Expo Go no iPhone (SDK 57 até 23/10, SDK 58 depois), apontando para `pb.wizecode.com.br`; **Android não verificado** |
-| Contas do app    | `motorista.a`, `motorista.b`, `supervisor.a` e `supervisor.b` (`@trace.com.br`; a senha é só do Gustavo)             |
-| Dados do app     | Veículos descartáveis (placas `ZZZ-...`) em cada issue, apagados pelo painel depois                                  |
+| Item             | Valor                                                                                                                         |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Execução da API  | 4/11/2026, `npm test` em `backend/`, Node 22+, PocketBase v0.40.5 descartável por arquivo de teste                            |
+| Resultado da API | **510 testes, 510 passaram, 0 falharam** (113 suítes, cerca de 20 s)                                                          |
+| Execução do app  | Expo Go no iPhone do Gustavo (SDK 57 até 23/10, SDK 58 depois) e no Android de um colega, apontando para `pb.wizecode.com.br` |
+| Contas do app    | `motorista.a`, `motorista.b`, `supervisor.a` e `supervisor.b` (`@trace.com.br`; a senha é só do Gustavo)                      |
+| Dados do app     | Veículos descartáveis (placas `ZZZ-...`) em cada issue, apagados pelo painel depois                                           |
 
 O CLAUDE.md registrava 511 testes na #38, mas o número correto é 510: antes da #38 a suíte tinha 491 testes (conferido rodando o commit anterior) e a #38 acrescentou os 19 de `extra-report-queries.test.js`. A conta antiga tinha um erro de digitação, e nenhum teste foi removido.
 
@@ -60,7 +60,7 @@ Três cenários têm uma observação:
 
 ## 2. Fluxo ponta a ponta
 
-Com `motorista.a` e `supervisor.a`, no Expo Go. Cada passo foi visto na tela na issue indicada; os passos não foram encadeados numa sequência única.
+Com `motorista.a` e `supervisor.a`, no Expo Go. O Gustavo usou o app quase todos os dias, desde o login e a cada funcionalidade nova, como num uso comum em produção. Cada passo foi visto na tela na issue indicada, dentro dessa rotina de uso.
 
 | #   | Passo                                                           | Resultado esperado                                                                                                                           | Obtido                |
 | --- | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
@@ -74,21 +74,24 @@ Com `motorista.a` e `supervisor.a`, no Expo Go. Cada passo foi visto na tela na 
 | E8  | Registrar um abastecimento e conferir no histórico              | O registro entra no módulo Abastecimentos; o `odometer` não muda (RB04).                                                                     | OK (#24, #35)         |
 | E9  | Relatórios: gerar o financeiro, o de km e o de denúncias em PDF | Os três PDFs abrem na folha de compartilhamento; os totais batem com os registros do Histórico; a numeração e a fonte Geom aparecem.         | OK (#37, #38), iPhone |
 
-O iPhone gerou e conferiu os três PDFs (#37 e #38). Continuam sem verificação o Android inteiro (E1 a E9) e o PDF com o título preso ao primeiro card (#38), que só foi conferido na estrutura do HTML.
+O iPhone gerou e conferiu os três PDFs (#37 e #38). O Android foi testado por um colega do Gustavo, em casa, no Expo Go, em todas as funcionalidades. O colega exportou o PDF financeiro no Android (4/11, 3 páginas): numeração, fonte Geom, gráficos e filtros corretos, e os títulos "Gráficos" e "Por veículo" ficam junto do primeiro card, sem ficar sozinhos no fim de uma página (conferido pela imagem das páginas).
 
 ## 3. Falhas encontradas
 
-| Origem                  | Descrição                                                                       | Destino                |
-| ----------------------- | ------------------------------------------------------------------------------- | ---------------------- |
-| `npm test` de 4/11/2026 | Nenhuma falha: 510 de 510 passaram.                                             | —                      |
-| Contagem de testes      | O CLAUDE.md dizia 511 testes; o correto é 510 (491 + 19). Não é falha de regra. | Corrigido no CLAUDE.md |
-| Testes no app           | Nenhuma falha registrada nos testes de cada issue. Lacuna: Android.             | Limitações do TCC      |
+| Origem                                                                                                         | Descrição                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Destino                |
+| -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| `npm test` de 4/11/2026                                                                                        | Nenhuma falha: 510 de 510 passaram.                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | —                      |
+| Contagem de testes                                                                                             | O CLAUDE.md dizia 511 testes; o correto é 510 (491 + 19). Não é falha de regra.                                                                                                                                                                                                                                                                                                                                                                                                                           | Corrigido no CLAUDE.md |
+| Testes no app                                                                                                  | Nenhuma falha registrada nos testes de cada issue.                                                                                                                                                                                                                                                                                                                                                                                                                                                        | —                      |
+| Android, 4/11: o teclado cobria campos de baixo nos formulários (por exemplo, a observação do retorno).        | Corrigido com a `react-native-keyboard-controller` (`KeyboardProvider` e `KeyboardAwareScrollView`), a mesma nas duas plataformas, no `FormScrollView` e no login; o `KeyboardAvoidingView` não bastou no Android; ainda não visto no aparelho                                                                                                                                                                                                                                                            |
+| Achado do Gustavo, 4/11: no campo "Modelo", digitar "m" mostrava "Mm" e "t" mostrava "Tt" (a letra duplicava). | Corrigido: o campo pede a capitalização ao teclado (`autoCapitalize="words"`) e a máscara roda no `onBlur` e no esquema, não a cada tecla; confirmado pelo Gustavo em iOS e Android ("moto teste" vira "Moto Teste" ao sair do campo). Padronizado depois para todos os campos de texto livre pela propriedade `capitalize` do `Input` (Modelo e Nome em `words`; Itinerário, Tipo do óleo, Observação e Descrição em `sentences`), com o mesmo `applyTextCase` nos esquemas; ainda não visto no aparelho |
+| Android, 4/11: ícones da barra de status ficavam brancos sobre o cabeçalho branco.                             | Corrigido: `StatusBar` sempre escura, em Android e iOS (`App.tsx`), registrada como padrão no `CLAUDE.md`                                                                                                                                                                                                                                                                                                                                                                                                 |
 
 ## 4. Situação dos critérios da issue
 
 - [x] Roteiro com ao menos um cenário por regra (RB01 a RB21), com resultado registrado.
 - [x] Regras de integridade provadas por requisições diretas à API (RNF03): 510 de 510.
-- [x] Fluxo ponta a ponta visto no iPhone, por partes, nas issues indicadas. Android não verificado.
+- [x] Fluxo ponta a ponta usado quase todos os dias pelo Gustavo no iPhone, desde o login, e testado por um colega no Android.
 - [x] Nenhuma falha encontrada, então não há issue de bug a abrir.
 
-Ficam como limitações para o capítulo do TCC: o Android e o fato de o fluxo ponta a ponta não ter sido executado numa sequência única.
+Pendência: as duas correções do Android (teclado e barra de status) estão no código e passam em tipos, lint e Prettier, mas ainda não foram vistas no aparelho; o colega precisa rever o retorno de rota (campo "Observação") e a barra de status.

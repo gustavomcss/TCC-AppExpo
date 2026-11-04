@@ -236,8 +236,8 @@ export default function RepairScreen() {
                                     multiline
                                     maxLength={REPAIR_DESCRIPTION_MAX}
                                     showCount
-                                    autoCapitalize="sentences"
                                     editable={!isSubmitting}
+                                    capitalize="sentences"
                                 />
                             )}
                         />

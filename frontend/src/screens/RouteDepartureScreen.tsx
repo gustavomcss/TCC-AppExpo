@@ -276,6 +276,7 @@ export default function RouteDepartureScreen() {
                                     onBlur={onBlur}
                                     error={errors.itinerary?.message}
                                     editable={!saving}
+                                    capitalize="sentences"
                                 />
                             )}
                         />
@@ -295,6 +296,7 @@ export default function RouteDepartureScreen() {
                                     maxLength={ROUTE_TEXT_MAX}
                                     showCount
                                     editable={!saving}
+                                    capitalize="sentences"
                                 />
                             )}
                         />

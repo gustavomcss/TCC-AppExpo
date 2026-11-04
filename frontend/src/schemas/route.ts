@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { decimalField } from './common';
-import { formatKm } from './masks';
+import { formatKm, applyTextCase } from './masks';
 
 /** Longest itinerary or observation the `routes` text fields accept. */
 export const ROUTE_TEXT_MAX = 500;
@@ -19,11 +19,13 @@ export const routeDepartureSchema = z.object({
         .string()
         .trim()
         .min(1, 'Informe o itinerário.')
-        .max(ROUTE_TEXT_MAX, `O itinerário deve ter no máximo ${ROUTE_TEXT_MAX} caracteres.`),
+        .max(ROUTE_TEXT_MAX, `O itinerário deve ter no máximo ${ROUTE_TEXT_MAX} caracteres.`)
+        .transform((text) => applyTextCase('sentences', text)),
     obs_departure: z
         .string()
         .trim()
-        .max(ROUTE_TEXT_MAX, `A observação deve ter no máximo ${ROUTE_TEXT_MAX} caracteres.`),
+        .max(ROUTE_TEXT_MAX, `A observação deve ter no máximo ${ROUTE_TEXT_MAX} caracteres.`)
+        .transform((text) => applyTextCase('sentences', text)),
 });
 
 /** What the route departure form holds while it is being filled in. */
@@ -85,7 +87,8 @@ export function createRouteReturnSchema(kmDeparture: number, kmComplaint: number
         obs_return: z
             .string()
             .trim()
-            .max(ROUTE_TEXT_MAX, `A observação deve ter no máximo ${ROUTE_TEXT_MAX} caracteres.`),
+            .max(ROUTE_TEXT_MAX, `A observação deve ter no máximo ${ROUTE_TEXT_MAX} caracteres.`)
+            .transform((text) => applyTextCase('sentences', text)),
     });
 }
 
