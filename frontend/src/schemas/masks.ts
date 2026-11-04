@@ -76,6 +76,17 @@ export function formatKm(value: number): string {
     return `${padded.slice(0, 3)}.${padded.slice(3, 6)},${padded.slice(6)}`;
 }
 
+/** Up to two initials of a name, in capitals: "Ana Paula Souza" is "AP". */
+export function formatInitials(name: string): string {
+    return name
+        .split(' ')
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((word) => word[0])
+        .join('')
+        .toUpperCase();
+}
+
 /** Reads a date from the server ("2026-10-22 08:15:00.000Z") as a Date. */
 export function parseServerDate(value: string): Date {
     return new Date(value.replace(' ', 'T'));
@@ -127,6 +138,18 @@ export function formatCurrency(value: number): string {
     const decimals = String(cents % 100).padStart(2, '0');
 
     return `${value < 0 ? '-' : ''}R$ ${integer},${decimals}`;
+}
+
+/**
+ * Formats a sum of km for display, with the thousands separator and no upper limit (a report adds
+ * the routes of a period, past the 999.999,99 of one odometer): 1234.5 is "1.234,50 km".
+ */
+export function formatDistance(value: number): string {
+    const hundredths = Math.round(Math.abs(value) * 100);
+    const integer = String(Math.trunc(hundredths / 100)).replace(/\B(?=(\d{3})+$)/g, '.');
+    const decimals = String(hundredths % 100).padStart(2, '0');
+
+    return `${value < 0 ? '-' : ''}${integer},${decimals} km`;
 }
 
 /**

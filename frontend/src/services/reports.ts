@@ -2,8 +2,12 @@ import type { RecordModel } from 'pocketbase';
 
 import type { VehicleType } from '../components/vehicleTypeOptions';
 import { formatDay } from '../schemas/masks';
+import { buildComplaintReport } from './complaintTotals';
+import type { ComplaintEntry, ComplaintReport } from './complaintTotals';
 import { periodRange, vehicleSearchMatches } from './history';
 import type { HistoryPeriod } from './history';
+import { buildKmReport } from './kmTotals';
+import type { KmEntry, KmReport } from './kmTotals';
 import { pb } from './pocketbase';
 import type { ReportFilters } from './reportDocument';
 import { buildReport } from './reportTotals';
@@ -31,6 +35,9 @@ export const REPORT_SERVICES: readonly { value: ServiceKind; label: string }[] =
     { value: 'repair', label: 'Manutenção' },
 ];
 
+/** The reports of the module (RF22, RF23), in the order the select lists them. */
+export type ReportKind = 'financial' | 'km' | 'complaints';
+
 /** A period as dates: `from` is the first moment included and `to` the first one left out. */
 export type ReportRange = { from: Date; to: Date };
 
@@ -45,6 +52,12 @@ export type ReportQuery = {
     service: ServiceKind | null;
 };
 
+/** What the km report is about: the period and a vehicle type; `null` keeps everything. */
+export type KmQuery = { range: ReportRange | null; type: VehicleType | null };
+
+/** What the complaints report is about: the same as the km report, the period and a vehicle type. */
+export type ComplaintQuery = KmQuery;
+
 /** A range as the user reads it, with the last day included: "01/11/2026 a 30/11/2026". */
 export function formatRange(range: ReportRange): string {
     const last = new Date(range.to.getFullYear(), range.to.getMonth(), range.to.getDate() - 1);
@@ -52,28 +65,48 @@ export function formatRange(range: ReportRange): string {
     return `${formatDay(range.from)} a ${formatDay(last)}`;
 }
 
-/**
- * The filters of a report as texts, for the PDF: the period (a shortcut shows its dates too), the
- * vehicle type and the service, each saying "all" when nothing is chosen, as the selects do.
- */
-export function describeFilters(period: ReportPeriod | null, query: ReportQuery): ReportFilters {
+/** The period as the PDF prints it: a shortcut shows its dates too, and no period is the whole history. */
+function describePeriod(period: ReportPeriod | null, range: ReportRange | null): string {
     const shortcut = REPORT_PERIODS.find((item) => item.value === period)?.label;
-    let periodText = 'Todo o período';
 
-    if (query.range) {
-        periodText =
-            period === 'custom' || !shortcut
-                ? formatRange(query.range)
-                : `${shortcut} (${formatRange(query.range)})`;
+    if (!range) {
+        return 'Todo o período';
     }
 
-    return {
-        period: periodText,
-        type: query.type ? typeLabel(query.type) : 'Todos os veículos',
-        service:
-            REPORT_SERVICES.find((item) => item.value === query.service)?.label ??
-            'Todos os serviços',
-    };
+    return period === 'custom' || !shortcut
+        ? formatRange(range)
+        : `${shortcut} (${formatRange(range)})`;
+}
+
+/**
+ * The filters of the financial report as texts, for the PDF: the period, the vehicle type and
+ * the service, each saying "all" when nothing is chosen, as the selects do.
+ */
+export function describeFilters(period: ReportPeriod | null, query: ReportQuery): ReportFilters {
+    return [
+        { label: 'Período', text: describePeriod(period, query.range), wide: true },
+        {
+            label: 'Tipo de veículo',
+            text: query.type ? typeLabel(query.type) : 'Todos os veículos',
+        },
+        {
+            label: 'Tipo de serviço',
+            text:
+                REPORT_SERVICES.find((item) => item.value === query.service)?.label ??
+                'Todos os serviços',
+        },
+    ];
+}
+
+/** The filters of the km report as texts, for the PDF: the period and the vehicle type. */
+export function describeKmFilters(period: ReportPeriod | null, query: KmQuery): ReportFilters {
+    return [
+        { label: 'Período', text: describePeriod(period, query.range), wide: true },
+        {
+            label: 'Tipo de veículo',
+            text: query.type ? typeLabel(query.type) : 'Todos os veículos',
+        },
+    ];
 }
 
 /** The day after the given one, at midnight, in the device's time zone. */
@@ -162,4 +195,114 @@ export async function loadReport(query: ReportQuery): Promise<Report> {
         lists.flatMap((records, index) => records.map((record) => toEntry(kinds[index], record))),
         query.range,
     );
+}
+
+/**
+ * Builds the server filter of the km report: the finalized routes (RB10) that returned in the
+ * period, as the history places them, of the vehicles of the type (no period keeps all dates).
+ * Who may read what is not decided here: the API rules show a driver only their own routes.
+ */
+export function buildKmFilter({ range, type }: KmQuery): string {
+    const parts = ['status = "finalizada"'];
+
+    if (range) {
+        parts.push(
+            pb.filter('date_return >= {:from} && date_return < {:to}', {
+                from: range.from,
+                to: range.to,
+            }),
+        );
+    }
+
+    if (type) {
+        parts.push(pb.filter('vehicle.type = {:type}', { type }));
+    }
+
+    return parts.join(' && ');
+}
+
+/** What is read of each route: the two readings of the odometer and the vehicle, which is all the km report adds up. */
+const KM_FIELDS = 'id,km_departure,km_return,vehicle,expand.vehicle';
+
+/** Maps a `routes` record, read with `KM_FIELDS`, to an entry of the km report. */
+function toKmEntry(record: RecordModel): KmEntry {
+    const { id, plate, model, type, active } = toVehicle(record.expand?.vehicle);
+
+    return {
+        vehicle: { id, plate, model, type, active },
+        kmDeparture: record.km_departure,
+        kmReturn: record.km_return,
+    };
+}
+
+/**
+ * Loads the km report (RF23): reads the finalized routes of the filter, as many as there are, and
+ * adds the km of each vehicle in the app. The filtering is the server's, and the km of a route
+ * are the ones the history shows on its card, so the totals match it.
+ */
+export async function loadKmReport(query: KmQuery): Promise<KmReport> {
+    const records = await pb.collection('routes').getFullList({
+        filter: buildKmFilter(query),
+        expand: 'vehicle',
+        fields: KM_FIELDS,
+    });
+
+    return buildKmReport(records.map(toKmEntry));
+}
+
+/**
+ * Builds the server filter of the complaints report: the complaints created in the period, of the
+ * vehicles of the type (reached through the route of the complaint); no period or no type keeps
+ * everything. Who may read what is not decided here: the API rules show a driver only the
+ * complaints of their own routes.
+ */
+export function buildComplaintFilter({ range, type }: ComplaintQuery): string {
+    const parts: string[] = [];
+
+    if (range) {
+        parts.push(
+            pb.filter('created >= {:from} && created < {:to}', { from: range.from, to: range.to }),
+        );
+    }
+
+    if (type) {
+        parts.push(pb.filter('route_current.vehicle.type = {:type}', { type }));
+    }
+
+    return parts.join(' && ');
+}
+
+/** What is read of each complaint: the situation and the route it was filed on, with the driver and the vehicle of it. */
+const COMPLAINT_FIELDS = 'id,status,expand.route_current';
+
+/** Maps a `complaints` record, read with `COMPLAINT_FIELDS`, to an entry of the complaints report. */
+function toComplaintEntry(record: RecordModel): ComplaintEntry {
+    const route = record.expand?.route_current;
+    const { id, plate, model, type, active } = toVehicle(route?.expand?.vehicle);
+
+    return {
+        status: record.status,
+        vehicle: { id, plate, model, type, active },
+        driver: {
+            id: route?.expand?.user?.id ?? '',
+            name: route?.expand?.user?.name ?? '',
+            role: route?.expand?.user?.role ?? 'motorista',
+        },
+    };
+}
+
+/**
+ * Loads the complaints report (RF23): reads the complaints of the filter, as many as there are,
+ * with the route of each one expanded to its driver and vehicle, and counts them in the app. The
+ * filtering is the server's, and the driver of a complaint is the user of its route, as in the
+ * history.
+ */
+export async function loadComplaintReport(query: ComplaintQuery): Promise<ComplaintReport> {
+    const records = await pb.collection('complaints').getFullList({
+        filter: buildComplaintFilter(query),
+        expand: 'route_current.user,route_current.vehicle',
+        fields: COMPLAINT_FIELDS,
+    });
+
+    return buildComplaintReport(records.map(toComplaintEntry));
 }

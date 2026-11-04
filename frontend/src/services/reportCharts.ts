@@ -1,4 +1,5 @@
 import { formatCurrency } from '../schemas/masks';
+import type { ComplaintStatus } from './complaints';
 import type { MonthTotal, Report } from './reportTotals';
 import type { ServiceKind } from './serviceRecords';
 
@@ -37,6 +38,13 @@ export const SERVICE_COLORS: Record<ServiceKind, string> = {
     fuel: '#202020',
     oil: '#808080',
     repair: '#C0C0C0',
+};
+
+/** Color of each situation of a complaint in the proportion bar and the dots of the complaints report: the same three grays. */
+export const STATUS_COLORS: Record<ComplaintStatus, string> = {
+    pendente: '#202020',
+    aprovada: '#808080',
+    reprovada: '#C0C0C0',
 };
 
 const TEXT = '#202020';
