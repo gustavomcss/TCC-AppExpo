@@ -1,14 +1,16 @@
 import type { RecordModel } from 'pocketbase';
 
 import type { VehicleType } from '../components/vehicleTypeOptions';
+import { formatDay } from '../schemas/masks';
 import { periodRange, vehicleSearchMatches } from './history';
 import type { HistoryPeriod } from './history';
 import { pb } from './pocketbase';
+import type { ReportFilters } from './reportDocument';
 import { buildReport } from './reportTotals';
 import type { Report, ReportEntry } from './reportTotals';
 import { COLLECTIONS } from './serviceRecords';
 import type { ServiceKind } from './serviceRecords';
-import { toVehicle } from './vehicles';
+import { toVehicle, typeLabel } from './vehicles';
 
 /** The period shortcuts of the history, plus a period with dates typed by the user. No period at all is the whole history. */
 export type ReportPeriod = HistoryPeriod | 'custom';
@@ -42,6 +44,37 @@ export type ReportQuery = {
     type: VehicleType | null;
     service: ServiceKind | null;
 };
+
+/** A range as the user reads it, with the last day included: "01/11/2026 a 30/11/2026". */
+export function formatRange(range: ReportRange): string {
+    const last = new Date(range.to.getFullYear(), range.to.getMonth(), range.to.getDate() - 1);
+
+    return `${formatDay(range.from)} a ${formatDay(last)}`;
+}
+
+/**
+ * The filters of a report as texts, for the PDF: the period (a shortcut shows its dates too), the
+ * vehicle type and the service, each saying "all" when nothing is chosen, as the selects do.
+ */
+export function describeFilters(period: ReportPeriod | null, query: ReportQuery): ReportFilters {
+    const shortcut = REPORT_PERIODS.find((item) => item.value === period)?.label;
+    let periodText = 'Todo o período';
+
+    if (query.range) {
+        periodText =
+            period === 'custom' || !shortcut
+                ? formatRange(query.range)
+                : `${shortcut} (${formatRange(query.range)})`;
+    }
+
+    return {
+        period: periodText,
+        type: query.type ? typeLabel(query.type) : 'Todos os veículos',
+        service:
+            REPORT_SERVICES.find((item) => item.value === query.service)?.label ??
+            'Todos os serviços',
+    };
+}
 
 /** The day after the given one, at midnight, in the device's time zone. */
 function dayAfter(date: Date): Date {
@@ -89,14 +122,19 @@ export function buildReportFilter({ range, query, type }: ReportQuery): string {
     return parts.join(' && ');
 }
 
-/** What is read of each record: the cost and the vehicle, which is all the report adds up. */
-const REPORT_FIELDS = 'id,cost,vehicle,expand.vehicle';
+/** What is read of each record: the cost, the vehicle and when it was created, which is all the report adds up. */
+const REPORT_FIELDS = 'id,cost,created,vehicle,expand.vehicle';
 
 /** Maps a record of `fuels`, `oils` or `repairs`, read with `REPORT_FIELDS`, to an entry of the report. */
 function toEntry(kind: ServiceKind, record: RecordModel): ReportEntry {
     const { id, plate, model, type, active } = toVehicle(record.expand?.vehicle);
 
-    return { kind, vehicle: { id, plate, model, type, active }, cost: record.cost };
+    return {
+        kind,
+        vehicle: { id, plate, model, type, active },
+        cost: record.cost,
+        created: record.created,
+    };
 }
 
 /**
@@ -122,5 +160,6 @@ export async function loadReport(query: ReportQuery): Promise<Report> {
 
     return buildReport(
         lists.flatMap((records, index) => records.map((record) => toEntry(kinds[index], record))),
+        query.range,
     );
 }

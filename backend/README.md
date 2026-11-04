@@ -171,7 +171,7 @@ Testes em `tests/history-queries.test.js`: quem lê o quê em cada módulo, os f
 
 O relatório financeiro (I-36) também não tem regra, hook nem migração própria. **Decisão: a soma é feita no app.** O servidor só filtra (`buildReportFilter`, em `frontend/src/services/reports.ts`) e devolve, de cada serviço, o `cost` e o veículo expandido; o app agrupa por veículo e soma em centavos (`buildReport`, em `frontend/src/services/reportTotals.ts`). Os totais saem dos mesmos registros que o Histórico lista, e nenhum endpoint novo precisa de regra de acesso própria: `fuels`, `oils` e `repairs` seguem as listRules da #5, então o motorista que fizesse a mesma consulta receberia só os próprios registros.
 
-- **Campos lidos:** `fields=id,cost,vehicle,expand.vehicle` com `expand=vehicle`, sem página (o SDK lê em blocos até acabar).
+- **Campos lidos:** `fields=id,cost,created,vehicle,expand.vehicle` com `expand=vehicle`, sem página (o SDK lê em blocos até acabar).
 - **Período:** `created >= ... && created < ...`, o início incluído e o fim excluído; num período personalizado o último dia digitado entra, então o fim é o começo do dia seguinte. Os atalhos têm os mesmos limites do Histórico, e sem período nenhum ("Todo o período") o filtro não tem data.
 - **Veículo:** `vehicle.model ~ ...` ou `vehicle.plate ~ ...` (com o hífen de volta depois do 3º caractere) e `vehicle.type = ...`. Veículo inativo com registros no período aparece (RB12).
 - **Serviço:** o app só lê a coleção escolhida; sem escolha, lê as três.
@@ -207,6 +207,10 @@ A migração `1792611533_block_inactive_users.js` (I-07) bloqueia o usuário des
 Com a regra falhando, a resposta depende da operação: listagem `200` com a lista vazia, visualização `404`, criação `400` e edição ou exclusão `403` ou `404`. Só o login e o `auth-refresh` respondem `403` de forma confiável, por isso o app confere a sessão com `auth-refresh` quando volta ao primeiro plano. Reativar o usuário devolve o acesso com o mesmo token. Testes em `tests/inactive-user.test.js`.
 
 Antes de aplicar na produção, confira que os usuários existentes têm `active = true`: a migração tranca quem estiver como `false`.
+
+## Dados de demonstração
+
+`backend/seed/` tem um script para encher `fuels`, `oils` e `repairs` com registros espalhados pelos últimos meses (gráficos do relatório financeiro). O servidor ignora um `created` enviado, até do superuser (RNF05), então o script usa o hook temporário `seed/seed_backdate.pb.js`, que **fica fora de `pb_hooks` de propósito**: copie-o para `pb_hooks` só enquanto o script roda e apague-o em seguida (em produção, os hooks recarregam na hora). O hook só age em requisição de superuser com o campo `seed_created`. O script (`bash backend/seed/seed-report-data.sh`) pede o e-mail e a senha do superuser, não grava nenhum dos dois, usa os veículos ativos (e cria `DEM-xAxx` até `MIN_VEHICLES`, 7 por padrão), aborta e apaga o registro de teste se o hook não estiver ativo, e só cria registros (apagar é pelo painel). `DRY_RUN=1` só imprime.
 
 ## Atualizar a versão
 

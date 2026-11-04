@@ -14,7 +14,7 @@ import { startPocketBase } from "./helpers/pocketbase.js";
  */
 
 /* The fields the report asks for, as in REPORT_FIELDS. */
-const REPORT_FIELDS = "id,cost,vehicle,expand.vehicle";
+const REPORT_FIELDS = "id,cost,created,vehicle,expand.vehicle";
 
 /* The three services and the field each one costs under, in the order the report lists them. */
 const SERVICES = ["fuels", "oils", "repairs"];
@@ -103,10 +103,10 @@ async function buildScenario() {
 }
 
 describe("what the report reads of each record", () => {
-    test("only the cost and the vehicle, with the vehicle expanded for the grouping", async () => {
+    test("only the cost, the creation date and the vehicle, with the vehicle expanded for the grouping", async () => {
         const [record] = await read(asSupervisor, "fuels", period(Date.now() - DAY, Date.now() + DAY));
 
-        assert.deepEqual(Object.keys(record).sort(), ["cost", "expand", "id", "vehicle"]);
+        assert.deepEqual(Object.keys(record).sort(), ["cost", "created", "expand", "id", "vehicle"]);
         const vehicle = record.expand.vehicle;
         assert.ok(vehicle.id && vehicle.plate && vehicle.model && vehicle.type);
         assert.equal(typeof vehicle.active, "boolean");

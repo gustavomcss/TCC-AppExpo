@@ -1,27 +1,37 @@
 import { CircleAlert, Droplets, FileText, Fuel, Wrench } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
+import { ActionBar } from '../components/ActionBar';
+import { Button } from '../components/Button';
+import { ChartView } from '../components/ChartView';
 import { Card, CardDescription, CardHeader, CardSeparator, CardTitle } from '../components/Card';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorState } from '../components/ErrorState';
+import { FormScrollView } from '../components/FormScrollView';
 import { LoadingState } from '../components/LoadingState';
+import { NoticeDialog } from '../components/NoticeDialog';
 import { Select } from '../components/Select';
 import type { SelectOption } from '../components/Select';
 import { TextField } from '../components/TextField';
 import { VEHICLE_TYPE_ICONS, VEHICLE_TYPE_OPTIONS } from '../components/vehicleTypeOptions';
 import type { VehicleType } from '../components/vehicleTypeOptions';
-import { formatCurrency, formatDateInput, formatDay } from '../schemas/masks';
+import { formatCurrency, formatDateInput } from '../schemas/masks';
 import { reportPeriodSchema } from '../schemas/report';
+import { buildCharts } from '../services/reportCharts';
+import { SharingUnavailableError, shareReportPdf } from '../services/reportPdf';
 import {
     customRange,
+    describeFilters,
+    formatRange,
     loadReport,
     REPORT_PERIODS,
     REPORT_SERVICES,
     shortcutRange,
 } from '../services/reports';
 import type { ReportPeriod, ReportQuery, ReportRange } from '../services/reports';
+import { countLabel } from '../services/reportTotals';
 import type { Report, ServiceTotal, VehicleTotals } from '../services/reportTotals';
 import { parseServerError } from '../services/serverErrors';
 import type { ServiceKind } from '../services/serviceRecords';
@@ -47,26 +57,15 @@ const SERVICE_OPTIONS: readonly SelectOption<ServiceKind>[] = REPORT_SERVICES.ma
     icon: SERVICE_ICONS[item.value],
 }));
 
+/** Width of the drawing of a chart until the screen is measured: about the inside of a card on a phone. */
+const CHART_WIDTH = 320;
+
 /** Color of each service in the proportion bar and in the dots next to its line. */
 const SERVICE_COLORS: Record<ServiceKind, string> = {
     fuel: palette.g20,
-    oil: palette.g60,
-    repair: palette.gA0,
+    oil: palette.g80,
+    repair: palette.gC0,
 };
-
-/** "Nenhum registro", "1 registro" or "N registros". */
-function countLabel(count: number): string {
-    if (count === 0) {
-        return 'Nenhum registro';
-    }
-
-    return count === 1 ? '1 registro' : `${count} registros`;
-}
-
-/** The day before a date, for showing the last day included in a range whose end is left out. */
-function lastDay(range: ReportRange): Date {
-    return new Date(range.to.getFullYear(), range.to.getMonth(), range.to.getDate() - 1);
-}
 
 /** One line of a card: the service with its color, how many records and what they add up to. */
 function ServiceLine({ kind, total }: { kind: ServiceKind; total: ServiceTotal }) {
@@ -130,7 +129,10 @@ function VehicleCard({ line, kinds }: { line: VehicleTotals; kinds: readonly Ser
  * history, every vehicle, every service), and pressing the chosen option again clears it. All
  * filters combine. The server filters and the sum is made on the device (see `loadReport`), so the totals
  * come from the same records the history lists. A vehicle appears whenever it has records in the
- * period, active or not (RB12).
+ * period, active or not (RB12). Between the total and the vehicles come the charts of the cost
+ * by vehicle (two vehicles or more) and by month (three months or more), also on the PDF. The bar below has "Gerar PDF", which makes the PDF of the report
+ * on the screen and opens the share sheet, with a spinner on the button while it works; it is
+ * off while there is no report with records to print.
  */
 export default function ReportsScreen() {
     const [period, setPeriod] = useState<ReportPeriod | null>('month');
@@ -140,6 +142,9 @@ export default function ReportsScreen() {
     const [service, setService] = useState<ServiceKind | null>(null);
     const [attempt, setAttempt] = useState(0);
     const [result, setResult] = useState<{ request: Request; outcome: Outcome } | null>(null);
+    const [contentWidth, setContentWidth] = useState(0);
+    const [generating, setGenerating] = useState(false);
+    const [failure, setFailure] = useState({ visible: false, message: '' });
 
     /* The custom period only counts once both dates are complete and valid; until then, no report. */
     const custom = useMemo(
@@ -196,9 +201,38 @@ export default function ReportsScreen() {
     /* The answer to the current request, or none while it is still loading. */
     const outcome = request && result?.request === request ? result.outcome : null;
 
-    const kinds = REPORT_SERVICES.map((item) => item.value).filter(
-        (kind) => service === null || kind === service,
-    );
+    const services = REPORT_SERVICES.filter((item) => service === null || item.value === service);
+    const kinds = services.map((item) => item.value);
+
+    /* The PDF is made from the report on the screen, so it has the same numbers; the button is off otherwise. */
+    const printable = request && outcome?.status === 'ready' && outcome.report.count > 0;
+
+    async function generatePdf() {
+        if (!request || outcome?.status !== 'ready' || generating) {
+            return;
+        }
+
+        setGenerating(true);
+
+        try {
+            await shareReportPdf({
+                report: outcome.report,
+                filters: describeFilters(period, request),
+                services,
+                issuedAt: new Date(),
+            });
+        } catch (error) {
+            setFailure({
+                visible: true,
+                message:
+                    error instanceof SharingUnavailableError
+                        ? 'Este aparelho não permite compartilhar arquivos.'
+                        : 'Não foi possível gerar o PDF. Tente novamente.',
+            });
+        } finally {
+            setGenerating(false);
+        }
+    }
 
     function renderReport(report: Report) {
         if (report.count === 0) {
@@ -210,6 +244,11 @@ export default function ReportsScreen() {
                 />
             );
         }
+
+        /* The drawing is as wide as the inside of a card (the border and the padding come off), so its text keeps the size of the app. */
+        const chartWidth = contentWidth > 0 ? contentWidth - 2 * (1 + spacing.md) : CHART_WIDTH;
+        const charts = buildCharts(report, services, chartWidth, fontSize.sm);
+        const drawn = [charts.top, charts.monthly].filter((chart) => chart !== null);
 
         return (
             <>
@@ -238,10 +277,32 @@ export default function ReportsScreen() {
                     </View>
                 </Card>
 
-                <Text style={styles.section}>Por veículo</Text>
-                {report.vehicles.map((line) => (
-                    <VehicleCard key={line.vehicle.id} line={line} kinds={kinds} />
-                ))}
+                {drawn.length > 0 && (
+                    <View style={styles.group}>
+                        <Text style={styles.section}>Gráficos</Text>
+                        <View style={styles.list}>
+                            {drawn.map((chart) => (
+                                <Card key={chart.title}>
+                                    <CardHeader>
+                                        <CardTitle>{chart.title}</CardTitle>
+                                        <CardDescription>{chart.description}</CardDescription>
+                                    </CardHeader>
+                                    <CardSeparator />
+                                    <ChartView chart={chart} />
+                                </Card>
+                            ))}
+                        </View>
+                    </View>
+                )}
+
+                <View style={styles.group}>
+                    <Text style={styles.section}>Por veículo</Text>
+                    <View style={styles.list}>
+                        {report.vehicles.map((line) => (
+                            <VehicleCard key={line.vehicle.id} line={line} kinds={kinds} />
+                        ))}
+                    </View>
+                </View>
             </>
         );
     }
@@ -278,93 +339,111 @@ export default function ReportsScreen() {
     }
 
     return (
-        <ScrollView
-            style={styles.screen}
-            contentContainerStyle={styles.content}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="on-drag"
-        >
-            <Card>
-                <CardHeader>
-                    <CardTitle>Filtros</CardTitle>
-                    <CardDescription>
-                        Escolha o período, o tipo de veículo e o serviço.
-                    </CardDescription>
-                </CardHeader>
+        <View style={styles.screen}>
+            <FormScrollView contentContainerStyle={styles.content} keyboardDismissMode="on-drag">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Filtros</CardTitle>
+                        <CardDescription>
+                            Escolha o período, o tipo de veículo e o serviço.
+                        </CardDescription>
+                    </CardHeader>
 
-                <CardSeparator />
+                    <CardSeparator />
 
-                <View style={styles.field}>
-                    <Select
-                        label="Período"
-                        placeholder="Todo o período"
-                        options={REPORT_PERIODS}
-                        value={period ?? undefined}
-                        onChange={setPeriod}
-                        onClear={() => setPeriod(null)}
-                    />
-                    {range && period !== 'custom' && (
-                        <Text style={styles.hint}>
-                            {formatDay(range.from)} a {formatDay(lastDay(range))}
-                        </Text>
+                    <View style={styles.field}>
+                        <Select
+                            label="Período"
+                            placeholder="Todo o período"
+                            options={REPORT_PERIODS}
+                            value={period ?? undefined}
+                            onChange={setPeriod}
+                            onClear={() => setPeriod(null)}
+                        />
+                        {range && period !== 'custom' && (
+                            <Text style={styles.hint}>{formatRange(range)}</Text>
+                        )}
+                    </View>
+
+                    {period === 'custom' && (
+                        <View style={styles.row}>
+                            <View style={styles.control}>
+                                <TextField
+                                    label="De"
+                                    placeholder="DD/MM/AAAA"
+                                    keyboardType="number-pad"
+                                    maxLength={10}
+                                    value={fromText}
+                                    onChangeText={(text) => setFromText(formatDateInput(text))}
+                                    error={dateError('from')}
+                                />
+                            </View>
+                            <View style={styles.control}>
+                                <TextField
+                                    label="Até"
+                                    placeholder="DD/MM/AAAA"
+                                    keyboardType="number-pad"
+                                    maxLength={10}
+                                    value={toText}
+                                    onChangeText={(text) => setToText(formatDateInput(text))}
+                                    error={dateError('to')}
+                                />
+                            </View>
+                        </View>
                     )}
-                </View>
 
-                {period === 'custom' && (
                     <View style={styles.row}>
                         <View style={styles.control}>
-                            <TextField
-                                label="De"
-                                placeholder="DD/MM/AAAA"
-                                keyboardType="number-pad"
-                                maxLength={10}
-                                value={fromText}
-                                onChangeText={(text) => setFromText(formatDateInput(text))}
-                                error={dateError('from')}
+                            <Select
+                                label="Tipo de veículo"
+                                placeholder="Todos os veículos"
+                                hideLabel
+                                options={VEHICLE_TYPE_OPTIONS}
+                                value={type ?? undefined}
+                                onChange={setType}
+                                onClear={() => setType(null)}
                             />
                         </View>
                         <View style={styles.control}>
-                            <TextField
-                                label="Até"
-                                placeholder="DD/MM/AAAA"
-                                keyboardType="number-pad"
-                                maxLength={10}
-                                value={toText}
-                                onChangeText={(text) => setToText(formatDateInput(text))}
-                                error={dateError('to')}
+                            <Select
+                                label="Tipo de serviço"
+                                placeholder="Todos os serviços"
+                                hideLabel
+                                options={SERVICE_OPTIONS}
+                                value={service ?? undefined}
+                                onChange={setService}
+                                onClear={() => setService(null)}
                             />
                         </View>
                     </View>
-                )}
+                </Card>
 
-                <View style={styles.row}>
-                    <View style={styles.control}>
-                        <Select
-                            label="Tipo de veículo"
-                            placeholder="Todos os veículos"
-                            hideLabel
-                            options={VEHICLE_TYPE_OPTIONS}
-                            value={type ?? undefined}
-                            onChange={setType}
-                            onClear={() => setType(null)}
-                        />
-                    </View>
-                    <View style={styles.control}>
-                        <Select
-                            label="Tipo de serviço"
-                            placeholder="Todos os serviços"
-                            hideLabel
-                            options={SERVICE_OPTIONS}
-                            value={service ?? undefined}
-                            onChange={setService}
-                            onClear={() => setService(null)}
-                        />
-                    </View>
+                <View
+                    style={styles.result}
+                    onLayout={(event) =>
+                        setContentWidth(Math.floor(event.nativeEvent.layout.width))
+                    }
+                >
+                    {renderResult()}
                 </View>
-            </Card>
+            </FormScrollView>
 
-            <View style={styles.result}>{renderResult()}</View>
-        </ScrollView>
+            <ActionBar>
+                <Button
+                    title="Gerar PDF"
+                    loading={generating}
+                    disabled={!printable}
+                    onPress={generatePdf}
+                />
+            </ActionBar>
+
+            <NoticeDialog
+                visible={failure.visible}
+                title="Não foi possível gerar o PDF"
+                message={failure.message}
+                onClose={() => setFailure((previous) => ({ ...previous, visible: false }))}
+            />
+        </View>
     );
 }
 
@@ -377,7 +456,7 @@ const styles = StyleSheet.create({
     content: {
         flexGrow: 1,
         padding: spacing.lg,
-        gap: spacing.xl,
+        gap: spacing.md,
     },
     field: {
         gap: spacing.sm,
@@ -397,7 +476,13 @@ const styles = StyleSheet.create({
     },
     result: {
         flex: 1,
-        gap: spacing.lg,
+        gap: spacing.xl,
+    },
+    group: {
+        gap: spacing.sm,
+    },
+    list: {
+        gap: spacing.md,
     },
     totalBox: {
         alignItems: 'center',
@@ -459,7 +544,6 @@ const styles = StyleSheet.create({
         textAlign: 'right',
     },
     section: {
-        marginTop: spacing.sm,
         color: colors.mutedForeground,
         fontFamily: fontFamily.medium,
         fontSize: fontSize.sm,
