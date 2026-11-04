@@ -77,7 +77,7 @@ export function formatKm(value: number): string {
 }
 
 /** Reads a date from the server ("2026-10-22 08:15:00.000Z") as a Date. */
-function parseServerDate(value: string): Date {
+export function parseServerDate(value: string): Date {
     return new Date(value.replace(' ', 'T'));
 }
 
@@ -87,6 +87,13 @@ export function formatDateTime(value: string): string {
     const pad = (number: number) => String(number).padStart(2, '0');
 
     return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${pad(date.getFullYear() % 100)}, ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+/** Formats the time of a date as the user reads it: "08:15". */
+export function formatTime(date: Date): string {
+    const pad = (number: number) => String(number).padStart(2, '0');
+
+    return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
 /** Formats a date as the user reads it in Brazil, without the time: "22/10/2026". */
