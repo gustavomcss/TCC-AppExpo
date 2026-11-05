@@ -11,7 +11,8 @@ import { colors, fontFamily, fontSize, radius, sizes, spacing } from '../theme';
  * Props of Input. `invalid` paints the border with the error color, `suffix` is a short text
  * drawn inside the box, on the right, such as the unit of the value ("km"), and `prefix` is the
  * same on the left, such as the currency ("R$"). `capitalize` is the one way to capitalize a
- * free text: `words` (a model, a name) or `sentences` (a long note).
+ * free text: `words` (a name, a vehicle model) or `sentences` (an itinerary, a note, a
+ * description); see TextCase.
  */
 export type InputProps = TextInputProps & {
     invalid?: boolean;
