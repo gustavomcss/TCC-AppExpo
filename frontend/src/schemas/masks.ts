@@ -57,31 +57,38 @@ export function formatDecimal(value: number): string {
 }
 
 /**
- * How a free-text field is capitalized: `words` makes the first letter of every word uppercase (a
- * model, a name, an itinerary, an oil type) and `sentences` only the first letter of the text and of
- * each sentence (a long note or description). It is also the `autoCapitalize` the keyboard gets.
+ * How a free-text field is capitalized, whatever case was typed, with the rest of the text
+ * lowercased:
+ * - `words`: every word starts uppercase ("gustavo Martins CORRÊA" is "Gustavo Martins Corrêa"),
+ *   for a name or a vehicle model.
+ * - `sentences`: the text and each sentence start uppercase ("kkk ROTA. teste" is "Kkk rota.
+ *   Teste"), for an itinerary, a note or a description.
+ * It is also the `autoCapitalize` the keyboard gets while typing.
  */
 export type TextCase = 'words' | 'sentences';
 
 /**
- * Removes leading spaces and makes the first letter of every word uppercase, leaving the rest as
- * typed, so "onix plus" becomes "Onix Plus" and "hb20" becomes "Hb20". A trailing space is kept
- * so the next word can be typed. Not for use on every keystroke: rewriting the letter being typed
- * while the keyboard composes it duplicated it ("Mm"). See applyTextCase.
+ * The words case: removes leading spaces, lowercases everything and makes the first letter of
+ * every word uppercase, so "gustavo Martins CORRÊA" becomes "Gustavo Martins Corrêa". A trailing
+ * space is kept so the next word can be typed. Not for use on every keystroke: rewriting the
+ * letter being typed while the keyboard composes it duplicated it ("Mm"). See applyTextCase.
  */
 export function capitalizeWords(text: string): string {
     return text
         .trimStart()
+        .toLowerCase()
         .replace(/(^|\s)(\S)/g, (_, space, letter) => space + letter.toUpperCase());
 }
 
 /**
- * Removes leading spaces and makes the first letter of the text and of each sentence uppercase,
- * leaving the rest as typed: "troca de óleo. revisão feita" becomes "Troca de óleo. Revisão feita".
+ * The sentences case: removes leading spaces, lowercases everything and makes the first letter of
+ * the text and of each sentence uppercase, so "ooooo. testando ÔFAFA" becomes "Ooooo. Testando
+ * ôfafa". A text that starts with a digit ("5w-30 SINTÉTICO") keeps it and only lowercases.
  */
 export function capitalizeSentences(text: string): string {
     return text
         .trimStart()
+        .toLowerCase()
         .replace(/(^|[.!?]\s+)(\p{L})/gu, (_, before, letter) => before + letter.toUpperCase());
 }
 
@@ -97,7 +104,7 @@ export function applyTextCase(mode: TextCase, text: string): string {
 
 /**
  * Formats a km value read from the server for display in the same 000.000,00 shape as the input
- * mask, so every value has the same width: 50 is "000.000,50" and 999999.99 is "999.999,99".
+ * mask, so every value has the same width: 0.5 is "000.000,50", 50 is "000.050,00" and 999999.99 is "999.999,99".
  */
 export function formatKm(value: number): string {
     const padded = String(Math.round(value * 100)).padStart(8, '0');
