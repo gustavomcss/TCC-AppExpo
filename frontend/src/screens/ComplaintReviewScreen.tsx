@@ -157,6 +157,7 @@ export default function ComplaintReviewScreen() {
                 {visible.length === 0 ? (
                     <EmptyState
                         icon={SearchX}
+                        top
                         title="Nenhuma denúncia encontrada"
                         description="Ajuste a busca ou o filtro para ver outras denúncias."
                     />

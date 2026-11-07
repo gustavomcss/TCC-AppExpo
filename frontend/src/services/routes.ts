@@ -1,6 +1,7 @@
 import type { RecordModel } from 'pocketbase';
 
 import type { RouteDepartureValues, RouteReturnValues } from '../schemas/route';
+import type { ComplaintStatus } from './complaints';
 import { fold } from './listFilters';
 import { pb } from './pocketbase';
 import { isNotFoundError } from './serverErrors';
@@ -89,9 +90,11 @@ export type ClosureRoute = {
     obsDeparture: string;
     driverName: string;
     vehicle: Vehicle;
+    /** Situation of the complaint of the route, or null when it has none (RF19). */
+    complaintStatus: ComplaintStatus | null;
 };
 
-/** Maps a `routes` record, read with `user` and `vehicle` expanded, to the route the closure screens show. */
+/** Maps a `routes` record, read with `user` and `vehicle` expanded (and, in the list, its complaint), to the route the closure screens show. */
 function toClosureRoute(record: RecordModel): ClosureRoute {
     return {
         id: record.id,
@@ -102,6 +105,7 @@ function toClosureRoute(record: RecordModel): ClosureRoute {
         obsDeparture: record.obs_departure,
         driverName: record.expand?.user?.name ?? '',
         vehicle: toVehicle(record.expand?.vehicle),
+        complaintStatus: record.expand?.complaints_via_route_current?.status ?? null,
     };
 }
 
@@ -114,7 +118,7 @@ export async function listClosureRoutes(): Promise<ClosureRoute[]> {
     const records = await pb.collection('routes').getFullList({
         filter: 'status != "finalizada"',
         sort: '-date_departure',
-        expand: 'user,vehicle',
+        expand: 'user,vehicle,complaints_via_route_current',
     });
     const routes = records.map(toClosureRoute);
 

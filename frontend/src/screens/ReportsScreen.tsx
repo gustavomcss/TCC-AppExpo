@@ -13,6 +13,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { ActionBar } from '../components/ActionBar';
 import { Button } from '../components/Button';
+import { FieldError } from '../components/FieldError';
 import { ChartView } from '../components/ChartView';
 import { Card, CardDescription, CardHeader, CardSeparator, CardTitle } from '../components/Card';
 import { ComplaintReportView } from '../components/ComplaintReportView';
@@ -232,6 +233,9 @@ export default function ReportsScreen() {
         (name === 'from' ? fromText : toText).length === 10
             ? custom.error?.issues.find((issue) => issue.path[0] === name)?.message
             : undefined;
+
+    /* The end before the start belongs to both dates: both borders turn red and the message shows once, under them. */
+    const orderError = custom.error?.issues.find((issue) => issue.path.length === 0)?.message;
 
     /*
      * A new object whenever something that changes the report changes, so an answer to an older
@@ -458,29 +462,34 @@ export default function ReportsScreen() {
                     </View>
 
                     {period === 'custom' && (
-                        <View style={styles.row}>
-                            <View style={styles.control}>
-                                <TextField
-                                    label="De"
-                                    placeholder="DD/MM/AAAA"
-                                    keyboardType="number-pad"
-                                    maxLength={10}
-                                    value={fromText}
-                                    onChangeText={(text) => setFromText(formatDateInput(text))}
-                                    error={dateError('from')}
-                                />
+                        <View style={styles.field}>
+                            <View style={styles.row}>
+                                <View style={styles.control}>
+                                    <TextField
+                                        label="De"
+                                        placeholder="DD/MM/AAAA"
+                                        keyboardType="number-pad"
+                                        maxLength={10}
+                                        value={fromText}
+                                        onChangeText={(text) => setFromText(formatDateInput(text))}
+                                        error={dateError('from')}
+                                        invalid={Boolean(orderError)}
+                                    />
+                                </View>
+                                <View style={styles.control}>
+                                    <TextField
+                                        label="Até"
+                                        placeholder="DD/MM/AAAA"
+                                        keyboardType="number-pad"
+                                        maxLength={10}
+                                        value={toText}
+                                        onChangeText={(text) => setToText(formatDateInput(text))}
+                                        error={dateError('to')}
+                                        invalid={Boolean(orderError)}
+                                    />
+                                </View>
                             </View>
-                            <View style={styles.control}>
-                                <TextField
-                                    label="Até"
-                                    placeholder="DD/MM/AAAA"
-                                    keyboardType="number-pad"
-                                    maxLength={10}
-                                    value={toText}
-                                    onChangeText={(text) => setToText(formatDateInput(text))}
-                                    error={dateError('to')}
-                                />
-                            </View>
+                            <FieldError message={orderError} />
                         </View>
                     )}
 

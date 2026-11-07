@@ -211,6 +211,7 @@ export default function HistoryScreen() {
                     filtered ? (
                         <EmptyState
                             icon={SearchX}
+                            top
                             title="Nenhum registro encontrado"
                             description="Ajuste a busca ou os filtros para ver outros registros."
                         />

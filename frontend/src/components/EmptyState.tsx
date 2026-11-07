@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react-native';
-import { StyleSheet, Text, View } from 'react-native';
+import { Keyboard, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, fontFamily, fontSize, radius, sizes, spacing } from '../theme';
 import { Button } from './Button';
@@ -11,11 +11,15 @@ export type EmptyStateProps = {
     icon?: LucideIcon;
     actionTitle?: string;
     onAction?: () => void;
+    /** Puts the notice at the top of its area, at the height of the first card, instead of centered. */
+    top?: boolean;
 };
 
 /**
  * Centered notice for a list with nothing to show: an icon in a ring, a title, a short text and,
- * optionally, the action that fills the list.
+ * optionally, the action that fills the list. With `top` it sits at the top of its area instead,
+ * for a search with no result, so it stays visible above the keyboard. A tap on the empty area
+ * closes the keyboard.
  */
 export function EmptyState({
     title,
@@ -23,9 +27,14 @@ export function EmptyState({
     icon: Icon,
     actionTitle,
     onAction,
+    top,
 }: EmptyStateProps) {
     return (
-        <View style={styles.state}>
+        <Pressable
+            accessible={false}
+            onPress={Keyboard.dismiss}
+            style={[styles.state, top && styles.top]}
+        >
             {Icon && (
                 <View style={styles.ring}>
                     <Icon color={colors.mutedForeground} size={sizes.icon} />
@@ -40,7 +49,7 @@ export function EmptyState({
                     <Button variant="outline" title={actionTitle} onPress={onAction} />
                 </View>
             )}
-        </View>
+        </Pressable>
     );
 }
 
@@ -52,6 +61,10 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         gap: spacing.md,
         padding: spacing.xl,
+    },
+    top: {
+        justifyContent: 'flex-start',
+        paddingTop: 0,
     },
     ring: {
         width: sizes.avatar,

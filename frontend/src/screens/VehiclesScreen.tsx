@@ -116,6 +116,7 @@ export default function VehiclesScreen() {
                 {visible.length === 0 ? (
                     <EmptyState
                         icon={SearchX}
+                        top
                         title="Nenhum veículo encontrado"
                         description="Ajuste a busca ou o filtro para ver outros veículos."
                     />
