@@ -36,6 +36,58 @@ A resposta esperada é `200` com `{"message":"API is healthy."}`.
 
 Persistência: depois de reiniciar o contêiner pelo Coolify, o login do superadmin no `/_/` precisa continuar funcionando. Se o painel pedir para criar o primeiro superuser, o `pb_data` não foi persistido.
 
+## Rodar localmente
+
+Para desenvolver ou testar sem tocar na produção, suba um PocketBase próprio na sua máquina. Os comandos partem de `backend/` e foram conferidos no Linux; no macOS troque `linux_amd64` pelo arquivo da sua plataforma (`darwin_arm64`, `darwin_amd64` ou `linux_arm64`, na página de [releases](https://github.com/pocketbase/pocketbase/releases/tag/v0.40.5)). Precisam de `curl` e `unzip`.
+
+**1. Baixar o PocketBase** (a mesma versão da produção) para `backend/.pocketbase/`, que o git ignora e onde `npm test` também procura o binário:
+
+```bash
+mkdir -p .pocketbase/0.40.5
+```
+
+```bash
+curl -L -o .pocketbase/0.40.5/pocketbase.zip https://github.com/pocketbase/pocketbase/releases/download/v0.40.5/pocketbase_0.40.5_linux_amd64.zip
+```
+
+```bash
+unzip -o .pocketbase/0.40.5/pocketbase.zip pocketbase -d .pocketbase/0.40.5
+```
+
+**2. Criar o superadmin** (e-mail e senha que só valem nesta instância local; ficam em `.pocketbase/0.40.5/pb_data`, também ignorado pelo git):
+
+```bash
+.pocketbase/0.40.5/pocketbase superuser create admin@exemplo.com 'uma-senha-forte-123'
+```
+
+**3. Subir o servidor e aplicar as migrações.** O `serve` aplica sozinho todas as migrações de `pb_migrations` que ainda não rodaram (uma pasta de dados nova recebe as 11, em ordem) e carrega os hooks de `pb_hooks`:
+
+```bash
+.pocketbase/0.40.5/pocketbase serve --http=0.0.0.0:8090 --migrationsDir=pb_migrations --hooksDir=pb_hooks --automigrate=false
+```
+
+- `--http=0.0.0.0:8090` deixa o celular da mesma rede Wi-Fi alcançar o servidor; sem a opção, ele só atende o próprio computador (`127.0.0.1:8090`).
+- `--automigrate=false` impede que alterações feitas pelo painel gravem arquivos novos em `pb_migrations`. Mudança de esquema ou de regra é migração escrita à mão (veja [Gerar uma migração](#gerar-uma-migração)).
+- Os hooks recarregam sozinhos quando um arquivo de `pb_hooks` muda.
+
+Confira em outro terminal. A resposta esperada é `200` com `{"message":"API is healthy."}`, e o painel abre em <http://127.0.0.1:8090/_/> (entre com o superadmin do passo 2):
+
+```bash
+curl -i http://127.0.0.1:8090/api/health
+```
+
+**4. Criar o primeiro supervisor.** Não existe auto-cadastro e só o supervisor cria motoristas, então o primeiro supervisor nasce no painel: **Collections → users → New record**, com `email`, `password` e `passwordConfirm` (mínimo de 8 caracteres), `name`, `role = supervisor` e **`active` ligado** (o campo nasce desligado, e usuário inativo não consegue entrar). Os motoristas, os veículos e todo o resto são cadastrados depois, pelo próprio app, entrando como esse supervisor (cards "Gestão de motoristas" e "Gestão de veículos" em Serviços).
+
+**5. Apontar o app para a instância local.** Em `frontend/.env`, troque a URL e reinicie o `npm start` (use `npm start -- --clear` se o app ainda usar a URL antiga):
+
+| Onde o app roda              | `EXPO_PUBLIC_POCKETBASE_URL`                                 |
+| ---------------------------- | ------------------------------------------------------------ |
+| Celular com o Expo Go        | `http://<IP do computador na rede>:8090` (celular e computador na mesma rede) |
+| Emulador Android             | `http://10.0.2.2:8090`                                       |
+| Simulador iOS (macOS)        | `http://127.0.0.1:8090`                                      |
+
+**Recomeçar do zero:** pare o servidor e apague `.pocketbase/0.40.5/pb_data`; os passos 2 a 4 criam tudo de novo. Para rodar os testes de API, que sobem instâncias descartáveis à parte e não usam esta, veja [Testes](#testes).
+
 ## Migrações
 
 O esquema (coleções, campos, índices) e as API Rules são versionados como arquivos em `backend/pb_migrations/`, commitados no repositório (RNF07). Qualquer mudança de esquema ou de regra entra como uma nova migração na mesma PR da issue. Uma instância vazia reproduz o esquema inteiro aplicando esses arquivos em ordem; hoje o arquivo inicial é `1792539204_create_trace_collections.js` (I-03).
@@ -73,6 +125,39 @@ Alterar coleções pelo painel da **produção** grava um arquivo novo direto em
 ### Testar em uma instância vazia
 
 `tests/migrations.test.js` (parte do `npm test`) cria uma pasta de dados vazia, aplica todas as migrações versionadas, confirma que uma segunda aplicação não faz nada e que a última migração pode ser revertida e reaplicada. `tests/collections.test.js` confere o esquema resultante (campos, enums, relações). Para ver à mão, use os comandos acima numa cópia nova.
+
+## Resumo de regras e hooks por coleção
+
+A integridade do TRACE é sustentada em quatro camadas, nesta ordem de preferência: **campos e índices** (tipo, limites, obrigatório, unicidade, no esquema), **API Rules** (quem pode listar, ver, criar, editar e excluir, e com quais campos), **hooks** em `pb_hooks/` (o que precisa consultar o banco ou o relógio do servidor) e, por cima, a validação do app, que só dá feedback antes. Duas regras valem em tudo:
+
+- Toda regra não nula começa com `@request.auth.active = true` (RB18): usuário inativo não acessa nada, mesmo com a sessão aberta.
+- Uma regra `null` é "só superuser". `delete` é `null` em `routes`, `complaints`, `fuels`, `oils` e `repairs` para sempre (RB17). As recusas dos hooks valem também para o superuser; as exceções são o `author.pb.js` e o `active` na criação de veículo, que mantêm o valor que o superuser enviar.
+
+Cada linha abaixo diz o que sustenta cada regra de negócio; o detalhe, as respostas de erro e os testes de cada uma estão nas seções seguintes.
+
+| Coleção | API Rules (migração) | Hooks (`pb_hooks/`) | Campos e índices | Regras de negócio |
+| --- | --- | --- | --- | --- |
+| `users` | Lista e vê o próprio, e o supervisor todos; só o supervisor cria, e só `motorista`; o usuário edita só `photo` e a senha; o supervisor edita de um motorista só `name`, `photo`, `active` e a senha; só o supervisor exclui, e só motorista (`1792601121`, `1792705420`, `1792957049`) | `users.pb.js`: recusa desativar com rota aberta (`user_has_open_route`), excluir com registros (`user_has_records`) e a troca de e-mail por link | `authRule` `active = true` (`1792611533`); `role` e `active` | RB18, RB19 |
+| `vehicles` | Qualquer usuário ativo lista e vê; só o supervisor cria, edita (sem mexer no `odometer`) e exclui (`1792601121`) | `vehicles.pb.js`: `odometer` obrigatório e numérico na criação, veículo criado nasce ativo, recusa inativar com rota aberta (`vehicle_has_open_route`) e excluir com registros (`vehicle_has_records`); `vehicle_plate.pb.js`: placa equivalente (`validation_not_unique`); `decimal_fields.pb.js` | `pattern` da placa `AAA-0A00` (`1792617392`), índices únicos `idx_vehicles_plate` e `idx_vehicles_plate_canonical` (`1792622079`), `odometer` de 0 a 999.999,99 | RB03, RB09, RB12, RB16, RB20 |
+| `vehicle_availability` (view) | Qualquer usuário ativo lista e vê (`1793056826`) | — | Só os ids dos veículos com rota `aberta` | RB01 (o app mostra os ocupados sem expor a rota alheia) |
+| `routes` | Lista e vê o autor, e o supervisor todas; cria qualquer usuário, só `aberta` e sem dados de retorno; finaliza só o autor (uma vez), encerra só o supervisor, o resto fica fixo (`1793049600`) | `routes.pb.js`: `km_departure` numérico, uma rota aberta por veículo e por motorista (`vehicle_in_open_route`, `user_in_open_route`), veículo ativo (`vehicle_inactive`), retorno maior que a saída e que a denúncia pendente (`km_return_not_greater`), `date_return` e `odometer` na finalização (mesma transação), encerramento sem denúncia pendente (`route_has_pending_complaint`); `author.pb.js`; `decimal_fields.pb.js` | Índices únicos parciais `idx_routes_open_vehicle` e `idx_routes_open_user` (`WHERE status = 'aberta'`) | RB01, RB02, RB03, RB05, RB09, RB10, RB12, RB13, RB15, RB17, RB21 |
+| `complaints` | Lista e vê o autor da `route_current`, e o supervisor todas; cria só o autor da rota, `pendente`; revisa só o supervisor (também a própria), só `pendente`, só `status` (`1793196483`) | `complaints.pb.js`: rota `aberta` (`route_not_open`), km diferente da saída (`km_equals_departure`), `route_previous` e `reviewed` do servidor, e na aprovação a correção de km em transação (`km_correction_inconsistent`); `decimal_fields.pb.js` | Índice único `idx_complaints_route_current`; foto obrigatória (JPEG, PNG ou WebP) | RB05, RB06, RB07, RB08, RB11, RB14, RB17 |
+| `fuels`, `oils`, `repairs` | Lista e vê o autor, e o supervisor todos; cria qualquer usuário; edita só o autor, sem mudar veículo, km nem autor (`1792601121`, `1793388044`) | `service_records.pb.js`: veículo ativo (`vehicle_inactive`); `author.pb.js`; `decimal_fields.pb.js` | `created` autodate só de criação; km e valores de 0 a 999.999,99 | RB04, RB09, RB12, RB16, RB17, RNF05 |
+
+### Hooks
+
+| Arquivo | Evento | Coleções | O que faz | Código de erro (campo) |
+| --- | --- | --- | --- | --- |
+| `author.pb.js` | `onRecordCreateRequest` | `routes`, `fuels`, `oils`, `repairs` | Grava o autor (`user`) a partir do usuário autenticado, descartando o do corpo | — |
+| `decimal_fields.pb.js` | `onRecordValidate` | `vehicles`, `routes`, `complaints`, `fuels`, `oils`, `repairs` | No máximo duas casas decimais em km e valores (RB16) | `validation_too_many_decimals` (o campo) |
+| `vehicles.pb.js` | `onRecordCreateRequest`, `onRecordUpdateRequest`, `onRecordDeleteRequest` | `vehicles` | `odometer` numérico na criação e veículo nasce ativo; não inativa com rota aberta; não exclui com registros (RB12) | `validation_required`, `validation_invalid_value` (`odometer`), `vehicle_has_open_route` (`active`), `vehicle_has_records` (`id`) |
+| `vehicle_plate.pb.js` | `onRecordValidate` | `vehicles` | Placa antiga e Mercosul equivalente são a mesma (RB20) | `validation_not_unique` (`plate`) |
+| `routes.pb.js` | `onRecordCreateRequest`, `onRecordCreate`, `onRecordValidate`, `onRecordUpdateRequest` | `routes` | `km_departure` numérico; uma rota aberta por veículo e por motorista; veículo ativo; retorno maior que a saída e que a denúncia pendente; ao finalizar grava `date_return` e o `odometer` (RB03) na mesma transação; recusa encerrar com denúncia pendente | `validation_required`, `validation_invalid_value` (`km_departure`), `vehicle_in_open_route` (`vehicle`), `user_in_open_route` (`user`), `vehicle_inactive` (`vehicle`), `km_return_not_greater` (`km_return`), `route_has_pending_complaint` (`status`) |
+| `complaints.pb.js` | `onRecordCreate`, `onRecordUpdateRequest` | `complaints` | Rota aberta e km diferente da saída; grava `route_previous` e `reviewed`; ao aprovar corrige `km_departure`, o `km_return` da rota anterior e o `odometer` em uma transação (RB06, RB07, RB14) | `route_not_open` (`route_current`), `km_equals_departure` (`km_complaint`), `km_correction_inconsistent` (`status`) |
+| `service_records.pb.js` | `onRecordCreate` | `fuels`, `oils`, `repairs` | Recusa registro em veículo inativo (RB12) | `vehicle_inactive` (`vehicle`) |
+| `users.pb.js` | `onRecordUpdateRequest`, `onRecordRequestEmailChangeRequest`, `onRecordDeleteRequest` | `users` | Não desativa com rota aberta; não exclui com registros; fecha a troca de e-mail por link (RB18, RB19) | `user_has_open_route` (`active`), `user_has_records` (`id`), `403` na troca de e-mail |
+
+O servidor responde com o `code` e uma mensagem em inglês; o app nunca mostra o texto, e sim a tradução por `code` em `frontend/src/services/serverErrors.ts`. Uma recusa vinda de uma API Rule não traz `code` de campo (listagem `200` vazia, visualização `404`, criação `400`, edição e exclusão `403` ou `404`): o app mostra "Ação não permitida". Cada hook e cada regra tem teste em `backend/tests` (`npm test`).
 
 ## API Rules
 
@@ -113,6 +198,7 @@ A migração `1793049600_set_route_rules.js` e o hook `pb_hooks/routes.pb.js` (I
 - Uma edição recusada pela regra responde com o erro de regra do PocketBase (sem `code` de campo): o app mostra "Ação não permitida". O superuser não passa pelas regras e pode reabrir ou corrigir uma rota pelo painel, mas a recusa de duas rotas abertas e o `km_return` maior que a saída valem também para ele.
 
 Testes em `tests/route-rules.test.js`. Rotas criadas por superuser nos outros testes precisam de motorista e veículo próprios, porque a recusa vale para ele também.
+
 ### Denúncias (RB05, RB06, RB08, RB11, RB17)
 
 A migração `1793196483_set_complaint_rules.js` e o hook `pb_hooks/complaints.pb.js` (I-27) definem o ciclo de vida da denúncia. As regras mantêm a condição de usuário ativo (RB18). A denúncia não tem campo de autor: o denunciante é o `user` da `route_current`.
