@@ -7,13 +7,15 @@
         "icon": "./assets/icon.png",
         "userInterfaceStyle": "light",
         "ios": {
-            "supportsTablet": true
+            "supportsTablet": true,
+            "bundleIdentifier": "com.tccapp.trace"
         },
         "android": {
+            "package": "com.tccapp.trace",
+            "versionCode": 1,
             "adaptiveIcon": {
-                "backgroundColor": "#E6F4FE",
+                "backgroundColor": "#202020",
                 "foregroundImage": "./assets/android-icon-foreground.png",
-                "backgroundImage": "./assets/android-icon-background.png",
                 "monochromeImage": "./assets/android-icon-monochrome.png"
             },
             "predictiveBackGestureEnabled": false
@@ -26,6 +28,7 @@
             [
                 "expo-image-picker",
                 {
+                    "microphonePermission": false,
                     "photosPermission": "O TRACE acessa suas fotos para você escolher a foto do perfil ou a foto do painel.",
                     "cameraPermission": "O TRACE usa a câmera para você tirar a foto do perfil ou a foto do painel da denúncia de km."
                 }
@@ -34,6 +37,12 @@
             "expo-secure-store",
             "expo-sharing",
             "expo-asset"
-        ]
+        ],
+        "extra": {
+            "eas": {
+                "projectId": "f2aee319-4160-4253-8bfe-416a8b0daea8"
+            }
+        },
+        "owner": "gustavomcs"
     }
 }

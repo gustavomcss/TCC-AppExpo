@@ -12,6 +12,7 @@ import {
     useWindowDimensions,
     View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, fontFamily, fontSize, radius, spacing } from '../theme';
 import { Badge } from './Badge';
@@ -38,12 +39,15 @@ export type BottomSheetProps = {
  * Pressing the backdrop or going back calls `onClose`. The sheet slides up and the backdrop fades
  * on its own: the Modal's own slide animation would carry the backdrop along with the sheet, like
  * a pane of dark glass. The slide decelerates as it arrives and accelerates as it leaves, which is
- * what makes it look smooth, and the Modal stays mounted until the slide-out ends.
+ * what makes it look smooth, and the Modal stays mounted until the slide-out ends. The bottom
+ * padding grows with the system bar inset: in an installed Android app the Modal draws edge to
+ * edge, so without it the last options end up behind the back, home and recents buttons.
  */
 export function BottomSheet({ visible, title, onClose, onHidden, children }: BottomSheetProps) {
     const [mounted, setMounted] = useState(visible);
     const [progress] = useState(() => new Animated.Value(0));
     const { height } = useWindowDimensions();
+    const { bottom } = useSafeAreaInsets();
 
     /* The latest onHidden, read when the slide-out ends, so a new callback does not restart it. */
     const hiddenCallback = useRef(onHidden);
@@ -96,6 +100,7 @@ export function BottomSheet({ visible, title, onClose, onHidden, children }: Bot
                     style={[
                         styles.sheet,
                         {
+                            paddingBottom: Math.max(spacing.xl, bottom + spacing.md),
                             transform: [
                                 {
                                     translateY: progress.interpolate({
@@ -196,7 +201,6 @@ const styles = StyleSheet.create({
         borderTopRightRadius: radius.xl,
         backgroundColor: colors.card,
         paddingTop: spacing.sm,
-        paddingBottom: spacing.xl,
     },
     grab: {
         width: 32,
