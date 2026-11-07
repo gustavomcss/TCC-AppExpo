@@ -102,6 +102,7 @@ export default function DriversScreen() {
                 {visible.length === 0 ? (
                     <EmptyState
                         icon={SearchX}
+                        top
                         title="Nenhum motorista encontrado"
                         description="Ajuste a busca ou o filtro para ver outros motoristas."
                     />

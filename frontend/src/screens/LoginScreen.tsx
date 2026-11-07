@@ -16,6 +16,12 @@ import { describeLoginError } from '../services/auth';
 import { colors, fontFamily, fontSize, spacing } from '../theme';
 
 /**
+ * Space kept between the password field and the keyboard, so the Entrar button (gap 16, 40 dp),
+ * the card padding (12), the note under the card (gap 24, 16 dp) and a margin of 36 stay visible.
+ */
+const KEYBOARD_CLEARANCE = 144;
+
+/**
  * Login screen (RF01). There is no sign-up link: users are created by the supervisor or by the
  * superadmin, and a line under the card says so. The app name and tagline sit above the card,
  * which holds only the form. Field errors show under the field; a refused login opens the
@@ -50,7 +56,7 @@ export default function LoginScreen() {
             <KeyboardAwareScrollView
                 contentContainerStyle={styles.scroll}
                 keyboardShouldPersistTaps="handled"
-                bottomOffset={spacing.lg}
+                bottomOffset={KEYBOARD_CLEARANCE}
             >
                 <View style={styles.content}>
                     <View style={styles.mark}>
@@ -114,7 +120,7 @@ export default function LoginScreen() {
                     </Card>
 
                     <Text style={styles.footnote}>
-                        O acesso é criado pelo supervisor da sua empresa.
+                        Sem acesso? Peça ao supervisor da sua empresa.
                     </Text>
                 </View>
             </KeyboardAwareScrollView>

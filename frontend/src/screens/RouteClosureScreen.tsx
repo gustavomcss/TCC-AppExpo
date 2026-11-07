@@ -7,6 +7,7 @@ import { Badge } from '../components/Badge';
 import { Card } from '../components/Card';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorState } from '../components/ErrorState';
+import { HistoryCardFooter, HistoryComplaintNote } from '../components/HistoryCardParts';
 import { ListFilters } from '../components/ListFilters';
 import type { StatusOption } from '../components/ListFilters';
 import { LoadingState } from '../components/LoadingState';
@@ -36,7 +37,8 @@ const STATUS_OPTIONS: readonly StatusOption<ClosureStatusFilter>[] = [
  * situation badge: "Aberta" outline and "Encerrada" muted, like "Ativo" and "Inativo".
  * A search field (driver, plate or model) and the chips Todas, Abertas and Encerradas narrow the
  * list on the device, without a new request. Every route opens its detail: an open one can be
- * closed there, a closed one is only shown. The list is loaded again each time the screen gets focus,
+ * closed there, a closed one is only shown. A route with a complaint names its situation in the footer, like the history card (so the supervisor
+ * knows, before trying to close it, that a pending complaint blocks the closure, RB21). The list is loaded again each time the screen gets focus,
  * so a route just closed, or one the driver finalized in the meantime, is up to date when the
  * detail goes back.
  */
@@ -74,20 +76,29 @@ export default function RouteClosureScreen() {
         const open = route.status === 'aberta';
         const card = (
             <Card style={styles.card}>
-                <View style={styles.iconBox}>
-                    <Route color={palette.g20} size={sizes.icon} />
+                <View style={styles.top}>
+                    <View style={styles.iconBox}>
+                        <Route color={palette.g20} size={sizes.icon} />
+                    </View>
+                    <View style={styles.texts}>
+                        <Text style={styles.name}>{route.driverName}</Text>
+                        <Text style={styles.detail}>
+                            {route.vehicle.plate} · {route.vehicle.model}
+                        </Text>
+                        <Text style={styles.detail}>
+                            Saiu {formatDateTime(route.dateDeparture)}
+                        </Text>
+                    </View>
+                    <Badge
+                        label={open ? 'Aberta' : 'Encerrada'}
+                        variant={open ? 'outline' : 'secondary'}
+                    />
                 </View>
-                <View style={styles.texts}>
-                    <Text style={styles.name}>{route.driverName}</Text>
-                    <Text style={styles.detail}>
-                        {route.vehicle.plate} · {route.vehicle.model}
-                    </Text>
-                    <Text style={styles.detail}>Saiu {formatDateTime(route.dateDeparture)}</Text>
-                </View>
-                <Badge
-                    label={open ? 'Aberta' : 'Encerrada'}
-                    variant={open ? 'outline' : 'secondary'}
-                />
+                {route.complaintStatus && (
+                    <HistoryCardFooter>
+                        <HistoryComplaintNote status={route.complaintStatus} />
+                    </HistoryCardFooter>
+                )}
             </Card>
         );
 
@@ -144,6 +155,7 @@ export default function RouteClosureScreen() {
                 {visible.length === 0 ? (
                     <EmptyState
                         icon={SearchX}
+                        top
                         title="Nenhuma rota encontrada"
                         description="Ajuste a busca ou o filtro para ver outras rotas."
                     />
@@ -178,6 +190,9 @@ const styles = StyleSheet.create({
         opacity: 0.6,
     },
     card: {
+        gap: spacing.md,
+    },
+    top: {
         flexDirection: 'row',
         alignItems: 'flex-start',
         gap: spacing.md,

@@ -26,8 +26,8 @@
             [
                 "expo-image-picker",
                 {
-                    "photosPermission": "O TRACE acessa suas fotos para você escolher a foto do perfil.",
-                    "cameraPermission": "O TRACE usa a câmera para você tirar a foto do perfil."
+                    "photosPermission": "O TRACE acessa suas fotos para você escolher a foto do perfil ou a foto do painel.",
+                    "cameraPermission": "O TRACE usa a câmera para você tirar a foto do perfil ou a foto do painel da denúncia de km."
                 }
             ],
             "expo-font",

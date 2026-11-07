@@ -47,11 +47,12 @@ export function Badge({ label, variant = 'default' }: BadgeProps) {
 const styles = StyleSheet.create({
     badge: {
         alignSelf: 'flex-start',
-        height: 24,
+        minHeight: 24,
         justifyContent: 'center',
         borderWidth: 1,
         borderRadius: radius.full,
         paddingHorizontal: spacing.sm,
+        paddingVertical: 2,
     },
     text: {
         fontSize: fontSize.xs,

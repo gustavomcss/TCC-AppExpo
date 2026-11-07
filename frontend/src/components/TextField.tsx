@@ -9,19 +9,21 @@ import { Label } from './Label';
 /**
  * Props of TextField: the input props plus its label and the validation error to show below it.
  * With `showCount` and a `maxLength`, the length typed so far is shown as "12/500" under the field.
+ * `invalid` paints the border red without a message, for an error that belongs to two fields and
+ * is written once under both.
  */
-export type TextFieldProps = Omit<InputProps, 'invalid'> & {
+export type TextFieldProps = InputProps & {
     label: string;
     error?: string;
     showCount?: boolean;
 };
 
 /** Form field: label, input and, when there is one, the validation error under it (RNF08). */
-export function TextField({ label, error, showCount, ...props }: TextFieldProps) {
+export function TextField({ label, error, showCount, invalid, ...props }: TextFieldProps) {
     return (
         <View style={styles.field}>
             <Label>{label}</Label>
-            <Input invalid={Boolean(error)} accessibilityLabel={label} {...props} />
+            <Input invalid={Boolean(error) || invalid} accessibilityLabel={label} {...props} />
             {showCount && props.maxLength ? (
                 <View style={styles.footer}>
                     <View style={styles.footerError}>

@@ -66,13 +66,18 @@ const headerOptions = {
     headerTitleStyle: { fontFamily: fontFamily.semibold, fontSize: fontSize.lg },
 } as const;
 
-/** The three tabs both roles see (RF20): History, Services and User. */
+/**
+ * The three tabs both roles see (RF20): History, Services and User. The app opens on Services,
+ * where the actions are, and the back button of the other tabs returns there before leaving the app.
+ */
 function Tabs() {
     const { bottom } = useSafeAreaInsets();
     useBottomBar(TAB_BAR_HEIGHT + bottom);
 
     return (
         <Tab.Navigator
+            initialRouteName="Serviços"
+            backBehavior="initialRoute"
             screenOptions={{
                 ...headerOptions,
                 tabBarActiveTintColor: palette.g20,

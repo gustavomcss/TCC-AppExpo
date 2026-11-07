@@ -43,7 +43,12 @@ export async function listDrivers(): Promise<Driver[]> {
         filter: 'role = "motorista"',
     });
 
-    return records.map(toDriver).sort((a, b) => nameCollator.compare(a.name, b.name));
+    return records
+        .map(toDriver)
+        .sort(
+            (a, b) =>
+                nameCollator.compare(a.name, b.name) || nameCollator.compare(a.email, b.email),
+        );
 }
 
 /** Loads one driver for the detail screen. The server answers 404 for a user the caller cannot see. */

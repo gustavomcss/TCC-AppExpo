@@ -54,10 +54,31 @@ const idsOf = (response) => response.body.items.map((item) => item.id);
 /** A date as pb.filter writes it into a filter: "2026-10-22 08:15:00.000Z". */
 const pbDate = (date) => date.toISOString().replace("T", " ");
 
-/** The plate text of the search field, with the hyphen put back after the third character. */
-function plateTerm(text) {
+/**
+ * The plate texts the app looks for (plateSearchTexts in services/history.ts): what was typed
+ * without symbols, and the same with the hyphen in each position it could take, since the stored
+ * plate is AAA-0A00 and the user may type part of it.
+ */
+function plateTexts(text) {
     const code = text.replace(/[^a-z0-9]/gi, "").toUpperCase();
-    return code.length > 3 ? `${code.slice(0, 3)}-${code.slice(3)}` : code;
+    const texts = code === "" ? [] : [code];
+
+    for (let left = 1; left <= 3 && left < code.length; left++) {
+        if (code.length - left <= 4) {
+            texts.push(`${code.slice(0, left)}-${code.slice(left)}`);
+        }
+    }
+
+    return texts;
+}
+
+/**
+ * The filter of a vehicle search on the model and the plate, as the app builds it. `vehicle` is the
+ * path to the relation and `others` are alternatives added to the same search (the driver's name).
+ */
+function vehicleSearchFilter(typed, vehicle = "vehicle", others = []) {
+    const plates = plateTexts(typed).map((text) => `${vehicle}.plate ~ '${text}'`);
+    return `(${[`${vehicle}.model ~ '${typed}'`, ...plates, ...others].join(" || ")})`;
 }
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -173,12 +194,27 @@ describe("the vehicle filters, in the service modules and through the route of a
 
     test("by plate, with or without the hyphen the user typed", async () => {
         for (const typed of [scenario.moto.plate, scenario.moto.plate.replace("-", "").toLowerCase()]) {
-            const term = plateTerm(typed);
-            const filter = `(vehicle.model ~ '${typed}' || vehicle.plate ~ '${term}')`;
-            const response = await list(asSupervisor, "oils", { filter });
+            const response = await list(asSupervisor, "oils", { filter: vehicleSearchFilter(typed) });
 
             assert.ok(idsOf(response).includes(scenario.oils.bMoto.id), `plate typed as "${typed}"`);
             assert.ok(!idsOf(response).includes(scenario.oils.aCar.id), `plate typed as "${typed}"`);
+        }
+    });
+
+    test("by part of the plate: the last four characters, or a piece that crosses the hyphen", async () => {
+        const plate = scenario.moto.plate;
+        const pieces = [
+            plate.slice(4), // 0A00
+            plate.slice(4).toLowerCase(),
+            plate.slice(2, 6), // the hyphen in the middle
+            plate.slice(2, 6).replace("-", "").toLowerCase(),
+            plate.slice(0, 5).replace("-", ""), // the three letters and the first digit
+        ];
+
+        for (const typed of pieces) {
+            const response = await list(asSupervisor, "oils", { filter: vehicleSearchFilter(typed) });
+
+            assert.ok(idsOf(response).includes(scenario.oils.bMoto.id), `part typed as "${typed}"`);
         }
     });
 
@@ -201,7 +237,7 @@ describe("the vehicle filters, in the service modules and through the route of a
         const byType = await list(asSupervisor, "complaints", { filter: "route_current.vehicle.type = 'moto'" });
         const byModel = await list(asSupervisor, "complaints", { filter: "(route_current.vehicle.model ~ 'Onix Hist')" });
         const byPlate = await list(asSupervisor, "complaints", {
-            filter: `(route_current.vehicle.model ~ '${scenario.car.plate}' || route_current.vehicle.plate ~ '${plateTerm(scenario.car.plate)}')`,
+            filter: vehicleSearchFilter(scenario.car.plate, "route_current.vehicle"),
         });
 
         assert.ok(idsOf(byType).includes(scenario.complaints.aMoto.id));
@@ -228,7 +264,7 @@ describe("the vehicle filters, in the service modules and through the route of a
 
     test("the driver name, the model and the plate are alternatives of one search", async () => {
         const term = scenario.driverA.name;
-        const filter = `(vehicle.model ~ '${term}' || vehicle.plate ~ '${plateTerm(term)}' || user.name ~ '${term}')`;
+        const filter = vehicleSearchFilter(term, "vehicle", [`user.name ~ '${term}'`]);
         const response = await list(asSupervisor, "oils", { filter });
 
         assert.deepEqual(idsOf(response), [scenario.oils.aCar.id]);

@@ -36,13 +36,13 @@ const dateField = z
 
 /**
  * Custom period of the report: both dates must be real and the end cannot come before the start
- * (a single day is a valid period). The end date is the last day included.
+ * (a single day is a valid period). The end date is the last day included. The order error
+ * belongs to both dates, so it has no path: the screen shows it once, under the two fields.
  */
 export const reportPeriodSchema = z
     .object({ from: dateField, to: dateField })
     .refine(({ from, to }) => from <= to, {
         message: 'A data final deve ser igual ou posterior à inicial.',
-        path: ['to'],
     });
 
 /** The custom period as the user types it, and as it is read once valid. */
