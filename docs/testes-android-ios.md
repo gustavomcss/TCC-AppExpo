@@ -2,7 +2,7 @@
 
 Issue #40 (`[RNF01, RNF08] Testes em Android e iOS e ajustes de usabilidade`). Este documento alimenta o capítulo de resultados do TCC. Ele é o roteiro de uma passada única, nos mesmos passos, em dois aparelhos (iPhone XS e Galaxy S25 FE), e o registro do que for achado.
 
-**Estado:** passada concluída em 5 a 7/11/2026, nos dois aparelhos (T01 a T18). Os problemas de maior impacto foram corrigidos e conferidos nos aparelhos (parte 9); o que sobrou está nas limitações (parte 10). A versão do Android do S25 FE ainda precisa ser registrada na parte 1.
+**Estado:** passada concluída em 5 a 7/11/2026, nos dois aparelhos (T01 a T18). Os problemas de maior impacto foram corrigidos e conferidos nos aparelhos (parte 9); o que sobrou está nas limitações (parte 10). O S25 FE roda o Android 17.
 
 Como usar: siga a parte 3 (preparação) e a parte 4 (testes) na ordem, nos dois aparelhos ao mesmo tempo (a regra de contas está na parte 3). Marque o resultado na parte 5 e me mande os achados no formato da parte 6, de preferência com print.
 
@@ -11,9 +11,9 @@ Como usar: siga a parte 3 (preparação) e a parte 4 (testes) na ordem, nos dois
 | Aparelho              | Sistema | Versão do sistema | Como roda        | Navegação (Android)                 | Quem e quando          |
 | --------------------- | ------- | ----------------- | ---------------- | ----------------------------------- | ---------------------- |
 | iPhone XS             | iOS     | 18.7.11           | Expo Go (SDK 58) | —                                   | Gustavo, 5 a 7/11/2026 |
-| Samsung Galaxy S25 FE | Android | a registrar       | Expo Go (SDK 58) | gestos (T02) e 3 botões (T17 e T18) | Gustavo, 5 a 7/11/2026 |
+| Samsung Galaxy S25 FE | Android | 17                | Expo Go (SDK 58) | gestos (T02) e 3 botões (T17 e T18) | Gustavo, 5 a 7/11/2026 |
 
-Preencher a versão e a navegação de cada um antes de começar (Ajustes, Sobre o telefone). A passada é feita nestes dois aparelhos. O iPhone XS (cerca de 375 dp) é o mais estreito, então é nele que o layout apertado aparece; o S25 FE é o mais largo. Telas mais estreitas, outras versões de sistema e iPad não são testados e constam nas limitações.
+A versão e a navegação de cada um foram registradas antes de começar (Ajustes, Sobre o telefone). A passada é feita nestes dois aparelhos. O iPhone XS (cerca de 375 dp) é o mais estreito, então é nele que o layout apertado aparece; o S25 FE é o mais largo. Telas mais estreitas, outras versões de sistema e iPad não são testados e constam nas limitações.
 
 ## 2. O que já foi visto em cada sistema
 
@@ -333,12 +333,10 @@ Preencher durante a passada. Cada linha vira correção (se for de maior impacto
 
 ## 10. Limitações
 
-Já conhecidas (registradas no CLAUDE.md nas issues indicadas). As que aparecerem na parte 9 e não forem corrigidas entram aqui.
+Já conhecidas (registradas no CLAUDE.md nas issues indicadas). As que aparecerem na parte 9 e não forem corrigidas entram aqui. **Reverificação de 10/11:** o autor testou de novo no Android e a barra de abas na busca do Histórico e a barra de ação dos formulários se comportam normalmente; essas duas limitações, registradas em 5 a 7/11, foram retiradas.
 
 | Limitação                                                                                                                                                                                                                                   | Origem    |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| No Android, a barra de abas sobe junto com o teclado ao tocar na busca do Histórico. `tabBarHideOnKeyboard` foi testado e ficou com defeito, então foi desfeito.                                                                            | #39       |
-| No Android, a barra de ação dos formulários aparece por um instante acima do teclado antes de sumir (a janela diminui quando o teclado abre e o app só a esconde depois). Só o visual; não impede nenhum uso.                               | #40       |
 | Com a fonte do sistema no tamanho máximo, os campos de busca, os seletores e os títulos longos mostram o texto abreviado com reticências (o conteúdo continua legível e utilizável). O app segue a fonte do sistema, sem limite de tamanho. | #40       |
 | A máscara numérica de km e valores reescreve a cada tecla; nenhuma biblioteca nativa de máscara roda no Expo Go.                                                                                                                            | #39       |
 | Motoristas, Veículos, Encerramento de rotas e Revisão de denúncias leem tudo de uma vez e filtram no app; Encerramento e Revisão crescem sem limite com o histórico. Serve ao porte de uma pequena empresa.                                 | #39       |

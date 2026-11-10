@@ -1,15 +1,16 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { StyleSheet, Text, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Alert } from '../components/Alert';
 import { Button } from '../components/Button';
 import { Card, CardContent } from '../components/Card';
 import { NoticeDialog } from '../components/NoticeDialog';
 import { TextField } from '../components/TextField';
 import { useAuth } from '../contexts/AuthContext';
+import { useBottomBar, useToast } from '../contexts/ToastContext';
 import { loginSchema } from '../schemas/auth';
 import type { LoginValues } from '../schemas/auth';
 import { describeLoginError } from '../services/auth';
@@ -26,12 +27,14 @@ const KEYBOARD_CLEARANCE = 144;
  * superadmin, and a line under the card says so. The app name and tagline sit above the card,
  * which holds only the form. Field errors show under the field; a refused login opens the
  * NoticeDialog, since it concerns the whole action. A session ended by the server (I-07) shows
- * its notice above the card. The keyboard is handled by the KeyboardAwareScrollView of
+ * its notice as a blue toast, the app's pattern for a warning, resting above the safe area. The keyboard is handled by the KeyboardAwareScrollView of
  * react-native-keyboard-controller, the same as in the forms (FormScrollView), on iOS and Android:
  * when the keyboard opens, the field in focus is scrolled above it, in step with the keyboard.
  */
 export default function LoginScreen() {
     const { signIn, notice } = useAuth();
+    const { show } = useToast();
+    const insets = useSafeAreaInsets();
     const [serverError, setServerError] = useState<string | null>(null);
     const {
         control,
@@ -41,6 +44,14 @@ export default function LoginScreen() {
         resolver: zodResolver(loginSchema),
         defaultValues: { email: '', password: '' },
     });
+
+    /* There is no bar on this screen: the safe area is what the toast rests above. */
+    useBottomBar(insets.bottom);
+    useEffect(() => {
+        if (notice) {
+            show('warning', notice);
+        }
+    }, [notice, show]);
 
     const submit = handleSubmit(async ({ email, password }) => {
         setServerError(null);
@@ -63,10 +74,6 @@ export default function LoginScreen() {
                         <Text style={styles.brand}>TRACE</Text>
                         <Text style={styles.tagline}>Gestão operacional de frotas</Text>
                     </View>
-
-                    {notice && (
-                        <Alert variant="warning" title="Sessão encerrada" description={notice} />
-                    )}
 
                     <Card>
                         <CardContent>
