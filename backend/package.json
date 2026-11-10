@@ -2,9 +2,12 @@
     "name": "trace-backend",
     "private": true,
     "type": "module",
-    "description": "Testes de API do backend do TRACE (PocketBase). Sem dependências.",
+    "description": "Testes de API do backend do TRACE (PocketBase) e dados de demonstração. Sem dependências.",
     "scripts": {
-        "test": "node --test \"tests/**/*.test.js\""
+        "test": "node --test \"tests/**/*.test.js\"",
+        "seed": "node seed/seed-demo.mjs --auto-hook",
+        "seed:clean": "node seed/seed-demo.mjs --clean --auto-hook",
+        "seed:reset": "node seed/seed-demo.mjs --reset --auto-hook"
     },
     "engines": {
         "node": ">=22"

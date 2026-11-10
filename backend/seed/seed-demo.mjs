@@ -14,9 +14,13 @@
  *
  *   node seed/seed-demo.mjs --auto-hook            create the demo data
  *   node seed/seed-demo.mjs --clean --auto-hook    delete everything this script created
+ *   node seed/seed-demo.mjs --reset --auto-hook    delete it and create it again (fresh dates)
+ *
+ * Also available from backend/ as `npm run seed`, `npm run seed:clean` and `npm run seed:reset`.
+ * Against a server that is not on this machine the script asks you to confirm first; --yes skips it.
  *
  *   HOOKS_DIR      hooks folder the server watches (default: ../pb_hooks, next to this folder)
- *   DEMO_DOMAIN    domain of the demo users' e-mails (default: trace.com.br)
+ *   DEMO_DOMAIN    domain of the demo users' e-mails (default: trace.com)
  *   PB_URL         server (default https://pb.wizecode.com.br)
  *   SU_EMAIL       superuser e-mail (asked if empty)
  *   SU_PASS        superuser password (asked if empty, never stored)
@@ -34,11 +38,13 @@ const PB_URL = (process.env.PB_URL || "https://pb.wizecode.com.br").replace(/\/$
 const DRY_RUN = process.env.DRY_RUN === "1";
 const CLEAN = process.argv.includes("--clean");
 const AUTO_HOOK = process.argv.includes("--auto-hook");
+const RESET = process.argv.includes("--reset");
+const ASSUME_YES = process.argv.includes("--yes");
 const HERE = dirname(fileURLToPath(import.meta.url));
 const HOOK_SOURCE = join(HERE, "seed_backdate.pb.js");
 const HOOK_TARGET = join(process.env.HOOKS_DIR || join(HERE, "..", "pb_hooks"), "seed_backdate.pb.js");
 /* Domain of the demo users' e-mails. The script only ever touches the exact addresses it creates, never the whole domain. */
-const DOMAIN = process.env.DEMO_DOMAIN || "trace.com.br";
+const DOMAIN = process.env.DEMO_DOMAIN || "trace.com";
 const HISTORY_DAYS = 178;
 /* Brazil has no daylight saving time since 2019: local time is UTC-3 all year. */
 const UTC_OFFSET_HOURS = 3;
@@ -455,6 +461,13 @@ const removeHook = () => {
     }
 };
 
+/** Asks for a confirmation before writing to a server that is not on this machine (unless --yes). */
+const confirmWrite = async (action) => {
+    if (ASSUME_YES || /^https?:\/\/(127\.0\.0\.1|localhost)(:|\/|$)/.test(PB_URL)) return;
+    const answer = await prompt(`Servidor ${PB_URL}. Vai ${action}. Digite "sim" para continuar: `);
+    if (answer.trim().toLowerCase() !== "sim") throw new Error("Cancelado.");
+};
+
 process.on("SIGINT", () => {
     removeHook();
     process.exit(130);
@@ -468,6 +481,7 @@ const main = async () => {
         console.log(`Rotas roteirizadas: ${SCRIPTED.length}, mais o histórico aleatório de ${HISTORY_DAYS} dias.`);
         return;
     }
+    await confirmWrite(CLEAN ? "apagar os dados de demonstração" : RESET ? "apagar e recriar os dados de demonstração" : "criar os dados de demonstração");
     const email = process.env.SU_EMAIL || (await prompt("E-mail do superusuário: "));
     const pass = process.env.SU_PASS || (await prompt("Senha do superusuário: ", true));
     const auth = await fetch(`${PB_URL}/api/collections/_superusers/auth-with-password`, {
@@ -484,6 +498,10 @@ const main = async () => {
     if (CLEAN) {
         await clean();
         return;
+    }
+    if (RESET) {
+        console.log("Apagando os dados de demonstração atuais...");
+        await clean();
     }
     const strangers = (await list("vehicles", "id != ''", "&fields=plate")).filter((v) => !Object.values(VEHICLES).some((demo) => demo.plate === v.plate));
     if (strangers.length > 0) {

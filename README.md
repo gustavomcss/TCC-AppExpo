@@ -173,6 +173,7 @@ docs/                    roteiro de testes, testes em Android e iOS e insumos do
 ## Documentação
 
 - [backend/README.md](backend/README.md): instância de produção, rodar o PocketBase localmente, migrações, **resumo das API Rules e dos hooks por coleção**, regras detalhadas e testes do backend.
+- [docs/README.md](docs/README.md): mapa da documentação, com o que é cada arquivo e os números de referência.
 - [docs/requisitos-final.md](docs/requisitos-final.md): especificação de requisitos (RF, RNF e RB) conforme implementado, com limitações e rastreabilidade.
 - [docs/roteiro-de-testes.md](docs/roteiro-de-testes.md): roteiro de testes das regras de negócio e dos fluxos críticos.
 - [docs/testes-android-ios.md](docs/testes-android-ios.md): testes de usabilidade em Android e iOS.

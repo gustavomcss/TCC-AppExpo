@@ -4,19 +4,38 @@ Plano e descrição do banco fictício que alimenta as capturas de tela do TCC (
 
 Os dados são criados pelo script [`backend/seed/seed-demo.mjs`](../../../backend/seed/seed-demo.mjs). Ele passa pelos fluxos reais (a rota é aberta e finalizada, a denúncia é registrada e aprovada ou reprovada), então o servidor aplica todas as regras e correções de km, e os números das telas são os que o sistema de fato produziria. O script foi executado e conferido numa instância descartável do PocketBase; **não foi executado na produção**.
 
+## Receita rápida: deixar os dados de prontidão
+
+Os dados ficam sempre a um comando de distância: apagar, recriar ou renovar as datas, na produção ou numa instância local. Os comandos rodam em `backend/` (Node 22 ou mais novo e ImageMagick, `convert`, instalados). O servidor é o da `PB_URL` (por padrão, a produção, `pb.wizecode.com.br`).
+
+```bash
+cd backend
+npm run seed          # cria os dados de demonstração (recusa se já existem)
+npm run seed:clean    # apaga só o que o script criou
+npm run seed:reset    # apaga e cria de novo, com as datas contadas a partir de hoje
+```
+
+- **Quando usar o `seed:reset`:** antes de uma apresentação (as datas são relativas ao dia da execução: sem isso, "há 3 dias" envelhece), depois de testes que sujaram os dados ou para voltar ao estado original.
+- **O que ele pergunta:** o e-mail e a senha do superadmin e a senha das contas de demonstração (nada é gravado). Num servidor que não é a máquina local, pede antes que você digite `sim`. Para não digitar, exporte `SU_EMAIL`, `SU_PASS` e `DEMO_PASSWORD` só naquele terminal, e use `-- --yes` para pular a confirmação (por exemplo `npm run seed:reset -- --yes`).
+- **Outros ajustes:** `PB_URL` aponta para outro servidor (por exemplo `http://127.0.0.1:8090`), `DEMO_DOMAIN` muda o domínio dos e-mails (padrão `trace.com`) e `HOOKS_DIR` muda a pasta de hooks que o servidor observa.
+- **Como funciona:** o script copia um hook temporário (`backend/seed/seed_backdate.pb.js`, que só aceita superusuário) para `backend/pb_hooks`, espera o servidor carregá-lo e o **remove ao terminar, mesmo com erro ou Ctrl+C**, porque a data de criação é sempre do servidor (RNF05) e só o hook consegue datar os registros no passado. O PocketBase reinicia por alguns segundos quando o hook entra e sai: espere antes de abrir o app ou de rodar outro comando.
+- **O que ele nunca apaga:** o `--clean` e o `--reset` só removem os 7 e-mails exatos do elenco (`nome.sobrenome@trace.com`), os 8 veículos pelas placas da frota e os registros desses usuários. As contas de teste (`supervisor.a@trace.com.br` etc.) e qualquer outro dado ficam como estão. Se alguém criou registros de outro usuário num veículo de demonstração, esse veículo fica (o script avisa).
+- **Se falhar no meio:** rode `npm run seed:clean` e depois `npm run seed`.
+- **Para usar sem tocar a produção:** suba um PocketBase local (ver "Alternativa: PocketBase local" mais abaixo) e rode com `PB_URL=http://127.0.0.1:8090 HOOKS_DIR=...`.
+
 ## Elenco
 
-Todos os usuários usam o domínio `trace.com.br` (mude com `DEMO_DOMAIN`) e a mesma senha, que você escolhe ao rodar o script (não fica no repositório). O `--clean` apaga só estes endereços exatos, nunca as contas de teste como `supervisor.a@trace.com.br`.
+Todos os usuários usam o domínio `trace.com` (nome.sobrenome@trace.com; mude com `DEMO_DOMAIN`) e a mesma senha, que você escolhe ao rodar o script (não fica no repositório). O `--clean` apaga só estes endereços exatos, nunca as contas de teste como `supervisor.a@trace.com.br`.
 
 | Usuário                 | E-mail                                  | Cargo      | Papel nas capturas                                                            |
 | ----------------------- | --------------------------------------- | ---------- | ----------------------------------------------------------------------------- |
-| Renata Albuquerque      | `renata.albuquerque@trace.com.br`  | supervisor | Todas as telas administrativas e os relatórios                                |
-| Rafael Tavares          | `rafael.tavares@trace.com.br`      | motorista  | Sem rota aberta, com histórico e registros recentes: saída, registros, Histórico e edição |
-| Carlos Menezes          | `carlos.menezes@trace.com.br`      | motorista  | Rota aberta **com denúncia pendente**: Serviços, retorno, denúncia registrada |
-| Juliana Prado           | `juliana.prado@trace.com.br`       | motorista  | Rota aberta **sem denúncia**: formulário de denúncia                          |
-| Anderson Cavalcante     | `anderson.cavalcante@trace.com.br` | motorista  | Rota aberta há 3 dias com denúncia pendente: aparece no Encerramento e na Revisão |
-| Fernanda Lopes          | `fernanda.lopes@trace.com.br`      | motorista  | Denúncia reprovada e a rota encerrada pelo supervisor                         |
-| Patrícia Nogueira       | `patricia.nogueira@trace.com.br`   | motorista  | **Inativa**: aparece com o badge "Inativo" (e não consegue entrar)            |
+| Renata Albuquerque      | `renata.albuquerque@trace.com`  | supervisor | Todas as telas administrativas e os relatórios                                |
+| Rafael Tavares          | `rafael.tavares@trace.com`      | motorista  | Sem rota aberta, com histórico e registros recentes: saída, registros, Histórico e edição |
+| Carlos Menezes          | `carlos.menezes@trace.com`      | motorista  | Rota aberta **com denúncia pendente**: Serviços, retorno, denúncia registrada |
+| Juliana Prado           | `juliana.prado@trace.com`       | motorista  | Rota aberta **sem denúncia**: formulário de denúncia                          |
+| Anderson Cavalcante     | `anderson.cavalcante@trace.com` | motorista  | Rota aberta há 3 dias com denúncia pendente: aparece no Encerramento e na Revisão |
+| Fernanda Lopes          | `fernanda.lopes@trace.com`      | motorista  | Denúncia reprovada e a rota encerrada pelo supervisor                         |
+| Patrícia Nogueira       | `patricia.nogueira@trace.com`   | motorista  | **Inativa**: aparece com o badge "Inativo" (e não consegue entrar)            |
 
 ## Frota
 
@@ -120,10 +139,10 @@ DRY_RUN=1 node backend/seed/seed-demo.mjs
 O script precisa, enquanto roda, de um hook temporário (`backend/seed/seed_backdate.pb.js`) que só aceita superusuário e serve para datar os registros no passado (a data de criação é sempre do servidor, RNF05). Com `--auto-hook`, o próprio script copia o hook para `backend/pb_hooks` (a pasta montada na produção, que recarrega na hora), espera o servidor carregá-lo e **o remove ao terminar, mesmo se der erro ou se você apertar Ctrl+C**. Assim o hook nunca fica na produção:
 
 ```bash
-node backend/seed/seed-demo.mjs --auto-hook
+cd backend && npm run seed
 ```
 
-Ele pergunta o e-mail e a senha do superadmin e a senha das contas de demonstração, e leva alguns minutos (cerca de 500 requisições). **Não interrompa.** No fim imprime o resumo (rotas, denúncias e registros). Ao remover o hook, o PocketBase reinicia por alguns segundos: espere antes de abrir o app. Se o script falhar no meio, rode `node backend/seed/seed-demo.mjs --clean --auto-hook` e comece de novo: ele apaga só o que criou, e recusa rodar duas vezes seguidas sem limpar.
+Ele pergunta o e-mail e a senha do superadmin e a senha das contas de demonstração, e leva alguns minutos (cerca de 500 requisições). **Não interrompa.** No fim imprime o resumo (rotas, denúncias e registros). Ao remover o hook, o PocketBase reinicia por alguns segundos: espere antes de abrir o app. Se o script falhar no meio, rode `npm run seed:clean` (em `backend/`) e comece de novo: ele apaga só o que criou, e recusa rodar duas vezes seguidas sem limpar.
 
 Se preferir o modo manual: copie o hook com `cp backend/seed/seed_backdate.pb.js backend/pb_hooks/`, rode o script **sem** `--auto-hook` e depois apague com `rm backend/pb_hooks/seed_backdate.pb.js`. Confira com `ls backend/pb_hooks`: devem restar só os oito hooks do projeto (`author`, `complaints`, `decimal_fields`, `routes`, `service_records`, `users`, `vehicle_plate`, `vehicles`).
 
@@ -133,11 +152,11 @@ Entre no app (iPhone, Expo Go, `frontend/.env` na produção) e confira:
 
 | Entre como                                       | Deve ver                                                                                                   |
 | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
-| `renata.albuquerque@trace.com.br`           | Em Serviços, contador **3** em "Encerramento de rotas" e **2** em "Revisão de denúncias". Seis motoristas (um "Inativo") e oito veículos (um "Inativo"). |
-| `carlos.menezes@trace.com.br`               | Em Serviços, "Aberta" no card Rota e "Pendente" no card Denúncia de km.                                    |
-| `rafael.tavares@trace.com.br`               | Histórico com várias páginas de rotas; uma rota com "Denúncia aprovada"; abastecimentos com o lápis.        |
+| `renata.albuquerque@trace.com`           | Em Serviços, contador **3** em "Encerramento de rotas" e **2** em "Revisão de denúncias". Seis motoristas (um "Inativo") e oito veículos (um "Inativo"). |
+| `carlos.menezes@trace.com`               | Em Serviços, "Aberta" no card Rota e "Pendente" no card Denúncia de km.                                    |
+| `rafael.tavares@trace.com`               | Histórico com várias páginas de rotas; uma rota com "Denúncia aprovada"; abastecimentos com o lápis.        |
 
-As demais contas, na tabela "Elenco" acima, usam a mesma senha. Se algum número não bater, rode `--clean --auto-hook` e refaça o passo 4.
+As demais contas, na tabela "Elenco" acima, usam a mesma senha. Se algum número não bater, rode `npm run seed:reset` (em `backend/`).
 
 ### Passo 6: capturas
 
@@ -145,7 +164,7 @@ Siga [README.md](README.md) (ordem e nomes dos arquivos) com o "Mapa das captura
 
 ### Depois do TCC
 
-Os dados são fictícios e as contas existem de verdade na produção. Ao fim da apresentação, ou apague tudo com `node backend/seed/seed-demo.mjs --clean --auto-hook`, ou mantenha e **troque a senha** das contas ou desative-as pelo painel.
+Os dados são fictícios e as contas existem de verdade na produção. Ao fim da apresentação, ou apague tudo com `npm run seed:clean` (em `backend/`), ou mantenha e **troque a senha** das contas ou desative-as pelo painel.
 
 ## Alternativa: PocketBase local
 
