@@ -2,11 +2,13 @@ import type { RecordModel } from 'pocketbase';
 
 import type { RouteDepartureValues, RouteReturnValues } from '../schemas/route';
 import type { ComplaintStatus } from './complaints';
-import { fold } from './listFilters';
 import { pb } from './pocketbase';
+import { LIST_PAGE_SIZE, readSegmentedPage } from './segmentedList';
+import type { Segment, SegmentedPage } from './segmentedList';
 import { isNotFoundError } from './serverErrors';
 import { toVehicle } from './vehicles';
 import type { Vehicle } from './vehicles';
+import { supervisorSearchFilter } from './vehicleSearch';
 
 /**
  * Tells whether the driver has an open route (RB02). The list rule only shows a driver their own
@@ -109,54 +111,59 @@ function toClosureRoute(record: RecordModel): ClosureRoute {
     };
 }
 
-/**
- * Lists the routes of the closure module (RF10, RB10): the open ones, oldest first because those
- * are the ones forgotten, and then the closed ones, newest first. Finalized routes belong to the
- * history and are left out. Only a supervisor sees every driver's routes.
- */
-export async function listClosureRoutes(): Promise<ClosureRoute[]> {
-    const records = await pb.collection('routes').getFullList({
-        filter: 'status != "finalizada"',
-        sort: '-date_departure',
-        expand: 'user,vehicle,complaints_via_route_current',
-    });
-    const routes = records.map(toClosureRoute);
-
-    return [
-        ...routes.filter((route) => route.status === 'aberta').reverse(),
-        ...routes.filter((route) => route.status !== 'aberta'),
-    ];
-}
-
 /** Situation filter of the closure list: every route, only the open ones or only the closed ones. */
 export type ClosureStatusFilter = 'all' | ClosureRoute['status'];
 
+/** What narrows the closure list: a search text (driver, plate or model) and the situation. */
+export type ClosureFilters = { query: string; status: ClosureStatusFilter };
+
 /**
- * Narrows the loaded list by situation and by a search text that must appear in the driver's
- * name, the plate or the model of the vehicle, ignoring case and accents. It works on what the
- * list already holds, so typing sends no request. The hyphen of the plate is optional in the
- * text: "abc1d" finds ABC-1D23.
+ * The queries behind the closure list (RF10, RB10), in the order they are shown: the open routes,
+ * oldest first because those are the ones forgotten, and then the closed ones, newest first. A
+ * situation chip keeps only its query. Finalized routes belong to the history and are left out.
+ * The search text must appear in the name of the driver, the plate or the model of the vehicle
+ * (see `supervisorSearchFilter`); the server does not ignore accents, only case. Ties are broken
+ * by `id`, so pages never repeat or skip a route.
  */
-export function filterClosureRoutes(
-    routes: ClosureRoute[],
-    query: string,
-    status: ClosureStatusFilter,
-): ClosureRoute[] {
-    const term = fold(query.trim());
-    const plateTerm = term.replace('-', '');
+export function closureSegments({ query, status }: ClosureFilters): Segment[] {
+    const search = supervisorSearchFilter('vehicle', 'user', query);
+    const withSearch = (filter: string) => (search === '' ? filter : `${filter} && ${search}`);
+    const open: Segment = { filter: withSearch('status = "aberta"'), sort: 'date_departure,id' };
+    const closed: Segment = {
+        filter: withSearch('status = "encerrada"'),
+        sort: '-date_departure,-id',
+    };
 
-    return routes.filter((route) => {
-        if (status !== 'all' && route.status !== status) {
-            return false;
-        }
+    if (status === 'aberta') {
+        return [open];
+    }
 
-        return (
-            term === '' ||
-            fold(route.driverName).includes(term) ||
-            (plateTerm !== '' && fold(route.vehicle.plate).replace('-', '').includes(plateTerm)) ||
-            fold(route.vehicle.model).includes(term)
-        );
-    });
+    return status === 'encerrada' ? [closed] : [open, closed];
+}
+
+/**
+ * Loads one page of the closure list (RF10): the filtering, the order and the paging are the
+ * server's, so a long history of closed routes is never read whole. Only a supervisor sees every
+ * driver's routes.
+ */
+export function listClosureRoutes(
+    filters: ClosureFilters,
+    page: number,
+): Promise<SegmentedPage<ClosureRoute>> {
+    return readSegmentedPage(
+        closureSegments(filters),
+        page,
+        LIST_PAGE_SIZE,
+        async (segment, p, perPage) => {
+            const result = await pb.collection('routes').getList(p, perPage, {
+                filter: segment.filter,
+                sort: segment.sort,
+                expand: 'user,vehicle,complaints_via_route_current',
+            });
+
+            return { items: result.items.map(toClosureRoute), totalItems: result.totalItems };
+        },
+    );
 }
 
 /** Counts the open routes of every driver, for the badge of the closure card (supervisor only). */

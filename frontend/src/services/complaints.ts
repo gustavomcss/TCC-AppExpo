@@ -4,12 +4,14 @@ import type { RecordModel } from 'pocketbase';
 import type { ComplaintValues } from '../schemas/complaint';
 import { kmEqualsDepartureMessage } from '../schemas/complaint';
 import { formatKm } from '../schemas/masks';
-import { fold } from './listFilters';
 import { pb } from './pocketbase';
+import { LIST_PAGE_SIZE, readSegmentedPage } from './segmentedList';
+import type { Segment, SegmentedPage } from './segmentedList';
 import { isNotFoundError } from './serverErrors';
 import type { MessageOverrides } from './serverErrors';
 import { toVehicle } from './vehicles';
 import type { Vehicle } from './vehicles';
+import { supervisorSearchFilter } from './vehicleSearch';
 
 /** Situation of a complaint: waiting for the supervisor, or decided by the review (RF15). */
 export type ComplaintStatus = 'pendente' | 'aprovada' | 'reprovada';
@@ -117,20 +119,39 @@ export type PreviousRoute = {
     kmReturn: number;
 };
 
-/** A complaint as the supervisor reviews it: what was reported, by whom, on which route and vehicle. */
-export type ReviewComplaint = Complaint & {
+/** A complaint as the review list shows it: what was reported, by whom, on which route and vehicle. */
+export type ReviewListComplaint = Complaint & {
     driverName: string;
     vehicle: Vehicle;
     /** Departure km of the reported route, the one the complaint corrects (RB06). */
     kmDeparture: number;
+};
+
+/** A complaint as the supervisor reviews it: the list data plus the previous route that a correction would touch. */
+export type ReviewComplaint = ReviewListComplaint & {
     /** The previous route of the vehicle (`route_previous`, set by the server), or null when there is none. */
     previous: PreviousRoute | null;
     /** Whether the previous route has a complaint of its own still pending. */
     previousPending: boolean;
 };
 
-/** Everything the review shows, expanded in one request: the driver and vehicle of the route, and the previous route. */
-const REVIEW_EXPAND = 'route_current.user,route_current.vehicle,route_previous';
+/** What the review list shows, expanded in one request: the driver and the vehicle of the route. */
+const LIST_EXPAND = 'route_current.user,route_current.vehicle';
+
+/** Everything the review detail shows: the same plus the previous route. */
+const REVIEW_EXPAND = `${LIST_EXPAND},route_previous`;
+
+/** Maps a `complaints` record read with `LIST_EXPAND` to the complaint the review list shows. */
+function toReviewListComplaint(record: RecordModel): ReviewListComplaint {
+    const route = record.expand?.route_current;
+
+    return {
+        ...toComplaint(record),
+        driverName: route?.expand?.user?.name ?? '',
+        vehicle: toVehicle(route?.expand?.vehicle),
+        kmDeparture: route?.km_departure ?? 0,
+    };
+}
 
 /**
  * Maps a `complaints` record read with `REVIEW_EXPAND` to the complaint the review screens show.
@@ -138,14 +159,10 @@ const REVIEW_EXPAND = 'route_current.user,route_current.vehicle,route_previous';
  * has one.
  */
 function toReviewComplaint(record: RecordModel, pendingRouteIds: Set<string>): ReviewComplaint {
-    const route = record.expand?.route_current;
     const previous = record.expand?.route_previous;
 
     return {
-        ...toComplaint(record),
-        driverName: route?.expand?.user?.name ?? '',
-        vehicle: toVehicle(route?.expand?.vehicle),
-        kmDeparture: route?.km_departure ?? 0,
+        ...toReviewListComplaint(record),
         previous: previous
             ? {
                   status: previous.status,
@@ -157,26 +174,62 @@ function toReviewComplaint(record: RecordModel, pendingRouteIds: Set<string>): R
     };
 }
 
-/**
- * Lists the complaints of the review module (RF15): the pending ones first, oldest first because
- * those are the ones waiting longest, and then the reviewed ones, the latest review first. Only a
- * supervisor sees the complaints of every driver.
- */
-export async function listReviewComplaints(): Promise<ReviewComplaint[]> {
-    const records = await pb
-        .collection('complaints')
-        .getFullList({ sort: 'created', expand: REVIEW_EXPAND });
-    const pendingRouteIds = new Set(
-        records.filter((record) => record.status === 'pendente').map((r) => r.route_current),
-    );
-    const complaints = records.map((record) => toReviewComplaint(record, pendingRouteIds));
+/** Situation filter of the review list: every complaint, only the pending ones or only the reviewed ones. */
+export type ReviewStatusFilter = 'all' | 'pendente' | 'revisada';
 
-    return [
-        ...complaints.filter((complaint) => complaint.status === 'pendente'),
-        ...complaints
-            .filter((complaint) => complaint.status !== 'pendente')
-            .sort((a, b) => b.reviewed.localeCompare(a.reviewed)),
-    ];
+/** What narrows the review list: a search text (driver, plate or model) and the situation. */
+export type ReviewFilters = { query: string; status: ReviewStatusFilter };
+
+/**
+ * The queries behind the review list (RF15), in the order they are shown: the pending complaints,
+ * oldest first because those are the ones waiting longest, and then the reviewed ones, the latest
+ * review first. A situation chip keeps only its query. The search text must appear in the name of
+ * the driver, the plate or the model of the vehicle of the route (see `supervisorSearchFilter`);
+ * the server does not ignore accents, only case. Ties are broken by `id`, so pages never repeat
+ * or skip a complaint.
+ */
+export function reviewSegments({ query, status }: ReviewFilters): Segment[] {
+    const search = supervisorSearchFilter('route_current.vehicle', 'route_current.user', query);
+    const withSearch = (filter: string) => (search === '' ? filter : `${filter} && ${search}`);
+    const pending: Segment = { filter: withSearch('status = "pendente"'), sort: 'created,id' };
+    const reviewed: Segment = {
+        filter: withSearch('status != "pendente"'),
+        sort: '-reviewed,-id',
+    };
+
+    if (status === 'pendente') {
+        return [pending];
+    }
+
+    return status === 'revisada' ? [reviewed] : [pending, reviewed];
+}
+
+/**
+ * Loads one page of the review list (RF15): the filtering, the order and the paging are the
+ * server's, so the list never reads every complaint. Only a supervisor sees the complaints of
+ * every driver.
+ */
+export function listReviewComplaints(
+    filters: ReviewFilters,
+    page: number,
+): Promise<SegmentedPage<ReviewListComplaint>> {
+    return readSegmentedPage(
+        reviewSegments(filters),
+        page,
+        LIST_PAGE_SIZE,
+        async (segment, p, perPage) => {
+            const result = await pb.collection('complaints').getList(p, perPage, {
+                filter: segment.filter,
+                sort: segment.sort,
+                expand: LIST_EXPAND,
+            });
+
+            return {
+                items: result.items.map(toReviewListComplaint),
+                totalItems: result.totalItems,
+            };
+        },
+    );
 }
 
 /** Loads one complaint for the review detail. The server answers 404 for one the caller cannot see. */
@@ -195,41 +248,6 @@ export async function getReviewComplaint(id: string): Promise<ReviewComplaint> {
         record,
         new Set(pending && pending.totalItems > 0 ? [previousId] : []),
     );
-}
-
-/** Situation filter of the review list: every complaint, only the pending ones or only the reviewed ones. */
-export type ReviewStatusFilter = 'all' | 'pendente' | 'revisada';
-
-/**
- * Narrows the loaded list by situation and by a search text that must appear in the driver's
- * name, the plate or the model of the vehicle, ignoring case and accents. It works on what the
- * list already holds, so typing sends no request. The hyphen of the plate is optional in the
- * text: "abc1d" finds ABC-1D23.
- */
-export function filterReviewComplaints(
-    complaints: ReviewComplaint[],
-    query: string,
-    status: ReviewStatusFilter,
-): ReviewComplaint[] {
-    const term = fold(query.trim());
-    const plateTerm = term.replace('-', '');
-
-    return complaints.filter((complaint) => {
-        if (status === 'pendente' && complaint.status !== 'pendente') {
-            return false;
-        }
-        if (status === 'revisada' && complaint.status === 'pendente') {
-            return false;
-        }
-
-        return (
-            term === '' ||
-            fold(complaint.driverName).includes(term) ||
-            (plateTerm !== '' &&
-                fold(complaint.vehicle.plate).replace('-', '').includes(plateTerm)) ||
-            fold(complaint.vehicle.model).includes(term)
-        );
-    });
 }
 
 /** Counts the pending complaints of every driver, for the badge of the review card (supervisor only). */
