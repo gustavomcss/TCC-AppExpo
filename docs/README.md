@@ -1,12 +1,13 @@
 # Mapa da documentação do TRACE
 
-Onde está cada coisa e qual é a fonte da verdade de cada assunto. O ponto de partida de quem chega ao projeto é o [CLAUDE.md](../CLAUDE.md).
+Onde está cada coisa e qual é a fonte da verdade de cada assunto. O ponto de partida de quem chega ao projeto é o [CLAUDE.md](../CLAUDE.md); o histórico completo do desenvolvimento está em [historico-de-desenvolvimento.md](historico-de-desenvolvimento.md).
 
 ## Núcleo do contexto
 
 | Arquivo | O que é | É a fonte da verdade de |
 | ------- | ------- | ----------------------- |
-| [CLAUDE.md](../CLAUDE.md) | Contexto, stack, regras de negócio essenciais, princípios de código, fluxo de trabalho e a seção "Estado atual", com uma entrada por issue (o que foi feito, decisões, o que foi visto no aparelho) | Decisões e histórico do desenvolvimento |
+| [CLAUDE.md](../CLAUDE.md) | Contexto, stack, regras de negócio essenciais, princípios de código, fluxo de trabalho, decisões e um resumo do estado atual (é lido inteiro por todo chat novo, por isso é enxuto) | Regras e decisões que valem para o código |
+| [historico-de-desenvolvimento.md](historico-de-desenvolvimento.md) | O registro, issue por issue, do que foi feito, das decisões e do que foi visto no aparelho (era a seção "Estado atual" do CLAUDE.md) | O histórico e o raciocínio do desenvolvimento |
 | [README.md](../README.md) | Como rodar o app e o backend, variáveis de ambiente, build de distribuição, scripts | Como instalar e executar |
 | [backend/README.md](../backend/README.md) | Instância de produção, rodar localmente, migrações, resumo das API Rules e dos hooks por coleção, consultas do histórico e dos relatórios, dados de demonstração | O backend descrito em texto |
 
@@ -23,8 +24,8 @@ Onde está cada coisa e qual é a fonte da verdade de cada assunto. O ponto de p
 
 | Arquivo | O que é |
 | ------- | ------- |
-| [requisitos-final.md](requisitos-final.md) e `.pdf` | Especificação de Requisitos versão 2.0: 23 RF, 8 RNF e 21 RB conforme implementado, limitações e rastreabilidade |
-| [planejamento-final.md](planejamento-final.md) e `.pdf` | Planejamento de Issues como executado: 44 issues, datas reais, matriz de 52 requisitos, riscos e decisões |
+| [requisitos-final.md](requisitos-final.md) | Especificação de Requisitos versão 2.0: 23 RF, 8 RNF e 21 RB conforme implementado, limitações e rastreabilidade |
+| [planejamento-final.md](planejamento-final.md) | Planejamento de Issues como executado: 44 issues, datas reais, matriz de 52 requisitos, riscos e decisões |
 | [roteiro-de-testes.md](roteiro-de-testes.md) | Cenários C01 a C21 (uma por regra de negócio) e o fluxo ponta a ponta E1 a E9 |
 | [testes-android-ios.md](testes-android-ios.md) | Testes de usabilidade T01 a T18 em iPhone XS e Galaxy S25 FE |
 
@@ -34,8 +35,10 @@ Onde está cada coisa e qual é a fonte da verdade de cada assunto. O ponto de p
 | ------- | ------- |
 | [insumos.md](tcc/insumos.md) | Atendimento por RF, RNF e RB, resultados dos testes e situação dos critérios da #43 |
 | [balanco-final.md](tcc/balanco-final.md) | Visão do processo, RF com ressalva ligados às issues, auditoria dos critérios e a comparação com os quatro documentos de origem |
-| [capturas/](tcc/capturas/) | 28 capturas em `ios/` e 28 em `android/`, a lista de telas e o plano dos dados de demonstração |
-| [diagramas/](tcc/diagramas/) | `der-final.png`, `dcu-final.png` e [ajustes-der-dcu.md](tcc/diagramas/ajustes-der-dcu.md) |
+| [capturas/](tcc/capturas/README.md) | 28 capturas em `ios/` e 28 em `android/`, a lista de telas e, no mesmo arquivo, o plano e a receita dos dados de demonstração |
+| [diagramas/](tcc/diagramas/) | `der-final.png` e `dcu-final.png` (o que mudou em relação aos originais está nas partes 5.3 e 5.4 do balanço) |
+
+**Conjunto completo de documentos antes da consolidação de 10/11/2026** (com os PDFs, o guia de ajustes dos diagramas e o arquivo separado dos dados de demonstração): tag `docs-completos-2026-11-10` (`git show docs-completos-2026-11-10:<caminho>`).
 
 ## Fora do repositório
 

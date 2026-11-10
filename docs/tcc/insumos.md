@@ -6,11 +6,11 @@ Issue #43 (`[TCC] Insumos para os capítulos de desenvolvimento e resultados`). 
 
 - Os resumos dos RF abaixo foram conferidos com o documento **TRACE – Requisitos** (versão de 13/10/2026), que não fica no repositório. A redação completa de cada RF está nele; as correções que o documento deve receber estão em [balanco-final.md](balanco-final.md), parte 5.
 - "Atendido" quer dizer que os critérios de aceite da issue foram marcados, a regra está no backend (RNF03) e a tela foi testada em aparelho. "Atendido com ressalva" tem uma decisão de projeto ou uma limitação, descrita na coluna de observação. "Parcial" é o que ficou de fora.
-- O detalhe de cada issue (decisões, achados, o que foi e não foi visto no aparelho) está no [CLAUDE.md](../../CLAUDE.md), em "Estado atual".
+- O detalhe de cada issue (decisões, achados, o que foi e não foi visto no aparelho) está no [historico-de-desenvolvimento.md](../historico-de-desenvolvimento.md) (antes, a seção "Estado atual" do CLAUDE.md).
 
 ## 1. Capturas de tela
 
-As capturas ficam em [capturas/](capturas/), uma pasta por sistema (`android/` e `ios/`), com a lista das telas, o nome de cada arquivo e os dados a preparar em [capturas/README.md](capturas/README.md). As capturas são feitas nos dois aparelhos: iPhone XS (iOS 18.7.11) e Galaxy S25 FE (Android 17). Os dados fictícios que as alimentam estão em [capturas/dados-de-demonstracao.md](capturas/dados-de-demonstracao.md).
+As capturas ficam em [capturas/](capturas/), uma pasta por sistema (`android/` e `ios/`), com a lista das telas, o nome de cada arquivo e os dados a preparar em [capturas/README.md](capturas/README.md). As capturas são feitas nos dois aparelhos: iPhone XS (iOS 18.7.11) e Galaxy S25 FE (Android 17). Os dados fictícios que as alimentam estão em [capturas/README.md](capturas/README.md#dados-de-demonstração).
 
 **Situação:** as 28 capturas foram feitas nos dois aparelhos (iOS em `.png`, Android em `.jpg`), com os dados fictícios criados na produção em 9/11 (112 rotas, 13 denúncias, 47 abastecimentos, 25 trocas de óleo e 17 manutenções).
 
@@ -18,7 +18,7 @@ As capturas ficam em [capturas/](capturas/), uma pasta por sistema (`android/` e
 
 O DER e o DCU vêm dos documentos de origem, que ficam fora do repositório. Os arquivos exportados vão em [diagramas/](diagramas/), em PNG ou SVG, com o nome `der-final` e `dcu-final`. A comparação de cada diagrama com o entregue, com as correções a fazer antes de exportar, está em [balanco-final.md](balanco-final.md), partes 5.3 (DER) e 5.4 (DCU): o DER não muda de estrutura (só limites de tamanho, notas e a view), e o DCU ganha o ator Superadmin e notas de pré-condição.
 
-**Situação:** o autor ajustou os dois diagramas conforme [diagramas/ajustes-der-dcu.md](diagramas/ajustes-der-dcu.md); **falta salvar os arquivos exportados nesta pasta**. Antes de exportar o DER, confira que ele bate com o que o backend tem hoje. As diferenças conhecidas entre o DER e o banco são só de nomes e de implementação:
+**Situação:** o autor ajustou os dois diagramas e os exportou em [diagramas/](diagramas/) (`der-final.png` e `dcu-final.png`); o que muda em relação aos originais está nas partes 5.3 e 5.4 de [balanco-final.md](balanco-final.md). Antes de exportar o DER, confira que ele bate com o que o backend tem hoje. As diferenças conhecidas entre o DER e o banco são só de nomes e de implementação:
 
 | Ponto                    | No banco                                                                                                                                                 |
 | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -178,6 +178,6 @@ Também foram corrigidos na etapa de testes da #39 (4/11): o teclado cobrindo ca
 ## 5. Situação dos critérios da issue
 
 - [x] As telas principais foram capturadas em Android e iOS (parte 1): 28 capturas em cada sistema.
-- [ ] O DER e o DCU finais estão exportados em alta resolução. **Pendente:** o autor ajustou os diagramas; falta salvar os arquivos exportados em `docs/tcc/diagramas/` (`der-final` e `dcu-final`, parte 2).
+- [x] O DER e o DCU finais estão exportados em alta resolução (parte 2): `docs/tcc/diagramas/der-final.png` e `dcu-final.png`.
 - [x] Há uma tabela do que foi implementado e do que ficou de fora, por RF, RNF e RB, com as limitações (parte 3). A redação dos RF deve ser conferida com o documento de Requisitos.
 - [x] Os resultados da I-39 estão resumidos em uma tabela (parte 4).

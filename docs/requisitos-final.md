@@ -60,7 +60,7 @@ Ficam fora do escopo: rastreamento por GPS, integração com sistemas de terceir
 
 - TRACE – Planejamento de Issues, versão de 13/10/2026 (43 issues, I-01 a I-43). Número da issue no GitHub igual ao I-nn até a #43.
 - DER e DCU do TRACE.
-- Repositório `gustavomcss/TCC-AppExpo`: `CLAUDE.md` (decisões e estado), `backend/README.md` (API Rules e hooks por coleção), `docs/roteiro-de-testes.md` e `docs/testes-android-ios.md` (resultados dos testes).
+- Repositório `gustavomcss/TCC-AppExpo`: `CLAUDE.md` (decisões e estado) e `docs/historico-de-desenvolvimento.md` (histórico, issue por issue), `backend/README.md` (API Rules e hooks por coleção), `docs/roteiro-de-testes.md` e `docs/testes-android-ios.md` (resultados dos testes).
 
 ## 2. Descrição geral
 

@@ -2,7 +2,7 @@
 
 Documento de fechamento do desenvolvimento do TRACE, em 7/11/2026. Reúne a avaliação do processo, a correspondência entre o que foi planejado e o que foi entregue (com as issues de cada ressalva) e a auditoria dos critérios de aceite de todas as issues. Serve de base para sincronizar os documentos de origem (Requisitos, Planejamento de Issues, DER e DCU) com o produto entregue.
 
-**Escopo desta versão.** As partes 1 a 4 usam o que o repositório registra (issues, CLAUDE.md, roteiros de teste, código). A parte 5 compara, arquivo a arquivo, os quatro documentos de origem (Requisitos, Planejamento de Issues, DER e DCU, de 13/10/2026) com o produto entregue e diz como corrigir cada um.
+**Escopo desta versão.** As partes 1 a 4 usam o que o repositório registra (issues, CLAUDE.md e docs/historico-de-desenvolvimento.md, roteiros de teste, código). A parte 5 compara, arquivo a arquivo, os quatro documentos de origem (Requisitos, Planejamento de Issues, DER e DCU, de 13/10/2026) com o produto entregue e diz como corrigir cada um.
 
 ## 1. Visão geral do processo
 
@@ -43,7 +43,7 @@ O plano previa que, faltando tempo, a I-43, a I-42 e a I-40 ficariam para novemb
 - **Ordem das issues.** As issues de backend antes das telas (I-18, I-19, I-27, I-31) evitaram retrabalho: nenhuma regra precisou ser reescrita depois que a tela existia.
 - **Fatiamento por issue.** Uma branch e uma PR por issue deixaram o histórico rastreável até o critério de aceite.
 - **Teste em aparelho real, com contas reais, a cada issue.** Os achados mais relevantes (teclado, letra duplicada, barra de status) apareceram nessa prática e não em teste automatizado.
-- **Decisões registradas.** O CLAUDE.md documenta cada decisão de desvio e o motivo, o que permite reconstruir o raciocínio no TCC.
+- **Decisões registradas.** O CLAUDE.md e o docs/historico-de-desenvolvimento.md documentam cada decisão de desvio e o motivo, o que permite reconstruir o raciocínio no TCC.
 
 **O que não funcionou como o planejado**
 
@@ -129,9 +129,9 @@ Foram lidos os critérios de todas as 44 issues (as 43 do plano e a #47). **35 i
 ## 4. Pendências para encerrar o projeto
 
 1. **#42:** concluída. A pessoa externa seguiu o README e a issue foi fechada em 7/11.
-2. **#43:** os dados de demonstração foram criados na produção (9/11) e as 28 capturas foram feitas em iOS e Android. Falta salvar o DER e o DCU exportados em `docs/tcc/diagramas/`, ticar os critérios, e o commit, a PR e o merge.
-3. **Decidir** D2 (redação do RF18, já refletida em [requisitos-final.md](../requisitos-final.md)); D1 e D3 estão resolvidas e D4 foi feita e mesclada em 10/11 (falta o teste em aparelho).
-4. **Marcar** no GitHub os critérios da parte 3 que estão com "Marcar", quando o autor autorizar.
+2. **#43:** concluída em 10/11. Os dados de demonstração foram criados na produção (9/11), as 28 capturas foram feitas em iOS e Android, o DER e o DCU finais estão em `docs/tcc/diagramas/` e a PR foi mesclada.
+3. **Decidir** D2 (redação do RF18, já refletida em [requisitos-final.md](../requisitos-final.md)); D1 e D3 estão resolvidas e D4 foi feita e mesclada em 10/11 (testada pelo autor em aparelho, sem problemas).
+4. **Critérios no GitHub:** os da parte 3 que estavam com "Marcar" foram marcados pelo autor; os 4 da #43, em 10/11.
 5. **Android do S25 FE:** versão 17, registrada em [testes-android-ios.md](../testes-android-ios.md).
 6. **Apagar** os dados de demonstração das capturas ao final, se o autor não os quiser manter para a apresentação.
 

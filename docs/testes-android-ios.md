@@ -333,7 +333,7 @@ Preencher durante a passada. Cada linha vira correção (se for de maior impacto
 
 ## 10. Limitações
 
-Já conhecidas (registradas no CLAUDE.md nas issues indicadas). As que aparecerem na parte 9 e não forem corrigidas entram aqui. **Reverificação de 10/11:** o autor testou de novo no Android e a barra de abas na busca do Histórico e a barra de ação dos formulários se comportam normalmente; essas duas limitações, registradas em 5 a 7/11, foram retiradas.
+Já conhecidas (registradas em docs/historico-de-desenvolvimento.md nas issues indicadas). As que aparecerem na parte 9 e não forem corrigidas entram aqui. **Reverificação de 10/11:** o autor testou de novo no Android e a barra de abas na busca do Histórico e a barra de ação dos formulários se comportam normalmente; essas duas limitações, registradas em 5 a 7/11, foram retiradas.
 
 | Limitação                                                                                                                                                                                                                                   | Origem    |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
