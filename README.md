@@ -167,14 +167,17 @@ backend/                 PocketBase
   pb_hooks/              hooks JS (autor, decimais, veículos, placas, rotas, denúncias, registros, usuários)
   tests/                 testes de API (npm test)
   seed/                  dados de demonstração para os relatórios
-docs/                    roteiro de testes das regras e testes em Android e iOS
+docs/                    roteiro de testes, testes em Android e iOS e insumos do TCC (docs/tcc)
 ```
 
 ## Documentação
 
 - [backend/README.md](backend/README.md): instância de produção, rodar o PocketBase localmente, migrações, **resumo das API Rules e dos hooks por coleção**, regras detalhadas e testes do backend.
+- [docs/requisitos-final.md](docs/requisitos-final.md): especificação de requisitos (RF, RNF e RB) conforme implementado, com limitações e rastreabilidade.
 - [docs/roteiro-de-testes.md](docs/roteiro-de-testes.md): roteiro de testes das regras de negócio e dos fluxos críticos.
 - [docs/testes-android-ios.md](docs/testes-android-ios.md): testes de usabilidade em Android e iOS.
+- [docs/tcc/balanco-final.md](docs/tcc/balanco-final.md): balanço do desenvolvimento, RF com ressalva ligados às issues e auditoria dos critérios de aceite.
+- [docs/tcc/insumos.md](docs/tcc/insumos.md): insumos para os capítulos 5 e 6 do TCC (atendimento aos requisitos, resultados dos testes, capturas de tela e diagramas).
 
 ## Licença
 
