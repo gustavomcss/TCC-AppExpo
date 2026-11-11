@@ -167,15 +167,15 @@ describe("vehicle management belongs to the supervisor", () => {
     test("a driver cannot register, edit or delete a vehicle", async () => {
         const total = await count("vehicles");
         const create = await asA.post("/api/collections/vehicles/records", { plate: "DRV-0001", type: "carro", model: "Gol", odometer: 1 });
-        assert.ok([400, 403].includes(create.status), `create status ${create.status}`);
+        assert.equal(create.status, 400, `create status ${create.status}`);
         assert.equal(await count("vehicles"), total);
 
         const edit = await asA.patch(`/api/collections/vehicles/records/${vehicleA.id}`, { model: "Hacked" });
-        assert.ok([403, 404].includes(edit.status), `edit status ${edit.status}`);
+        assert.equal(edit.status, 404, `edit status ${edit.status}`);
         assert.equal((await admin.get(`/api/collections/vehicles/records/${vehicleA.id}`)).body.model, vehicleA.model);
 
         const remove = await asA.delete(`/api/collections/vehicles/records/${vehicleA.id}`);
-        assert.ok([403, 404].includes(remove.status), `delete status ${remove.status}`);
+        assert.equal(remove.status, 404, `delete status ${remove.status}`);
         assert.equal(await count("vehicles"), total);
     });
 
@@ -199,14 +199,14 @@ describe("the current km of a vehicle is not changed by a request from the app (
     test("the supervisor cannot change the odometer", async () => {
         const vehicle = await make.vehicle({ odometer: 1000 });
         const response = await asSupervisor.patch(`/api/collections/vehicles/records/${vehicle.id}`, { odometer: 9999 });
-        assert.ok([400, 403, 404].includes(response.status), `status ${response.status}`);
+        assert.equal(response.status, 404, `status ${response.status}`);
         assert.equal((await admin.get(`/api/collections/vehicles/records/${vehicle.id}`)).body.odometer, 1000);
     });
 
     test("a driver cannot change the odometer", async () => {
         const vehicle = await make.vehicle({ odometer: 1000 });
         const response = await asA.patch(`/api/collections/vehicles/records/${vehicle.id}`, { odometer: 9999 });
-        assert.ok([400, 403, 404].includes(response.status), `status ${response.status}`);
+        assert.equal(response.status, 404, `status ${response.status}`);
         assert.equal((await admin.get(`/api/collections/vehicles/records/${vehicle.id}`)).body.odometer, 1000);
     });
 
@@ -247,7 +247,7 @@ describe("the author is set by the server from the signed-in user, not by the bo
         const route = await make.route({ user: owner.user, vehicle: owner.vehicle });
 
         const foreign = await asB.post("/api/collections/complaints/records", complaintForm({ route_current: route.id }));
-        assert.ok([400, 403].includes(foreign.status), `status ${foreign.status}`);
+        assert.equal(foreign.status, 400, `status ${foreign.status}`);
         assert.equal((await admin.get(`/api/collections/complaints/records?filter=route_current='${route.id}'`)).body.totalItems, 0);
 
         const own = await owner.session.post("/api/collections/complaints/records", complaintForm({ route_current: route.id }));
@@ -274,20 +274,21 @@ describe("requests without authentication are rejected on every collection", () 
             const total = await count(collection);
 
             const list = await anonymous.get(`/api/collections/${collection}/records`);
-            assert.ok([200, 403].includes(list.status), `list status ${list.status}`);
-            assert.equal(list.status === 200 ? list.body.items.length : 0, 0, "records leaked to an anonymous list");
+            assert.equal(list.status, 200, `list status ${list.status}`);
+            assert.equal(list.body.items.length, 0, "records leaked to an anonymous list");
 
             const view = await anonymous.get(`/api/collections/${collection}/records/${existing.id}`);
-            assert.ok([403, 404].includes(view.status), `view status ${view.status}`);
+            assert.equal(view.status, 404, `view status ${view.status}`);
 
             const create = await anonymous.post(`/api/collections/${collection}/records`, body());
-            assert.ok([400, 403].includes(create.status), `create status ${create.status}`);
+            assert.equal(create.status, 400, `create status ${create.status}`);
 
             const edit = await anonymous.patch(`/api/collections/${collection}/records/${existing.id}`, { created: "2000-01-01 00:00:00.000Z" });
-            assert.ok([403, 404].includes(edit.status), `edit status ${edit.status}`);
+            assert.equal(edit.status, 404, `edit status ${edit.status}`);
 
             const remove = await anonymous.delete(`/api/collections/${collection}/records/${existing.id}`);
-            assert.ok([403, 404].includes(remove.status), `delete status ${remove.status}`);
+            /* Where the delete rule is a filter (users, vehicles) the record is hidden, so 404; where it is null (superuser only, RB17) it is 403. */
+            assert.equal(remove.status, ["users", "vehicles"].includes(collection) ? 404 : 403, `delete status ${remove.status}`);
 
             assert.equal(await count(collection), total);
         });

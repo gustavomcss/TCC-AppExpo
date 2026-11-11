@@ -13,15 +13,6 @@ export type VehicleKm = { vehicle: ReportVehicle; routes: number; km: number };
 /** The km report: the km driven per vehicle, plus the general total and the number of routes. */
 export type KmReport = { vehicles: VehicleKm[]; routes: number; km: number };
 
-/** "Nenhuma rota", "1 rota" or "N rotas". */
-export function routesLabel(count: number): string {
-    if (count === 0) {
-        return 'Nenhuma rota';
-    }
-
-    return count === 1 ? '1 rota' : `${count} rotas`;
-}
-
 /**
  * Groups the finalized routes by vehicle (RF23): the km of a route is its return minus its
  * departure, the same "X km rodados" the history shows on the route card, so the totals match it.

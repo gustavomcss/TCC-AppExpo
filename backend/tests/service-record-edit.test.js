@@ -67,7 +67,7 @@ const read = async (collection, id) => (await admin.get(`${path(collection)}/${i
 const readVehicle = async (vehicle) => (await admin.get(`/api/collections/vehicles/records/${vehicle.id}`)).body;
 
 /** Asserts that a request was refused (rule or validation), never accepted. */
-const assertRefused = (response, label = "") => assert.ok([400, 403, 404].includes(response.status), `${label} ${response.status} ${JSON.stringify(response.body)}`);
+const assertRefused = (response, label = "") => assert.equal(response.status, 404, `${label} ${response.status} ${JSON.stringify(response.body)}`);
 
 for (const [collection, kind] of Object.entries(KINDS)) {
     describe(`${collection}: the author edits the non-sensitive fields (RB17)`, () => {

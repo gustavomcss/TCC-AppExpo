@@ -117,7 +117,7 @@ describe("a vehicle without records is deleted (RF06)", () => {
         const vehicle = await make.vehicle();
         const response = await asDriver.delete(`${PATH}/${vehicle.id}`);
 
-        assert.ok([403, 404].includes(response.status), `status ${response.status}`);
+        assert.equal(response.status, 404, `status ${response.status}`);
         assert.equal(await exists(vehicle), true);
     });
 
@@ -201,7 +201,7 @@ describe("a vehicle with records is not deleted, it is inactivated (RB12)", () =
         const vehicle = await make.vehicle();
         const response = await asDriver.patch(`${PATH}/${vehicle.id}`, { active: false });
 
-        assert.ok([403, 404].includes(response.status), `status ${response.status}`);
+        assert.equal(response.status, 404, `status ${response.status}`);
         assert.equal((await read(vehicle)).active, true);
     });
 });

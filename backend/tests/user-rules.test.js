@@ -53,9 +53,14 @@ async function stored(user) {
     return (await admin.get(`/api/collections/users/records/${user.id}`)).body;
 }
 
-/** The status of a refused write: a rule that fails answers 400 on create and 404 or 403 on edit. */
-function assertRefused(response, label) {
-    assert.ok([400, 403, 404].includes(response.status), `${label}: status ${response.status}`);
+/** A create that a rule refuses answers 400 with no field data. */
+function assertCreateRefused(response, label) {
+    assert.equal(response.status, 400, `${label}: status ${response.status}`);
+}
+
+/** An edit or a delete that a rule refuses hides the record, so it answers 404. */
+function assertWriteRefused(response, label) {
+    assert.equal(response.status, 404, `${label}: status ${response.status}`);
 }
 
 /** Checks that the stored user still has the values of the record read before the attempt. */
@@ -102,33 +107,33 @@ describe("creating users (RB19)", () => {
 
     test("a supervisor cannot create a supervisor", async () => {
         const body = form({ role: "supervisor" });
-        assertRefused(await asSupervisorA.post("/api/collections/users/records", body), "create supervisor");
+        assertCreateRefused(await asSupervisorA.post("/api/collections/users/records", body), "create supervisor");
         assert.equal((await admin.get(`/api/collections/users/records?filter=email='${body.email}'`)).body.totalItems, 0);
     });
 
     test("a supervisor cannot create a user without a role", async () => {
         const { role, ...body } = form();
-        assertRefused(await asSupervisorA.post("/api/collections/users/records", body), "create without role");
+        assertCreateRefused(await asSupervisorA.post("/api/collections/users/records", body), "create without role");
         assert.equal((await admin.get(`/api/collections/users/records?filter=email='${body.email}'`)).body.totalItems, 0);
     });
 
     test("a supervisor cannot create a pre-verified user", async () => {
         const body = form({ verified: true });
-        assertRefused(await asSupervisorA.post("/api/collections/users/records", body), "create verified");
+        assertCreateRefused(await asSupervisorA.post("/api/collections/users/records", body), "create verified");
         assert.equal((await admin.get(`/api/collections/users/records?filter=email='${body.email}'`)).body.totalItems, 0);
     });
 
     for (const role of ["motorista", "supervisor"]) {
         test(`a driver cannot create a ${role}`, async () => {
             const body = form({ role });
-            assertRefused(await asDriverA.post("/api/collections/users/records", body), `create ${role}`);
+            assertCreateRefused(await asDriverA.post("/api/collections/users/records", body), `create ${role}`);
             assert.equal((await admin.get(`/api/collections/users/records?filter=email='${body.email}'`)).body.totalItems, 0);
         });
     }
 
     test("nobody signs up without being signed in", async () => {
         const body = form();
-        assertRefused(await pb.anonymous.post("/api/collections/users/records", body), "anonymous sign-up");
+        assertCreateRefused(await pb.anonymous.post("/api/collections/users/records", body), "anonymous sign-up");
         assert.equal((await admin.get(`/api/collections/users/records?filter=email='${body.email}'`)).body.totalItems, 0);
     });
 
@@ -138,7 +143,7 @@ describe("creating users (RB19)", () => {
         await admin.patch(`/api/collections/users/records/${supervisor.id}`, { active: false });
 
         const body = form();
-        assertRefused(await session.post("/api/collections/users/records", body), "create as inactive");
+        assertCreateRefused(await session.post("/api/collections/users/records", body), "create as inactive");
         assert.equal((await admin.get(`/api/collections/users/records?filter=email='${body.email}'`)).body.totalItems, 0);
     });
 });
@@ -164,7 +169,7 @@ describe("a user edits only their own photo and password (RB19)", () => {
                 const before = await stored(user);
                 /* The role sent must differ from the stored one, or the change would not be a change. */
                 const newValue = field === "role" && label === "supervisor" ? "motorista" : value;
-                assertRefused(await getSession().patch(`/api/collections/users/records/${user.id}`, { [field]: newValue }), field);
+                assertWriteRefused(await getSession().patch(`/api/collections/users/records/${user.id}`, { [field]: newValue }), field);
                 await assertUnchanged(user, before, [field]);
             });
         }
@@ -201,8 +206,13 @@ describe("a user edits only their own photo and password (RB19)", () => {
             const user = await make.user({ role: label === "driver" ? "motorista" : "supervisor" });
             const session = await signIn(user);
 
-            assertRefused(await session.patch(`/api/collections/users/records/${user.id}`, passwordBody()), "without old password");
-            assertRefused(await session.patch(`/api/collections/users/records/${user.id}`, passwordBody({ oldPassword: "wrong-password" })), "wrong old password");
+            const withoutOld = await session.patch(`/api/collections/users/records/${user.id}`, passwordBody());
+            assert.equal(withoutOld.status, 400, "without old password");
+            assert.equal(withoutOld.body.data.oldPassword.code, "validation_required");
+
+            const wrongOld = await session.patch(`/api/collections/users/records/${user.id}`, passwordBody({ oldPassword: "wrong-password" }));
+            assert.equal(wrongOld.status, 400, "wrong old password");
+            assert.equal(wrongOld.body.data.oldPassword.code, "validation_invalid_old_password");
             assert.equal(await canSignIn(user, user.password), true);
 
             const response = await session.patch(`/api/collections/users/records/${user.id}`, passwordBody({ oldPassword: user.password }));
@@ -215,7 +225,7 @@ describe("a user edits only their own photo and password (RB19)", () => {
     test("a driver cannot edit another driver", async () => {
         const before = await stored(driverB);
         for (const body of [{ name: "Hacked" }, passwordBody({ oldPassword: driverB.password }), photoBody()]) {
-            assertRefused(await asDriverA.patch(`/api/collections/users/records/${driverB.id}`, body), "edit another driver");
+            assertWriteRefused(await asDriverA.patch(`/api/collections/users/records/${driverB.id}`, body), "edit another driver");
         }
         await assertUnchanged(driverB, before, ["name", "photo", ...FIXED_FIELDS]);
         assert.equal(await canSignIn(driverB, driverB.password), true);
@@ -223,8 +233,8 @@ describe("a user edits only their own photo and password (RB19)", () => {
 
     test("a driver cannot edit a supervisor", async () => {
         const before = await stored(supervisorB);
-        assertRefused(await asDriverA.patch(`/api/collections/users/records/${supervisorB.id}`, { name: "Hacked" }), "edit supervisor");
-        assertRefused(await asDriverA.patch(`/api/collections/users/records/${supervisorB.id}`, passwordBody()), "password of supervisor");
+        assertWriteRefused(await asDriverA.patch(`/api/collections/users/records/${supervisorB.id}`, { name: "Hacked" }), "edit supervisor");
+        assertWriteRefused(await asDriverA.patch(`/api/collections/users/records/${supervisorB.id}`, passwordBody()), "password of supervisor");
         await assertUnchanged(supervisorB, before, ["name"]);
         assert.equal(await canSignIn(supervisorB, supervisorB.password), true);
     });
@@ -233,7 +243,7 @@ describe("a user edits only their own photo and password (RB19)", () => {
         const user = await make.user();
         const session = await signIn(user);
         await admin.patch(`/api/collections/users/records/${user.id}`, { active: false });
-        assertRefused(await session.patch(`/api/collections/users/records/${user.id}`, photoBody()), "edit as inactive");
+        assertWriteRefused(await session.patch(`/api/collections/users/records/${user.id}`, photoBody()), "edit as inactive");
         assert.equal((await stored(user)).photo, "");
     });
 });
@@ -295,7 +305,7 @@ describe("a supervisor edits a driver's name, photo, active flag and password (R
         test(`cannot change the ${field} of a driver`, async () => {
             const driver = await make.user();
             const before = await stored(driver);
-            assertRefused(await asSupervisorA.patch(`/api/collections/users/records/${driver.id}`, { [field]: value }), field);
+            assertWriteRefused(await asSupervisorA.patch(`/api/collections/users/records/${driver.id}`, { [field]: value }), field);
             await assertUnchanged(driver, before, [field]);
         });
     }
@@ -303,7 +313,7 @@ describe("a supervisor edits a driver's name, photo, active flag and password (R
     test("cannot slip a forbidden field in along with an allowed one", async () => {
         const driver = await make.user();
         const before = await stored(driver);
-        assertRefused(await asSupervisorA.patch(`/api/collections/users/records/${driver.id}`, { name: "Promoted", role: "supervisor" }), "name and role");
+        assertWriteRefused(await asSupervisorA.patch(`/api/collections/users/records/${driver.id}`, { name: "Promoted", role: "supervisor" }), "name and role");
         await assertUnchanged(driver, before, ["name", "role"]);
     });
 });
@@ -322,7 +332,7 @@ describe("a supervisor does not edit another supervisor (RB19)", () => {
             demotion: { role: "motorista" },
         };
         for (const [label, body] of Object.entries(attempts)) {
-            assertRefused(await asSupervisorA.patch(`/api/collections/users/records/${target.id}`, body), label);
+            assertWriteRefused(await asSupervisorA.patch(`/api/collections/users/records/${target.id}`, body), label);
         }
 
         await assertUnchanged(target, before, ["name", "photo", "active", "email", "role"]);
@@ -332,8 +342,8 @@ describe("a supervisor does not edit another supervisor (RB19)", () => {
     test("a supervisor cannot deactivate or demote themself", async () => {
         const supervisor = await make.user({ role: "supervisor" });
         const session = await signIn(supervisor);
-        assertRefused(await session.patch(`/api/collections/users/records/${supervisor.id}`, { active: false }), "deactivate self");
-        assertRefused(await session.patch(`/api/collections/users/records/${supervisor.id}`, { role: "motorista" }), "demote self");
+        assertWriteRefused(await session.patch(`/api/collections/users/records/${supervisor.id}`, { active: false }), "deactivate self");
+        assertWriteRefused(await session.patch(`/api/collections/users/records/${supervisor.id}`, { role: "motorista" }), "demote self");
         const after = await stored(supervisor);
         assert.equal(after.active, true);
         assert.equal(after.role, "supervisor");
@@ -345,8 +355,8 @@ describe("a supervisor does not edit another supervisor (RB19)", () => {
         const driver = await make.user();
         await admin.patch(`/api/collections/users/records/${supervisor.id}`, { active: false });
 
-        assertRefused(await session.patch(`/api/collections/users/records/${driver.id}`, { name: "Hacked" }), "edit as inactive supervisor");
-        assertRefused(await session.patch(`/api/collections/users/records/${driver.id}`, passwordBody()), "password as inactive supervisor");
+        assertWriteRefused(await session.patch(`/api/collections/users/records/${driver.id}`, { name: "Hacked" }), "edit as inactive supervisor");
+        assertWriteRefused(await session.patch(`/api/collections/users/records/${driver.id}`, passwordBody()), "password as inactive supervisor");
         assert.equal(await canSignIn(driver, driver.password), true);
     });
 });
@@ -362,7 +372,7 @@ describe("deleting users (I-15, RB18, RB19)", () => {
     test("a driver cannot delete a user, not even themself", async () => {
         const target = await make.user();
         for (const user of [target, driverA, supervisorA]) {
-            assertRefused(await remove(asDriverA, user), "delete as driver");
+            assertWriteRefused(await remove(asDriverA, user), "delete as driver");
             assert.equal(await exists(user), true);
         }
     });
@@ -378,7 +388,7 @@ describe("deleting users (I-15, RB18, RB19)", () => {
 
     test("a supervisor cannot delete a supervisor, not even themself (RB19)", async () => {
         for (const user of [supervisorB, supervisorA]) {
-            assertRefused(await remove(asSupervisorA, user), "delete supervisor");
+            assertWriteRefused(await remove(asSupervisorA, user), "delete supervisor");
             assert.equal(await exists(user), true);
         }
     });
@@ -424,13 +434,13 @@ describe("deleting users (I-15, RB18, RB19)", () => {
         const driver = await make.user();
         await admin.patch(`/api/collections/users/records/${supervisor.id}`, { active: false });
 
-        assertRefused(await remove(session, driver), "delete as inactive supervisor");
+        assertWriteRefused(await remove(session, driver), "delete as inactive supervisor");
         assert.equal(await exists(driver), true);
     });
 
     test("nobody signed out deletes a user", async () => {
         const driver = await make.user();
-        assertRefused(await remove(createClient(pb.url), driver), "delete anonymous");
+        assertWriteRefused(await remove(createClient(pb.url), driver), "delete anonymous");
         assert.equal(await exists(driver), true);
     });
 });

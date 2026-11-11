@@ -140,7 +140,7 @@ describe("only an active signed-in user reads the view", () => {
         const vehicle = await make.vehicle();
 
         for (const response of [await session.post(PATH, { id: vehicle.id }), await session.patch(`${PATH}/${vehicle.id}`, {}), await session.delete(`${PATH}/${vehicle.id}`)]) {
-            assert.ok([400, 403, 404].includes(response.status), String(response.status));
+            assert.equal(response.status, 400, String(response.status));
         }
     });
 });

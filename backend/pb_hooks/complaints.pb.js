@@ -101,7 +101,12 @@ onRecordUpdateRequest((e) => {
             });
         };
 
-        /* The route of the complaint, when already finalized, keeps a return km above the new departure km. */
+        /*
+         * The route of the complaint, when already finalized, keeps a return km above the new departure
+         * km. The API cannot reach this refusal today: finalizing a route with a pending complaint
+         * already demands a return km above the complaint km (routes.pb.js, RB13). It stays as a second
+         * barrier, so that an approval never leaves a route inconsistent (RB14) even if that changes.
+         */
         if (route.getString("status") === "finalizada" && route.getFloat("km_return") <= kmComplaint) {
             refuse("The correction would leave the return km of the route not greater than its departure km.");
         }

@@ -43,7 +43,9 @@ onRecordCreateRequest((e) => {
  * vehicle (RB12). Runs after the author hook has set `user`, on every create, superuser included,
  * and counts only `aberta` routes, so a `finalizada` or `encerrada` one never blocks. The unique
  * indexes idx_routes_open_vehicle and idx_routes_open_user (migration set_route_rules) are the
- * guarantee against two requests racing; this hook only gives the request a clear answer.
+ * guarantee against two requests racing; this hook only gives the request a clear answer. A
+ * vehicle that does not exist (for instance one deleted while the form was open) is left to the
+ * relation validation, which reports it on `vehicle`.
  */
 onRecordCreate((e) => {
     if (e.record.getString("status") === "aberta") {
@@ -59,8 +61,14 @@ onRecordCreate((e) => {
             }
         }
 
-        const vehicle = e.app.findRecordById("vehicles", e.record.getString("vehicle"));
-        if (!vehicle.getBool("active")) {
+        let vehicle = null;
+        try {
+            vehicle = e.app.findRecordById("vehicles", e.record.getString("vehicle"));
+        } catch (err) {
+            /* Missing or unknown vehicle: the required relation field reports it. */
+        }
+
+        if (vehicle && !vehicle.getBool("active")) {
             throw new BadRequestError("Failed to create record.", {
                 vehicle: new ValidationError("vehicle_inactive", "An inactive vehicle cannot start a route."),
             });
@@ -71,6 +79,14 @@ onRecordCreate((e) => {
 }, "routes");
 
 /*
+ * A new open route starts at the current km of the vehicle (RB03, RB09). Finalizing a route copies
+ * its return km to the odometer, so with a free departure km a direct request could open a route
+ * at any km and lower the odometer without going through the complaint of a km deviation, which is
+ * the audited path (RB06, RB14). The app already sends the current km. A km that differs is
+ * reported on `km_departure` with `km_departure_not_odometer`. It is checked at validation, after
+ * the decimal places (decimal_fields.pb.js), so a km with three decimals is still reported as such.
+ * A vehicle that does not exist is left to the relation validation.
+ *
  * A finalized route has a return km greater than the departure km (RB13). Checked on every save of
  * a `finalizada` route, so a later correction of either km (I-30) cannot break it either. While the
  * route has a `pendente` complaint (RB05), the return km must also be greater than the complaint km:
@@ -78,6 +94,22 @@ onRecordCreate((e) => {
  * to the complaint km, rejecting leaves it where it is).
  */
 onRecordValidate((e) => {
+    if (e.record.isNew() && e.record.getString("status") === "aberta") {
+        let vehicle = null;
+        try {
+            vehicle = e.app.findRecordById("vehicles", e.record.getString("vehicle"));
+        } catch (err) {
+            /* Missing or unknown vehicle: the required relation field reports it. */
+        }
+
+        /* Both values have two decimals at most (RB16), so half a cent apart is a different km. */
+        if (vehicle && Math.abs(e.record.getFloat("km_departure") - vehicle.getFloat("odometer")) >= 0.005) {
+            throw new BadRequestError("Failed to validate record.", {
+                km_departure: new ValidationError("km_departure_not_odometer", "The departure km must be the current km of the vehicle."),
+            });
+        }
+    }
+
     if (e.record.getString("status") === "finalizada") {
         const kmReturn = e.record.getFloat("km_return");
         let floor = e.record.getFloat("km_departure");

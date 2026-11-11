@@ -10,6 +10,6 @@
         "seed:reset": "node seed/seed-demo.mjs --reset --auto-hook"
     },
     "engines": {
-        "node": ">=22"
+        "node": ">=22.18"
     }
 }

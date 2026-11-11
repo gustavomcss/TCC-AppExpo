@@ -1,40 +1,40 @@
 # Testes em Android e iOS e ajustes de usabilidade
 
-Issue #40 (`[RNF01, RNF08] Testes em Android e iOS e ajustes de usabilidade`). Este documento alimenta o capítulo de resultados do TCC. Ele é o roteiro de uma passada única, nos mesmos passos, em dois aparelhos (iPhone XS e Galaxy S25 FE), e o registro do que for achado.
+Issue #40 (`[RNF01, RNF08] Testes em Android e iOS e ajustes de usabilidade`). Este documento alimenta o capítulo de resultados do TCC. Ele reúne o roteiro de uma passada única, nos mesmos passos, em dois aparelhos (iPhone XS e Galaxy S25 FE), e o registro do que foi achado. É um teste funcional e de interface conduzido pelo autor, sem usuários finais e sem medição de desempenho.
 
 **Estado:** passada concluída em 5 a 7/11/2026, nos dois aparelhos (T01 a T18). Os problemas de maior impacto foram corrigidos e conferidos nos aparelhos (parte 9); o que sobrou está nas limitações (parte 10). O S25 FE roda o Android 17.
 
-Como usar: siga a parte 3 (preparação) e a parte 4 (testes) na ordem, nos dois aparelhos ao mesmo tempo (a regra de contas está na parte 3). Marque o resultado na parte 5 e me mande os achados no formato da parte 6, de preferência com print.
+Como foi conduzida: a passada seguiu a parte 3 (preparação) e a parte 4 (testes) na ordem, nos dois aparelhos ao mesmo tempo (a regra de contas está na parte 3). O resultado de cada teste está na parte 5 e o que foi achado, na parte 9; a parte 6 registra o formato em que os achados foram anotados.
 
 ## 1. Aparelhos
 
 | Aparelho              | Sistema | Versão do sistema | Como roda        | Navegação (Android)                 | Quem e quando          |
 | --------------------- | ------- | ----------------- | ---------------- | ----------------------------------- | ---------------------- |
-| iPhone XS             | iOS     | 18.7.11           | Expo Go (SDK 58) | —                                   | Gustavo, 5 a 7/11/2026 |
-| Samsung Galaxy S25 FE | Android | 17                | Expo Go (SDK 58) | gestos (T02) e 3 botões (T17 e T18) | Gustavo, 5 a 7/11/2026 |
+| iPhone XS             | iOS     | 18.7.11           | Expo Go (SDK 58) | —                                   | Autor, 5 a 7/11/2026   |
+| Samsung Galaxy S25 FE | Android | 17                | Expo Go (SDK 58) | gestos (T02) e 3 botões (T17 e T18) | Autor, 5 a 7/11/2026   |
 
-A versão e a navegação de cada um foram registradas antes de começar (Ajustes, Sobre o telefone). A passada é feita nestes dois aparelhos. O iPhone XS (cerca de 375 dp) é o mais estreito, então é nele que o layout apertado aparece; o S25 FE é o mais largo. Telas mais estreitas, outras versões de sistema e iPad não são testados e constam nas limitações.
+A versão e a navegação de cada um foram registradas antes de começar (Ajustes, Sobre o telefone). A passada foi feita nestes dois aparelhos. O iPhone XS (cerca de 375 dp) é o mais estreito, então é nele que o layout apertado aparece; o S25 FE é o mais largo. Telas mais estreitas, outras versões de sistema e iPad não foram testados e constam nas limitações.
 
 ## 2. O que já foi visto em cada sistema
 
-Para a passada não repetir o que está confirmado e para saber onde olhar com mais cuidado.
+O que já estava confirmado antes da passada, para ela não repetir esses pontos e para saber onde olhar com mais cuidado. As células trazem o estado final, com a data da confirmação quando houve uma depois da passada.
 
 | Item                                                                  | iOS                     | Android                                 |
 | --------------------------------------------------------------------- | ----------------------- | --------------------------------------- |
-| Funcionalidades das issues #6 a #38                                   | Testadas a cada issue   | Testadas por um colega                  |
+| Funcionalidades das issues #6 a #38                                   | Testadas a cada issue   | Testadas a cada issue                   |
 | Teclado sobre os campos de baixo (`react-native-keyboard-controller`) | Confirmado              | Confirmado                              |
 | Campo "Modelo" sem letra duplicada                                    | Confirmado              | Confirmado                              |
-| `capitalize` nos outros campos de texto livre                         | Não visto               | Não visto                               |
-| Ícones da barra de status escuros sobre o cabeçalho branco            | Sem problema            | Corrigido, **não revisto**              |
-| PDF financeiro (gerar, numerar, Geom, gráficos, quebra de página)     | Conferido               | Conferido pelo colega                   |
+| `capitalize` nos outros campos de texto livre                         | Confirmado pelo autor   | Confirmado pelo autor                   |
+| Ícones da barra de status escuros sobre o cabeçalho branco            | Sem problema            | Corrigido e confirmado na passada       |
+| PDF financeiro (gerar, numerar, Geom, gráficos, quebra de página)     | Conferido               | Conferido                               |
 | PDF de km e de denúncias                                              | Conferido               | Conferido em 7/11 (exportado no S25 FE) |
 | Indicador de carregamento do botão "Gerar PDF"                        | Conferido em 7/11 (T16) | Conferido em 7/11 (T16)                 |
-| Barra de abas ao tocar na busca do Histórico                          | Sem problema            | **Sobe junto com o teclado** (aberto)   |
+| Barra de abas ao tocar na busca do Histórico                          | Sem problema            | Subia junto com o teclado; reverificado em 10/11, comportamento normal |
 
 ## 3. Preparação
 
 1. **Servidor do app:** no computador, `cd frontend && npx expo start` (ou `npx expo start --tunnel` se o celular não alcançar a rede). Em cada aparelho, abrir o Expo Go (SDK 58) e escanear o QR. O app aponta para a produção (`pb.wizecode.com.br`).
-2. **Contas e aparelhos:** os dois aparelhos fazem o mesmo passo ao mesmo tempo, cada um com a sua conta, para não disputarem o mesmo registro. **O S25 FE é sempre o A** (`motorista.a`, `supervisor.a`) e **o iPhone XS é sempre o B** (`motorista.b`, `supervisor.b`), todos `@trace.com.br` (a senha só o Gustavo tem). Onde o passo diz "motorista" ou "supervisor", entre com a conta do seu aparelho.
+2. **Contas e aparelhos:** os dois aparelhos fazem o mesmo passo ao mesmo tempo, cada um com a sua conta, para não disputarem o mesmo registro. **O S25 FE é sempre o A** (`motorista.a`, `supervisor.a`) e **o iPhone XS é sempre o B** (`motorista.b`, `supervisor.b`), todos `@trace.com.br` (contas de teste do desenvolvimento, já removidas da produção). Onde o passo diz "motorista" ou "supervisor", entre com a conta do seu aparelho.
 3. **Veículos descartáveis, km 1000, tipo à escolha** (cadastrar pelo app como supervisor, ou pelo painel): `ZZZ-4A01` (rota aberta do `motorista.a` na Fase 1; o A o usa nos registros das fases seguintes), `ZZZ-4A02` (rota aberta do `supervisor.a` na Fase 1; o B o usa nos registros) e `ZZZ-4B01` (da rota que o B prepara para o encerramento). Um veículo por aparelho evita que a denúncia de um atrapalhe a do outro.
 4. **Fotos:** deixe uma foto qualquer na galeria do aparelho, para a denúncia e para a foto do perfil.
 5. **Ordem:** siga as fases na ordem, nos dois aparelhos. Quando o passo disser "só A" ou "só B", o outro aparelho espera e confere o efeito na lista. As fases trocam de conta (Sair e entrar de novo), e isso já faz parte do teste.
@@ -205,7 +205,8 @@ Depois: **Sair**.
 
 1. Foto de 80 dp, nome, e-mail e badge de cargo. Toque em "Trocar foto": folha com "Tirar foto" e "Escolher da galeria". Escolha a galeria e uma foto; depois "Remover foto".
 2. "Trocar senha": toque em "Alterar senha" vazio (erros nos três campos); digite uma senha atual **errada** e confira o erro. **Não conclua a troca** para não perder a senha da conta de teste.
-3. "Sair": diálogo "Sair da conta?".
+3. "Privacidade" (acrescentada em 11/11): abre a folha "Privacidade dos dados" com cinco blocos de texto e o botão "Entendi". Na tela de login, o link "Privacidade dos dados" abaixo do card abre a mesma folha.
+4. "Sair": diálogo "Sair da conta?".
 
 **Avaliar:** a foto não deforma; a folha e o diálogo ficam por cima da barra de abas.
 
@@ -218,7 +219,7 @@ Depois: **Sair**.
 3. Salve o PDF (Arquivos no iOS; Downloads ou o Drive no Android) e abra-o.
 4. Abra a opção "Personalizado": digite as datas em `DD/MM/AAAA` e confira o erro de data final antes da inicial.
 
-**Avaliar:** os totais dos cards batem com o Histórico; os gráficos cabem na largura; o PDF tem fonte Geom, "Página N de M", margens e nenhum card cortado entre páginas, e os títulos não ficam sozinhos no fim da página. **O PDF de km e o de denúncias no Android e o indicador de carregamento do botão são os pontos ainda não vistos.**
+**Avaliar:** os totais dos cards batem com o Histórico; os gráficos cabem na largura; o PDF tem fonte Geom, "Página N de M", margens e nenhum card cortado entre páginas, e os títulos não ficam sozinhos no fim da página. O PDF de km e o de denúncias no Android e o indicador de carregamento do botão foram conferidos em 7/11 (PDFs exportados no S25 FE; indicador no T16).
 
 ### Fase 6: sistema (qualquer conta; o T17 é só do A, que é Android)
 
@@ -237,11 +238,11 @@ Depois: **Sair**.
 2. Reveja o Login, Serviços, a saída (T04), o abastecimento (T12), a lista de motoristas (T09) e a barra de abas.
 3. **Devolva a fonte ao tamanho normal no fim.**
 
-**Avaliar:** nenhum botão corta a linha; o rótulo da aba cabe; os campos continuam usáveis. Se quebrar, diga em quais telas, para decidirmos entre limitar o tamanho da fonte e registrar como limitação.
+**Avaliar:** nenhum botão corta a linha; o rótulo da aba cabe; os campos continuam usáveis. Se quebrar, anotar em quais telas e decidir entre limitar o tamanho da fonte e registrar como limitação (decidido: o app segue a fonte do sistema e a limitação consta na parte 10).
 
 ## 5. Resultados
 
-Marque **OK**, **Falhou** (descreva na parte 9 e mande pelo formato da parte 6) ou **n/a**.
+Legenda: **OK**, **Falhou** (descrito na parte 9, no formato da parte 6) ou **n/a**.
 
 | #   | Teste                                         | iPhone XS (B)      | S25 FE (A)         |
 | --- | --------------------------------------------- | ------------------ | ------------------ |
@@ -264,19 +265,19 @@ Marque **OK**, **Falhou** (descreva na parte 9 e mande pelo formato da parte 6) 
 | T17 | Voltar do Android                             | n/a                | OK                 |
 | T18 | Fonte do sistema no tamanho máximo            | OK, com limitações | OK, com limitações |
 
-## 6. Como me passar os achados
+## 6. Formato de registro dos achados
 
 Para cada coisa estranha, uma linha com:
 
 - **Aparelho** (iPhone XS ou S25 FE);
 - **Teste e passo** (por exemplo, "T11 passo 3");
 - **Esperado e visto**, em uma frase cada;
-- **Print ou gravação de tela** (mande aqui na conversa; eu consigo olhar a imagem e julgar o layout);
+- **Print ou gravação de tela**;
 - **Impacto:** alto (impede de usar), médio (atrapalha) ou baixo (estético).
 
 Se algo quebrar o app (tela branca, fechar), copie o texto do erro que o Expo Go mostra, ou o que aparecer no terminal do `expo start`.
 
-Com isso, eu corrijo os de impacto alto e médio nesta branch, passo os restantes para as limitações (parte 10) e fecho a parte 9.
+Os achados de impacto alto e médio foram corrigidos na própria branch da issue; os demais entraram nas limitações (parte 10), e a parte 9 foi fechada.
 
 ## 7. Pontos de risco vistos no código
 
@@ -286,7 +287,7 @@ Conferência feita lendo o código em 5/11/2026, sem rodar nos aparelhos. São o
 - **Larguras fixas.** Só há dimensões fixas em `PhotoField` (altura 112) e nos diálogos e estados vazios (`maxWidth` 240 a 400); o resto é flexível. Não há largura fixa em dp que quebre um aparelho estreito.
 - **Barras do sistema no Android.** O app desenha de borda a borda (`statusBarTranslucent` e `navigationBarTranslucent` no `KeyboardProvider`) e usa as áreas seguras em `ActionBar`, `StackHeader` e na barra de abas. Vale conferir com navegação por três botões e por gestos (T02).
 - **Ramos por plataforma.** Há quatro arquivos com `Platform.OS`, todos de comportamento de sistema que não tem equivalente: `ActionBar` (no Android a barra some com o teclado aberto; no iOS o teclado a cobre), `BottomSheet` e `useHiddenCallback` (no iOS a câmera e a galeria só abrem depois que a folha some) e `reportPdf` (margem da página).
-- **iPad.** O `app.json` tem `ios.supportsTablet: true`, mas o app só foi desenhado e testado em telefone, em retrato, e não há iPad entre os aparelhos de teste. Decisão do Gustavo em 7/11: manter o suporte como está e registrar como limitação (parte 10).
+- **iPad.** O `app.json` tem `ios.supportsTablet: true`, mas o app só foi desenhado e testado em telefone, em retrato, e não há iPad entre os aparelhos de teste. Decisão do autor em 7/11: manter o suporte como estava e registrar como limitação (parte 10). Em 10/11 o `app.json` passou a `supportsTablet: false`, porque o suporte a tablet nunca foi confirmado em aparelho (só foram testados o iPhone XS e o Galaxy S25 FE); o app roda no iPad como app de iPhone, no modo de compatibilidade do iOS.
 - **Tema escuro do sistema.** O app é só claro (`userInterfaceStyle: light`) e a barra de status é sempre escura, então o tema escuro do celular não deve afetar. Conferir uma vez no Android com o tema escuro ligado (T02).
 - **Voltar do Android.** `predictiveBackGestureEnabled` está desligado. Confirmar que o voltar fecha a folha ou o diálogo antes de sair da tela (T17).
 
@@ -308,13 +309,13 @@ Campos de entrada de cada formulário de registro, contados no código (`src/scr
 | Trocar senha                  | Senha atual, nova senha, confirmação                | 3     |
 | Edição de registro de serviço | Valor e os campos próprios de cada tipo (2 ou 3)    | 2 a 3 |
 
-**Mensagens claras:** os erros do servidor são traduzidos pelo `code` em português (`serverErrors.ts`, I-08) e os do app vêm dos esquemas Zod (`src/schemas`). Durante a passada, anote qualquer mensagem em inglês, genérica demais ("Valor inválido.") ou sem dizer o que fazer.
+**Mensagens claras:** os erros do servidor são traduzidos pelo `code` em português (`serverErrors.ts`, I-08) e os do app vêm dos esquemas Zod (`src/schemas`). A passada verificou se alguma mensagem aparecia em inglês, genérica demais ("Valor inválido.") ou sem dizer o que fazer; as que apareceram estão na parte 9.
 
 Os formulários têm barra de ação fixa no rodapé, erro embaixo do campo e o `NoticeDialog` para o que não pertence a um campo. Relatórios tem seis controles de filtro, mas não é um formulário de registro.
 
 ## 9. Problemas encontrados na passada
 
-Preencher durante a passada. Cada linha vira correção (se for de maior impacto) ou entra na parte 10.
+Registro dos problemas achados na passada. Cada linha virou correção (se de maior impacto) ou entrou na parte 10.
 
 | Teste                          | Aparelho           | Descrição                                                                                                                                                                                                        | Impacto (alto, médio, baixo) | Destino (corrigido, limitação)                                                                                                                                                                                                   |
 | ------------------------------ | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -333,17 +334,17 @@ Preencher durante a passada. Cada linha vira correção (se for de maior impacto
 
 ## 10. Limitações
 
-Já conhecidas (registradas em docs/historico-de-desenvolvimento.md nas issues indicadas). As que aparecerem na parte 9 e não forem corrigidas entram aqui. **Reverificação de 10/11:** o autor testou de novo no Android e a barra de abas na busca do Histórico e a barra de ação dos formulários se comportam normalmente; essas duas limitações, registradas em 5 a 7/11, foram retiradas.
+Já conhecidas (registradas em docs/historico-de-desenvolvimento.md nas issues indicadas). As achadas na parte 9 e não corrigidas entraram aqui. **Reverificação de 10/11:** o autor testou de novo no Android e a barra de abas na busca do Histórico e a barra de ação dos formulários se comportam normalmente; essas duas limitações, registradas em 5 a 7/11, foram retiradas.
 
 | Limitação                                                                                                                                                                                                                                   | Origem    |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
 | Com a fonte do sistema no tamanho máximo, os campos de busca, os seletores e os títulos longos mostram o texto abreviado com reticências (o conteúdo continua legível e utilizável). O app segue a fonte do sistema, sem limite de tamanho. | #40       |
 | A máscara numérica de km e valores reescreve a cada tecla; nenhuma biblioteca nativa de máscara roda no Expo Go.                                                                                                                            | #39       |
-| Motoristas, Veículos, Encerramento de rotas e Revisão de denúncias leem tudo de uma vez e filtram no app; Encerramento e Revisão crescem sem limite com o histórico. Serve ao porte de uma pequena empresa.                                 | #39       |
+| Motoristas e Veículos leem tudo de uma vez e filtram no app. Serve ao porte de uma pequena empresa. (Encerramento de rotas e Revisão de denúncias paginam de 10 em 10 no servidor desde 10/11.)                                 | #39       |
 | Os relatórios leem todo o período escolhido e somam no app.                                                                                                                                                                                 | #36       |
 | Relatórios: faltam "utilização" do veículo (dias em rota), última troca de óleo por veículo, custo por km e consumo (km/L). Os relatórios de km e de denúncias não têm gráficos.                                                            | #37, #38  |
-| O instalável para iOS segue em aberto: exige conta Apple. Os testes em iOS são pelo Expo Go.                                                                                                                                                | CLAUDE.md |
+| O instalável para iOS segue em aberto: exige conta Apple. Os testes em iOS são pelo Expo Go.                                                                                                                                                | #41       |
 | A busca por modelo e por nome no servidor não ignora acento, só maiúsculas. O Histórico não tem período com datas livres, só atalhos.                                                                                                       | #33       |
 | Os testes cobrem um iPhone XS e um Galaxy S25 FE no Expo Go. Não foram testados outros aparelhos (por exemplo, telas mais estreitas que a do iPhone XS), outras versões de Android e iOS, nem iPad.                                         | #40       |
-| O app é só claro e em retrato; não há modo escuro nem aplicativo para tablet.                                                                                                                                                               | CLAUDE.md |
+| O app é só claro e em retrato; não há modo escuro nem aplicativo para tablet.                                                                                                                                                               | #40, #41  |
 | A margem da página do PDF vai pela opção `margins` no iOS e pelo `@page` no Android; os três PDFs foram conferidos no Android (7/11).                                                                                                       | #37, #38  |

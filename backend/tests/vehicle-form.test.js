@@ -287,7 +287,7 @@ describe("the date of creation belongs to the server (RNF05)", () => {
     test("a created date sent in the body is ignored", async () => {
         const response = await supervisor.post(PATH, vehicle({ created: "2000-01-01 00:00:00.000Z" }));
         assert.equal(response.status, 200);
-        assert.ok(new Date(response.body.created).getFullYear() >= 2026, response.body.created);
+        assert.ok(Math.abs(new Date(response.body.created).getTime() - Date.now()) < 60000, response.body.created);
     });
 });
 

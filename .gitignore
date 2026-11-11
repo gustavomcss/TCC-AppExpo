@@ -1,0 +1,32 @@
+# Ambiente local (o .env.example é commitado)
+.env
+.env.*
+!.env.example
+
+# Dependências e artefatos de build
+node_modules/
+dist/
+build/
+*.apk
+*.aab
+*.ipa
+
+# Chaves de assinatura e credenciais de serviços
+*.jks
+*.keystore
+*.p8
+*.p12
+*.key
+*.pem
+google-services.json
+GoogleService-Info.plist
+
+# Dados do PocketBase (a instância de desenvolvimento nunca vai para o git)
+pb_data/
+*.db
+*.db-shm
+*.db-wal
+
+# Sistema e ferramentas locais
+.DS_Store
+.claude/settings.local.json

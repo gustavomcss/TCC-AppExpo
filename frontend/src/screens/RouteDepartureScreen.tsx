@@ -24,7 +24,12 @@ import { formatKm } from '../schemas/masks';
 import { ROUTE_TEXT_MAX, routeDepartureSchema } from '../schemas/route';
 import type { RouteDepartureInput, RouteDepartureValues } from '../schemas/route';
 import { createRoute, hasOpenRoute } from '../services/routes';
-import { applyServerError, isRuleError, parseServerError } from '../services/serverErrors';
+import {
+    applyServerError,
+    hasFieldCode,
+    isRuleError,
+    parseServerError,
+} from '../services/serverErrors';
 import { getVehicle, listRouteVehicles } from '../services/vehicles';
 import type { RouteVehicle } from '../services/vehicles';
 import { colors, spacing } from '../theme';
@@ -161,6 +166,21 @@ export default function RouteDepartureScreen() {
         } catch (error) {
             if (parseServerError(error).fields.user) {
                 setOpenRouteNotice(true);
+                return;
+            }
+
+            /*
+             * The server ties the departure km to the current km of the vehicle (RB03). The km is read
+             * again right before sending, so this only happens when it changed in between: the list
+             * is loaded again and the driver registers the departure again.
+             */
+            if (hasFieldCode(error, 'km_departure', 'km_departure_not_odometer')) {
+                load();
+                setFailure({
+                    visible: true,
+                    title: 'O km do veículo mudou',
+                    message: parseServerError(error).fields.km_departure,
+                });
                 return;
             }
 

@@ -31,7 +31,9 @@ const FIELD_MESSAGES: Record<string, (params: Record<string, unknown>) => string
     validation_required: () => 'Campo obrigatório.',
     validation_not_unique: () => 'Já existe um registro com este valor.',
     validation_invalid_value: () => 'Valor inválido.',
-    validation_invalid_email: () => 'Informe um e-mail válido.',
+    validation_is_email: () => 'Informe um e-mail válido.',
+    validation_missing_rel_records: () =>
+        'O item selecionado não existe mais. Atualize a tela e escolha outro.',
     validation_invalid_format: () => 'Formato inválido.',
     validation_min_text_constraint: ({ min }) => `Use pelo menos ${min} caracteres.`,
     validation_max_text_constraint: ({ max }) => `Use no máximo ${max} caracteres.`,
@@ -53,6 +55,8 @@ const FIELD_MESSAGES: Record<string, (params: Record<string, unknown>) => string
     user_in_open_route: () =>
         'Você já tem uma rota aberta. Registre o retorno antes de iniciar outra.',
     km_return_not_greater: () => 'O km de retorno deve ser maior que o km de saída.',
+    km_departure_not_odometer: () =>
+        'O km atual do veículo mudou. Confira o km e registre a saída de novo.',
     vehicle_inactive: () => 'Este veículo está inativo e não pode receber registros.',
     route_not_open: () => 'Esta rota não está mais aberta.',
     km_equals_departure: () => 'O km informado deve ser diferente do km de saída.',

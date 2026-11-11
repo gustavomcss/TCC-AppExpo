@@ -1,5 +1,5 @@
 import { useNavigation } from '@react-navigation/native';
-import { Camera, ChevronRight, KeyRound } from 'lucide-react-native';
+import { Camera, ChevronRight, KeyRound, ShieldCheck } from 'lucide-react-native';
 import { useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -12,6 +12,7 @@ import { Card } from '../components/Card';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { NoticeDialog } from '../components/NoticeDialog';
 import { PhotoSheet } from '../components/PhotoSheet';
+import { PrivacySheet } from '../components/PrivacySheet';
 import type { PhotoSource } from '../components/PhotoSheet';
 import { useAuth } from '../contexts/AuthContext';
 import type { SessionUser } from '../contexts/AuthContext';
@@ -60,7 +61,7 @@ function MenuRow({ icon, label, onPress, busy = false, disabled = false }: MenuR
 
 /**
  * User tab (RF04): photo, name, e-mail and role of the signed-in user, read only except for the
- * photo (RB19), then the menu to change the photo and the password and the way out. The photo
+ * photo (RB19), then the menu to change the photo and the password, read the privacy notice and the way out. The photo
  * comes from the camera or the gallery and goes to the server at once, and can be removed to go
  * back to the initials; the change shows as soon as the session record is refreshed. Changing the
  * password opens its own screen.
@@ -71,6 +72,7 @@ export default function UserScreen() {
     const toast = useToast();
     const [sheetOpen, setSheetOpen] = useState(false);
     const [signOutOpen, setSignOutOpen] = useState(false);
+    const [privacyOpen, setPrivacyOpen] = useState(false);
     const leaving = useRef(false);
     const [uploading, setUploading] = useState(false);
     const pendingSource = useRef<PhotoSource | null>(null);
@@ -163,6 +165,12 @@ export default function UserScreen() {
                     label="Trocar senha"
                     onPress={() => navigation.navigate('ChangePassword')}
                 />
+                <View style={styles.separator} />
+                <MenuRow
+                    icon={<ShieldCheck color={colors.foreground} size={sizes.icon} />}
+                    label="Privacidade"
+                    onPress={() => setPrivacyOpen(true)}
+                />
             </Card>
 
             <Button variant="destructive" title="Sair" onPress={() => setSignOutOpen(true)} />
@@ -185,6 +193,8 @@ export default function UserScreen() {
                 onHidden={pickPhoto}
                 canRemove={Boolean(user?.photoUrl)}
             />
+
+            <PrivacySheet visible={privacyOpen} onClose={() => setPrivacyOpen(false)} />
 
             <NoticeDialog
                 visible={failure.visible}

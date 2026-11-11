@@ -1,13 +1,14 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '../components/Button';
 import { Card, CardContent } from '../components/Card';
 import { NoticeDialog } from '../components/NoticeDialog';
+import { PrivacySheet } from '../components/PrivacySheet';
 import { TextField } from '../components/TextField';
 import { useAuth } from '../contexts/AuthContext';
 import { useBottomBar, useToast } from '../contexts/ToastContext';
@@ -24,7 +25,7 @@ const KEYBOARD_CLEARANCE = 144;
 
 /**
  * Login screen (RF01). There is no sign-up link: users are created by the supervisor or by the
- * superadmin, and a line under the card says so. The app name and tagline sit above the card,
+ * superadmin, and a line under the card says so, followed by the link to the privacy notice. The app name and tagline sit above the card,
  * which holds only the form. Field errors show under the field; a refused login opens the
  * NoticeDialog, since it concerns the whole action. A session ended by the server (I-07) shows
  * its notice as a blue toast, the app's pattern for a warning, resting above the safe area. The keyboard is handled by the KeyboardAwareScrollView of
@@ -36,6 +37,7 @@ export default function LoginScreen() {
     const { show } = useToast();
     const insets = useSafeAreaInsets();
     const [serverError, setServerError] = useState<string | null>(null);
+    const [privacyOpen, setPrivacyOpen] = useState(false);
     const {
         control,
         handleSubmit,
@@ -126,9 +128,18 @@ export default function LoginScreen() {
                         </CardContent>
                     </Card>
 
-                    <Text style={styles.footnote}>
-                        Sem acesso? Peça ao supervisor da sua empresa.
-                    </Text>
+                    <View style={styles.footer}>
+                        <Text style={styles.footnote}>
+                            Sem acesso? Peça ao supervisor da sua empresa.
+                        </Text>
+                        <Pressable
+                            accessibilityRole="link"
+                            onPress={() => setPrivacyOpen(true)}
+                            hitSlop={spacing.md}
+                        >
+                            <Text style={styles.link}>Privacidade dos dados</Text>
+                        </Pressable>
+                    </View>
                 </View>
             </KeyboardAwareScrollView>
 
@@ -138,11 +149,12 @@ export default function LoginScreen() {
                 message={serverError ?? ''}
                 onClose={() => setServerError(null)}
             />
+            <PrivacySheet visible={privacyOpen} onClose={() => setPrivacyOpen(false)} />
         </View>
     );
 }
 
-/** Styles of the login screen: the name, a card and a note centered on a light gray background. */
+/** Styles of the login screen: the name, a card and a note with the privacy link centered on a light gray background. */
 const styles = StyleSheet.create({
     screen: {
         flex: 1,
@@ -173,6 +185,17 @@ const styles = StyleSheet.create({
         fontFamily: fontFamily.normal,
         fontSize: fontSize.sm,
         lineHeight: 20,
+    },
+    footer: {
+        alignItems: 'center',
+        gap: spacing.xs,
+    },
+    link: {
+        color: colors.mutedForeground,
+        fontFamily: fontFamily.medium,
+        fontSize: fontSize.xs,
+        lineHeight: 16,
+        textDecorationLine: 'underline',
     },
     footnote: {
         color: colors.mutedForeground,

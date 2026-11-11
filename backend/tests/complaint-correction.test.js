@@ -3,6 +3,7 @@ import { after, before, describe, test } from "node:test";
 import { login } from "./helpers/client.js";
 import { complaintForm, createFactories } from "./helpers/factories.js";
 import { startPocketBase } from "./helpers/pocketbase.js";
+import { withUnsavableVehicles } from "./helpers/schema.js";
 
 /*
  * API tests for the km corrections made when a complaint is approved (I-30, RB06, RB07, RB13,
@@ -480,12 +481,8 @@ describe("the review and the corrections happen together or not at all", () => {
         const { vehicle, previous, route, complaint } = await withPreviousRoute(990);
         const before = await snapshot({ vehicle, routes: { previous, route } });
 
-        /* A new required field makes every existing vehicle invalid, so saving the odometer fails, the last step. */
-        const collection = (await admin.get("/api/collections/vehicles")).body;
-        const patched = await admin.patch(`/api/collections/${collection.id}`, { fields: [...collection.fields, { type: "text", name: "must_have", required: true }] });
-        assert.equal(patched.status, 200);
-
-        const response = await review(complaint, "aprovada");
+        /* Every vehicle is invalid meanwhile, so saving the odometer, the last step, fails. */
+        const response = await withUnsavableVehicles(admin, () => review(complaint, "aprovada"));
 
         assert.equal(response.status, 400, JSON.stringify(response.body));
         assert.deepEqual(await snapshot({ vehicle, routes: { previous, route } }), before);

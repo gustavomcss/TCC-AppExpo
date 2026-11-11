@@ -31,11 +31,11 @@ O plano tem 6 milestones e 43 issues (I-01 a I-43). Uma 44ª issue, a **#47** (i
 - **Labels:** não são usadas. Prioridade e tamanho ficam neste planejamento.
 - **Tamanho:** P até 3 h, M de 3 a 6 h, G acima de 6 h. São estimativas; as horas reais não foram medidas.
 - **Definição de pronto**, válida para toda issue: todos os critérios de aceite marcados e as regras de negócio citadas verificadas no aplicativo e no backend; sem erros de lint e de tipos; testado em emulador, dispositivo ou Expo Go; migrações do PocketBase commitadas quando há mudança de esquema ou de regras (RNF07); um branch por issue, pull request com `Closes #n` e mesclagem na `main`.
-- **Testes de backend:** cada regra é provada também por requisições diretas à API, sem passar pelo aplicativo, de forma automatizada em `backend/tests` (530 testes em 10/11/2026).
+- **Testes de backend:** cada regra é provada também por requisições diretas à API, sem passar pelo aplicativo, de forma automatizada em `backend/tests` (545 testes em 10/11/2026).
 
 ## 2. Visão geral das milestones
 
-O plano previa 19 dias (13 a 31/10, contando os dois extremos). O repositório registra que o desenvolvimento **começou em 20/10**, sete dias depois do início planejado: o primeiro commit de trabalho e as primeiras issues fechadas são de 20/10, à noite. Por isso todos os marcos fecharam depois da data planejada. As milestones 1 a 5 tiveram durações próximas do plano; a 6 levou mais (7 dias contra 1), porque reuniu as capturas, os diagramas e a documentação final. Ao todo foram 22 dias corridos, de 20/10 a 10/11, contra 19 planejados.
+O plano previa o período de 13 a 31/10: 19 dias contando os dois extremos (o documento de origem fala em "cerca de 200 h de trabalho para 18 dias"). A data de 31/10 era a meta do autor para terminar o desenvolvimento; o TCC completo (projeto e texto) é entregue em 30/11/2026. O repositório registra que o desenvolvimento **começou em 20/10**, sete dias depois do início planejado: o primeiro commit de trabalho e as primeiras issues fechadas são de 20/10, à noite. Por isso todos os marcos fecharam depois da data planejada. As milestones 1 a 5 tiveram durações próximas do plano; a 6 levou mais (7 dias contra 1), porque reuniu as capturas, os diagramas e a documentação final. Ao todo foram 22 dias corridos, de 20/10 a 10/11, contra 19 planejados.
 
 | Milestone                          | Issues         | Esforço estimado | Planejado   | Realizado (primeira a última issue fechada) | Duração planejada / realizada |
 | ---------------------------------- | -------------- | ---------------- | ----------- | ------------------------------------------- | ----------------------------- |
@@ -120,10 +120,10 @@ A coluna "Fechada" traz a data em que a issue foi fechada. "Tam." é o tamanho e
 
 | Issue | Título                                                               | Requisitos                       | Tam. | Fechada       | Como foi executada                                                                                                           |
 | ----- | -------------------------------------------------------------------- | -------------------------------- | ---- | ------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| I-39  | [Testes] Testes das regras de negócio e dos fluxos críticos          | RB01 a RB21; RNF03, RNF05, RNF06 | G    | 4/11          | 21 cenários (RB01 a RB21), fluxo ponta a ponta (E1 a E9) e 510 testes de API na época (530 em 10/11). Nenhuma falha encontrada. |
+| I-39  | [Testes] Testes das regras de negócio e dos fluxos críticos          | RB01 a RB21; RNF03, RNF05, RNF06 | G    | 4/11          | 21 cenários (RB01 a RB21), fluxo ponta a ponta (E1 a E9) e 510 testes de API na época (539 em 10/11). Nenhuma falha encontrada. |
 | I-40  | [RNF01, RNF08] Testes em Android e iOS e ajustes de usabilidade      | RF20; RNF01, RNF08               | M    | 7/11          | iPhone XS e Galaxy S25 FE (Android 17), 18 testes, todos aprovados. Teclado, capitalização e barra de status corrigidos.      |
 | I-41  | [RNF01, RNF02] Build de distribuição e configuração de produção     | RNF01, RNF02, RNF04              | M    | 7/11          | APK pelo EAS Build. iOS pelo Expo Go (decisão registrada).                                                                   |
-| I-42  | [RNF07] Documentação técnica e README                                | RNF02, RNF03, RNF07              | M    | 7/11          | README, `backend/README.md` e resumo de regras e hooks. Uma pessoa nova seguiu o README sem problemas.                       |
+| I-42  | [RNF07] Documentação técnica e README                                | RNF02, RNF03, RNF07              | M    | 7/11          | README, `backend/README.md` e resumo de regras e hooks. Em 7/11, o cientista da computação Pedro Kourly, externo ao projeto, seguiu o README do início ao fim, com o resultado esperado. |
 | I-43  | [TCC] Insumos para os capítulos de desenvolvimento e resultados      | RNF01, RNF08                     | P    | 10/11         | Balanço, requisitos finais, este planejamento, script de dados de demonstração, 56 capturas (iOS e Android) e DER e DCU finais.  |
 
 ## 4. Matriz de rastreabilidade
@@ -233,7 +233,7 @@ O plano previa, faltando tempo, cortar nesta ordem: I-38 (opcional, cerca de 4,5
 | Número de issues              | 43 (I-01 a I-43)                                        | 43 mais a #47, fora do plano                                                                        |
 | Labels e campos do Project    | Grupos tipo, área e prioridade; campos Status etc.      | Não usados; prioridade e tamanho ficam neste documento                                              |
 | Modelo do corpo da issue      | Descrição, Requisitos, Critérios, Tarefas, Dependências | Descrição, Tarefas e Critérios de aceite                                                            |
-| Período                       | 13 a 31/10 (19 dias)                                    | 20/10 a 10/11 (22 dias)                                                                             |
+| Período                       | 13 a 31/10 (19 dias; "18 dias" no documento de origem) | 20/10 a 10/11 (22 dias)                                                                             |
 | Requisitos cobertos           | 50 (23 RF, 8 RNF e 19 RB)                               | 52 (23 RF, 8 RNF e 21 RB)                                                                           |
 | I-03                          | Decimais validados no aplicativo e no servidor          | Servidor na I-03; aplicativo nas I-24 a I-26                                                        |
 | I-08                          | Cliente e formulário de exemplo                         | Incluiu a RB20                                                                                      |
@@ -247,6 +247,6 @@ O plano previa, faltando tempo, cortar nesta ordem: I-38 (opcional, cerca de 4,5
 | I-36                          | Filtros de veículo por placa, modelo e tipo; agregar onde: em aberto | Filtros por tipo de veículo e de serviço; agregação no aplicativo                              |
 | I-37                          | PDF com período, filtros, data e totais                 | Mais gráficos, fonte embutida e numeração de páginas                                                |
 | I-38                          | De um a três relatórios                                 | Dois relatórios; a utilização e a última troca de óleo ficaram de fora                              |
-| I-39                          | RB01 a RB19                                             | RB01 a RB21 e 530 testes de API                                                                     |
+| I-39                          | RB01 a RB19                                             | RB01 a RB21 e 545 testes de API                                                                     |
 | I-41                          | "O instalável para Android existe desde o MVP"          | O APK foi gerado de novo no EAS Build                                                               |
 | I-23, I-29 (10/11)            | Listas lidas por inteiro                                | Carregam de 10 em 10, com busca e filtros no servidor                                                |

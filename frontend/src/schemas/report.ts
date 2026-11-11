@@ -44,7 +44,3 @@ export const reportPeriodSchema = z
     .refine(({ from, to }) => from <= to, {
         message: 'A data final deve ser igual ou posterior à inicial.',
     });
-
-/** The custom period as the user types it, and as it is read once valid. */
-export type ReportPeriodInput = z.input<typeof reportPeriodSchema>;
-export type ReportPeriodValues = z.output<typeof reportPeriodSchema>;

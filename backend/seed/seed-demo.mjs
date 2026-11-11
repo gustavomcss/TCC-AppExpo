@@ -214,19 +214,19 @@ const clean = async () => {
     ]) {
         const items = await list(collection, filter, "&fields=id");
         for (const item of items) await api("DELETE", `/api/collections/${collection}/records/${item.id}`);
-        console.log(`${collection}: ${items.length} apagados`);
+        console.log(`${collection}: ${items.length} deleted`);
     }
     const plates = Object.values(VEHICLES).map((v) => `plate = '${v.plate}'`).join(" || ");
     for (const vehicle of await list("vehicles", plates, "&fields=id,plate")) {
         await api("DELETE", `/api/collections/vehicles/records/${vehicle.id}`).then(
-            () => console.log(`veículo ${vehicle.plate} apagado`),
-            (error) => console.error(`veículo ${vehicle.plate} ficou: ${error.message}`),
+            () => console.log(`vehicle ${vehicle.plate} deleted`),
+            (error) => console.error(`vehicle ${vehicle.plate} kept: ${error.message}`),
         );
     }
     for (const user of await list("users", demoUsersFilter("email"), "&fields=id,email")) {
         await api("DELETE", `/api/collections/users/records/${user.id}`).then(
-            () => console.log(`usuário ${user.email} apagado`),
-            (error) => console.error(`usuário ${user.email} ficou: ${error.message}`),
+            () => console.log(`user ${user.email} deleted`),
+            (error) => console.error(`user ${user.email} kept: ${error.message}`),
         );
     }
 };
@@ -337,7 +337,6 @@ const runRoute = async (plan) => {
         });
         dates.date_return = later(plan.departedAt, between(180, 520));
         if (isFuture(dates.date_return)) dates.date_return = stamp(plan.d, 23);
-        state.odometer[plan.v] = kmReturn;
         for (const kind of ["fuels", "oils", "repairs"]) {
             const wanted = { fuels: plan.fuel ?? random() < 0.45, oils: plan.oil ?? false, repairs: Boolean(plan.repair) };
             if (wanted[kind]) await serviceRecord(kind, plan, plan.v);
@@ -352,6 +351,8 @@ const runRoute = async (plan) => {
         out.add(plan.v);
         withOpenRoute.add(plan.u);
     }
+    /* The server is the source of the current km: a finalization or an approved complaint moves it (RB03, RB14). */
+    state.odometer[plan.v] = (await api("GET", `/api/collections/vehicles/records/${vehicleId}`)).odometer;
     await backdate("routes", route.id, dates);
     busy.add(`${plan.d}:${plan.u}`);
 };
@@ -393,16 +394,16 @@ const history = async () => {
             });
             nextDue[key] = d - gap(d);
         }
-        if (d % 30 === 0) console.log(`  ... faltam ${d} dias (${state.count.routes} rotas)`);
+        if (d % 30 === 0) console.log(`  ... ${d} days to go (${state.count.routes} routes)`);
     }
 };
 
 const create = async () => {
     if ((await list("users", demoUsersFilter("email"), "&fields=id")).length > 0) {
-        throw new Error("Já existem usuários de demonstração. Rode com --clean antes.");
+        throw new Error("Demo users already exist. Run with --clean first.");
     }
-    const password = process.env.DEMO_PASSWORD || (await prompt("Senha dos usuários de demonstração (8+ caracteres): ", true));
-    if (password.length < 8) throw new Error("A senha precisa de 8 ou mais caracteres.");
+    const password = process.env.DEMO_PASSWORD || (await prompt("Password of the demo users (8+ characters): ", true));
+    if (password.length < 8) throw new Error("The password needs 8 or more characters.");
 
     for (const [key, user] of Object.entries(USERS)) {
         const record = await api("POST", "/api/collections/users/records", {
@@ -417,7 +418,7 @@ const create = async () => {
         state.vehicles[key] = record.id;
         state.odometer[key] = vehicle.start;
     }
-    console.log(`Usuários e veículos criados. Rotas e registros (isso leva alguns minutos)...`);
+    console.log(`Users and vehicles created. Routes and records (this takes a few minutes)...`);
     await history();
 
     for (const [key, vehicle] of Object.entries(VEHICLES)) {
@@ -427,8 +428,8 @@ const create = async () => {
         if (user.inactive) await api("PATCH", `/api/collections/users/records/${state.users[key]}`, { active: false });
     }
     const total = sums.fuels + sums.oils + sums.repairs;
-    console.log(`\nCriados: ${state.count.routes} rotas, ${state.count.complaints} denúncias, ${state.count.fuels} abastecimentos, ${state.count.oils} trocas de óleo, ${state.count.repairs} manutenções (${requests} requisições).`);
-    console.log(`Total de custos R$ ${money(total)}: abastecimento ${Math.round((sums.fuels * 100) / total)}%, troca de óleo ${Math.round((sums.oils * 100) / total)}%, manutenção ${Math.round((sums.repairs * 100) / total)}%.`);
+    console.log(`\nCreated: ${state.count.routes} routes, ${state.count.complaints} complaints, ${state.count.fuels} fuel records, ${state.count.oils} oil changes, ${state.count.repairs} repairs (${requests} requests).`);
+    console.log(`Total cost R$ ${money(total)}: fuel ${Math.round((sums.fuels * 100) / total)}%, oil change ${Math.round((sums.oils * 100) / total)}%, repair ${Math.round((sums.repairs * 100) / total)}%.`);
 };
 
 /* ------------------------------------------------------------------ main */
@@ -443,13 +444,13 @@ const installHook = async () => {
     for (let attempt = 0; attempt < 30; attempt++) {
         try {
             await api("GET", "/api/seed/ping");
-            console.log("Hook temporário carregado pelo servidor.");
+            console.log("Temporary hook loaded by the server.");
             return;
         } catch (error) {
             await new Promise((resolve) => setTimeout(resolve, 500));
         }
     }
-    throw new Error(`O servidor não carregou o hook em ${HOOK_TARGET}. A pasta é a que ele observa (HOOKS_DIR)?`);
+    throw new Error(`The server did not load the hook at ${HOOK_TARGET}. Is that the folder it watches (HOOKS_DIR)?`);
 };
 
 /** Removes the hook this run copied; it never touches a copy somebody else put there. */
@@ -457,15 +458,15 @@ const removeHook = () => {
     if (hookInstalled && existsSync(HOOK_TARGET)) {
         rmSync(HOOK_TARGET, { force: true });
         hookInstalled = false;
-        console.log("Hook temporário removido.");
+        console.log("Temporary hook removed.");
     }
 };
 
 /** Asks for a confirmation before writing to a server that is not on this machine (unless --yes). */
 const confirmWrite = async (action) => {
     if (ASSUME_YES || /^https?:\/\/(127\.0\.0\.1|localhost)(:|\/|$)/.test(PB_URL)) return;
-    const answer = await prompt(`Servidor ${PB_URL}. Vai ${action}. Digite "sim" para continuar: `);
-    if (answer.trim().toLowerCase() !== "sim") throw new Error("Cancelado.");
+    const answer = await prompt(`Server ${PB_URL}. About to ${action}. Type "yes" to continue: `);
+    if (answer.trim().toLowerCase() !== "yes") throw new Error("Cancelled.");
 };
 
 process.on("SIGINT", () => {
@@ -475,45 +476,45 @@ process.on("SIGINT", () => {
 
 const main = async () => {
     if (DRY_RUN) {
-        console.log("DRY_RUN: nada é enviado.");
-        console.log(`Usuários: ${Object.keys(USERS).map(emailOf).join(", ")}`);
-        console.log(`Veículos: ${Object.values(VEHICLES).map((v) => `${v.plate} ${v.model}`).join(", ")}`);
-        console.log(`Rotas roteirizadas: ${SCRIPTED.length}, mais o histórico aleatório de ${HISTORY_DAYS} dias.`);
+        console.log("DRY_RUN: nothing is sent.");
+        console.log(`Users: ${Object.keys(USERS).map(emailOf).join(", ")}`);
+        console.log(`Vehicles: ${Object.values(VEHICLES).map((v) => `${v.plate} ${v.model}`).join(", ")}`);
+        console.log(`Scripted routes: ${SCRIPTED.length}, plus the random history of ${HISTORY_DAYS} days.`);
         return;
     }
-    await confirmWrite(CLEAN ? "apagar os dados de demonstração" : RESET ? "apagar e recriar os dados de demonstração" : "criar os dados de demonstração");
-    const email = process.env.SU_EMAIL || (await prompt("E-mail do superusuário: "));
-    const pass = process.env.SU_PASS || (await prompt("Senha do superusuário: ", true));
+    await confirmWrite(CLEAN ? "delete the demo data" : RESET ? "delete and recreate the demo data" : "create the demo data");
+    const email = process.env.SU_EMAIL || (await prompt("Superuser e-mail: "));
+    const pass = process.env.SU_PASS || (await prompt("Superuser password: ", true));
     const auth = await fetch(`${PB_URL}/api/collections/_superusers/auth-with-password`, {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ identity: email, password: pass }),
     });
-    if (!auth.ok) throw new Error(`Login do superusuário recusado (${auth.status}).`);
+    if (!auth.ok) throw new Error(`Superuser login refused (${auth.status}).`);
     token = (await auth.json()).token;
     if (AUTO_HOOK) await installHook();
     try {
         await api("GET", "/api/seed/ping");
     } catch (error) {
-        throw new Error("O hook seed/seed_backdate.pb.js não está ativo. Rode com --auto-hook, ou copie-o para a pasta de hooks do servidor e espere 2 s.");
+        throw new Error("The hook seed/seed_backdate.pb.js is not active. Run with --auto-hook, or copy it to the hooks folder of the server and wait 2 s.");
     }
     if (CLEAN) {
         await clean();
         return;
     }
     if (RESET) {
-        console.log("Apagando os dados de demonstração atuais...");
+        console.log("Deleting the current demo data...");
         await clean();
     }
     const strangers = (await list("vehicles", "id != ''", "&fields=plate")).filter((v) => !Object.values(VEHICLES).some((demo) => demo.plate === v.plate));
     if (strangers.length > 0) {
-        console.warn(`Atenção: existem ${strangers.length} veículos que não são de demonstração (${strangers.map((v) => v.plate).join(", ")}). Eles aparecerão nas telas e nos relatórios.`);
+        console.warn(`Warning: there are ${strangers.length} vehicles that are not demo data (${strangers.map((v) => v.plate).join(", ")}). They will show in the screens and in the reports.`);
     }
     await create();
-    if (!AUTO_HOOK) console.log("\nAgora apague seed_backdate.pb.js de backend/pb_hooks.");
+    if (!AUTO_HOOK) console.log("\nNow delete seed_backdate.pb.js from backend/pb_hooks.");
 };
 
 main()
     .catch((error) => {
-        console.error(`\nErro: ${error.message}`);
+        console.error(`\nError: ${error.message}`);
         process.exitCode = 1;
     })
     .finally(() => {
