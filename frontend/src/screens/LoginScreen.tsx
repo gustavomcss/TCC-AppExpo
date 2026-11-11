@@ -19,9 +19,10 @@ import { colors, fontFamily, fontSize, spacing } from '../theme';
 
 /**
  * Space kept between the password field and the keyboard, so the Entrar button (gap 16, 40 dp),
- * the card padding (12), the note under the card (gap 24, 16 dp) and a margin of 36 stay visible.
+ * the card padding (12), the footer under the card (gap 24, then the note of 16 dp, a gap of 4 and
+ * the privacy link of 16 dp) and a margin of 36 stay visible: 16 + 40 + 12 + 24 + 36 + 36 = 164.
  */
-const KEYBOARD_CLEARANCE = 144;
+const KEYBOARD_CLEARANCE = 164;
 
 /**
  * Login screen (RF01). There is no sign-up link: users are created by the supervisor or by the

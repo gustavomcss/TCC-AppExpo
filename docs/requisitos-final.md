@@ -221,7 +221,7 @@ Cada regra tem um cenário no roteiro de testes (`docs/roteiro-de-testes.md`) co
 | L12 | O servidor impede que um usuário altere o km atual do veículo, mas o superusuário, no painel do PocketBase, pode editá-lo (e qualquer outro campo). É o acesso do superadmin, fora do aplicativo. | RB09 |
 | L13 | A RB10 (o histórico mostra só rotas finalizadas) é uma regra de exibição: está no filtro do aplicativo, e a API devolve as rotas encerradas a quem pode listá-las, porque o módulo de encerramento precisa delas. | RB10 |
 | L14 | As fotos de perfil e de denúncia são servidas por URL sem token (o campo de arquivo do PocketBase não é protegido). O nome do arquivo é aleatório, então a URL não é adivinhável, mas quem a tiver vê a imagem. Proteger exigiria marcar os campos como protegidos, pedir um token de arquivo em três pontos do aplicativo e gerar um novo APK. | RF04, RF14 |
-| L15 | Privacidade e acesso: o app mostra um aviso de privacidade (folha "Privacidade dos dados", no login e na aba Usuário), mas não registra aceite, porque os usuários são cadastrados pelo supervisor da empresa. Não há limite de tentativas de login configurado no PocketBase, e a política de senha é o padrão de 8 caracteres. | RNF04, RB19 |
+| L15 | Privacidade e acesso: o app mostra um aviso de privacidade (folha "Privacidade dos dados", no login e na aba Usuário), mas não registra aceite, porque os usuários são cadastrados pelo supervisor da empresa. A política de senha é o padrão do PocketBase, de 8 caracteres. O limite de requisições do PocketBase está ligado, com os valores padrão (2 tentativas de login por 3 s por IP). | RNF04, RB19 |
 
 ## 7. Rastreabilidade
 
