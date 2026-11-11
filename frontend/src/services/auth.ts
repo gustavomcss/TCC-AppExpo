@@ -15,15 +15,21 @@ export function signOut(): void {
 
 /**
  * Refreshes the stored session against the server. Resolves to false when the server rejects it
- * (expired token, user removed) and to true otherwise, including when the server is unreachable,
- * so that opening the app offline does not log the user out.
+ * (expired token, user removed or deactivated) and to true otherwise, including when the server
+ * is unreachable, busy (5xx) or limiting requests (429, the rate limit of the server), so that
+ * opening the app offline or in a burst of requests does not log the user out.
  */
 export async function refreshSession(): Promise<boolean> {
     try {
         await pb.collection('users').authRefresh();
         return true;
     } catch (error) {
-        return !(error instanceof ClientResponseError) || error.status === 0;
+        return (
+            !(error instanceof ClientResponseError) ||
+            error.status === 0 ||
+            error.status === 429 ||
+            error.status >= 500
+        );
     }
 }
 
@@ -38,6 +44,9 @@ export function describeLoginError(error: unknown): string {
         }
         if (error.status === 0) {
             return 'Não foi possível conectar ao servidor. Verifique sua conexão.';
+        }
+        if (error.status === 429) {
+            return 'Muitas tentativas. Aguarde alguns segundos e tente novamente.';
         }
     }
 

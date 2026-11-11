@@ -20,6 +20,10 @@ A origem dos bind mounts é o checkout deste repositório no servidor (a pasta `
 - Tudo que estiver em `pb_migrations` roda no próximo restart do contêiner. Não deixe migração incompleta ali.
 - Os hooks recarregam sozinhos quando um arquivo de `pb_hooks` muda. Trocar de branch muda o que a produção carrega na hora.
 
+### Limite de requisições (rate limiting)
+
+A instância de produção tem o rate limiting do PocketBase ligado (Settings, Application, "Rate limiting"), com as regras padrão: `*:auth` 2 requisições por 3 s por IP, `*:create` 20 por 5 s, `/api/batch` 3 por 1 s e `/api/` 300 por 10 s. O acesso passa pelo Cloudflare Tunnel, então o painel "IP proxy headers" deve ter `CF-Connecting-IP` em "Trusted IP proxy headers": sem isso o PocketBase vê todos os usuários com o IP do túnel e divide o mesmo contador entre eles. O app trata o `429`: no login mostra "Muitas tentativas" e a revalidação da sessão não desloga o usuário. A configuração é do painel, não do repositório.
+
 ## Superadmin
 
 O superadmin é o superuser do PocketBase. Ele entra só pelo painel `/_/`, fora do app, e cria e gerencia os supervisores. As credenciais ficam no gerenciador de senhas do responsável e **nunca** entram no repositório, no `.env` ou em issues.
