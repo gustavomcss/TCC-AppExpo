@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { after, before, describe, test } from "node:test";
+import { loadAppModule } from "./helpers/app-modules.js";
 import { login } from "./helpers/client.js";
 import { createFactories } from "./helpers/factories.js";
 import { startPocketBase } from "./helpers/pocketbase.js";
@@ -11,6 +12,9 @@ import { startPocketBase } from "./helpers/pocketbase.js";
  * here, so these tests prove that the server runs them and returns what the sum needs, that the
  * sum of what comes back is the sum of the records created, that inactive vehicles still come
  * (RB12), and that the API rules still decide who reads what: a driver gets only their own records.
+ * The sum is not copied: `buildReport` is loaded from the app (src/services/reportTotals.ts), so a
+ * change in how the app adds up breaks these tests. The filters are written out the way
+ * history-queries.test.js does, because src/services/reports.ts needs the PocketBase client.
  */
 
 /* The fields the report asks for, as in REPORT_FIELDS. */
@@ -19,15 +23,20 @@ const REPORT_FIELDS = "id,cost,created,vehicle,expand.vehicle";
 /* The three services and the field each one costs under, in the order the report lists them. */
 const SERVICES = ["fuels", "oils", "repairs"];
 
-/* State shared by the file: one disposable instance, two sessions and the scenario below. */
+/* The kind each collection has in the app's report. */
+const KINDS = { fuels: "fuel", oils: "oil", repairs: "repair" };
+
+/* State shared by the file: one disposable instance, two sessions, the app's sum and the scenario below. */
 let pb;
 let admin;
 let make;
 let asSupervisor;
 let scenario;
+let buildReport;
 
 /** Starts the instance, signs in a supervisor and builds the scenario. */
 before(async () => {
+    ({ buildReport } = await loadAppModule("services/reportTotals.ts"));
     pb = await startPocketBase();
     admin = pb.admin;
     make = createFactories(admin);
@@ -58,22 +67,33 @@ async function read(session, collection, filter) {
     return response.body.items;
 }
 
-/** Reads the three services and groups them by vehicle id, adding the costs in cents, like `buildReport`. */
+/**
+ * Reads the three services and adds them up with the app's own `buildReport`, then reshapes the
+ * result by vehicle id and in cents, so the assertions below read the figures directly.
+ */
 async function report(session, filter) {
-    const byVehicle = {};
-    let general = 0;
+    const entries = [];
 
     for (const collection of SERVICES) {
         for (const record of await read(session, collection, filter)) {
-            const cents = Math.round(record.cost * 100);
-            const line = (byVehicle[record.vehicle] ??= { plate: record.expand.vehicle.plate, services: {}, cents: 0 });
-            line.services[collection] = (line.services[collection] ?? 0) + cents;
-            line.cents += cents;
-            general += cents;
+            entries.push({ kind: KINDS[collection], vehicle: record.expand.vehicle, cost: record.cost, created: record.created });
         }
     }
 
-    return { byVehicle, general };
+    const built = buildReport(entries);
+    const byVehicle = {};
+
+    for (const line of built.vehicles) {
+        const services = {};
+        for (const [collection, kind] of Object.entries(KINDS)) {
+            if (line.services[kind].count > 0) {
+                services[collection] = Math.round(line.services[kind].total * 100);
+            }
+        }
+        byVehicle[line.vehicle.id] = { plate: line.vehicle.plate, services, cents: Math.round(line.total * 100) };
+    }
+
+    return { byVehicle, general: Math.round(built.total * 100) };
 }
 
 /*

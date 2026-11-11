@@ -8,7 +8,7 @@ As 28 capturas foram feitas nos dois aparelhos em 9 e 10/11/2026 (iPhone XS em `
 
 1. Crie os dados fictícios e entre com as contas de demonstração, como em [Dados de demonstração](#dados-de-demonstração) (o script cria o elenco, a frota, as rotas, as denúncias e os registros; a coluna "Conta" abaixo usa os nomes de lá: Carlos, Juliana, Rafael e Renata).
 2. Capture com a fonte do sistema no tamanho normal, no tema claro, com a barra de status limpa (bateria cheia, sem notificações). Em retrato, tela inteira, sem moldura do aparelho.
-3. Formato PNG, sem edição. Use a captura nativa de cada aparelho (iPhone: botão lateral e aumentar volume; Galaxy S25 FE: botão lateral e diminuir volume). Passe os arquivos para o computador (iPhone: AirDrop, iCloud ou cabo; Android: cabo ou Drive) e salve em `ios/` e `android/`, **com o mesmo nome em cada pasta**.
+3. Formato PNG no iPhone e JPEG no Galaxy S25 FE (o Samsung salva em JPEG), sem edição. Use a captura nativa de cada aparelho (iPhone: botão lateral e aumentar volume; Galaxy S25 FE: botão lateral e diminuir volume). Passe os arquivos para o computador (iPhone: AirDrop, iCloud ou cabo; Android: cabo ou Drive) e salve em `ios/` e `android/`, **com o mesmo nome em cada pasta**.
 4. Faça as duas rodadas com os mesmos dados e o mesmo passo a passo, uma por aparelho, para as telas ficarem lado a lado. **Preencha os formulários, mas não os envie** (as telas de saída, abastecimento, óleo, manutenção e edição): assim os dados ficam iguais para o segundo aparelho e para a apresentação.
 5. Não confirme as ações de aprovar, reprovar e encerrar: mudariam os contadores. Cancele os diálogos.
 6. Ao terminar, mantenha os dados fictícios para a apresentação ou apague-os com `--clean` (ver [Dados de demonstração](#dados-de-demonstração)).
@@ -21,34 +21,34 @@ As 28 capturas foram feitas nos dois aparelhos em 9 e 10/11/2026 (iPhone XS em `
 
 | NN  | Arquivo                       | Tela                                                                                    | Conta       | Feito |
 | --- | ----------------------------- | --------------------------------------------------------------------------------------- | ----------- | ----- |
-| 01  | `01-login.png`                | Login (e, se couber, o diálogo "Não foi possível entrar")                               | —          |       |
-| 02  | `02-servicos-motorista.png`   | Serviços do motorista (cinco cards operacionais)                                        | Carlos     |       |
-| 03  | `03-servicos-supervisor.png`  | Serviços do supervisor, com os contadores nos cards administrativos                     | Renata     |       |
-| 04  | `04-saida-formulario.png`     | Registrar saída, preenchido                                                             | Rafael     |       |
-| 05  | `05-saida-veiculos.png`       | Folha de veículos com um "Indisponível"                                                 | Rafael     |       |
-| 06  | `06-retorno.png`              | Registrar retorno (cartão "Rota aberta" e formulário)                                   | Carlos     |       |
-| 07  | `07-denuncia-formulario.png`  | Denúncia de km com a foto do painel anexada                                             | Juliana    |       |
-| 08  | `08-denuncia-registrada.png`  | Denúncia registrada, situação pendente                                                  | Carlos     |       |
-| 09  | `09-abastecimento.png`        | Abastecimento, preenchido                                                               | Rafael     |       |
-| 10  | `10-troca-de-oleo.png`        | Troca de óleo, preenchida                                                               | Rafael     |       |
-| 11  | `11-manutencao.png`           | Manutenção, preenchida                                                                  | Rafael     |       |
-| 12  | `12-historico-rotas.png`      | Histórico, módulo Rotas, com um card com denúncia aprovada                              | Rafael     |       |
-| 13  | `13-historico-servicos.png`   | Histórico, módulo Abastecimentos (card com o lápis de edição)                           | Rafael     |       |
-| 14  | `14-edicao-registro.png`      | Edição de um registro próprio                                                           | Rafael     |       |
-| 15  | `15-usuario.png`              | Aba Usuário                                                                             | Rafael     |       |
-| 16  | `16-motoristas-lista.png`     | Gestão de motoristas, lista                                                             | Renata     |       |
-| 17  | `17-motorista-detalhe.png`    | Edição do motorista                                                                     | Renata     |       |
-| 18  | `18-veiculos-lista.png`       | Gestão de veículos, lista com as duas linhas de chips                                   | Renata     |       |
-| 19  | `19-veiculo-detalhe.png`      | Edição do veículo ("Km atual" só para leitura)                                          | Renata     |       |
-| 20  | `20-revisao-lista.png`        | Revisão de denúncias, lista                                                             | Renata     |       |
-| 21  | `21-revisao-detalhe.png`      | Detalhe da denúncia pendente, com a foto e a barra "Aprovar" e "Reprovar"               | Renata     |       |
-| 22  | `22-revisao-confirmacao.png`  | Diálogo de confirmação de "Aprovar"                                                     | Renata     |       |
-| 23  | `23-encerramento-lista.png`   | Encerramento de rotas, lista                                                            | Renata     |       |
-| 24  | `24-encerramento-detalhe.png` | Detalhe da rota aberta, com o aviso "Encerrar sem retorno"                              | Renata     |       |
-| 25  | `25-relatorio-financeiro.png` | Relatórios, financeiro, com os gráficos                                                 | Renata     |       |
-| 26  | `26-relatorio-km.png`         | Relatórios, km rodados                                                                  | Renata     |       |
-| 27  | `27-relatorio-denuncias.png`  | Relatórios, denúncias                                                                   | Renata     |       |
-| 28  | `28-pdf-financeiro.png`       | Primeira página do PDF financeiro aberto (captura do PDF, não da folha de compartilhar) | Renata     |       |
+| 01  | `01-login.png`                | Login (e, se couber, o diálogo "Não foi possível entrar")                               | —          | Sim   |
+| 02  | `02-servicos-motorista.png`   | Serviços do motorista (cinco cards operacionais)                                        | Carlos     | Sim   |
+| 03  | `03-servicos-supervisor.png`  | Serviços do supervisor, com os contadores nos cards administrativos                     | Renata     | Sim   |
+| 04  | `04-saida-formulario.png`     | Registrar saída, preenchido                                                             | Rafael     | Sim   |
+| 05  | `05-saida-veiculos.png`       | Folha de veículos com um "Indisponível"                                                 | Rafael     | Sim   |
+| 06  | `06-retorno.png`              | Registrar retorno (cartão "Rota aberta" e formulário)                                   | Carlos     | Sim   |
+| 07  | `07-denuncia-formulario.png`  | Denúncia de km com a foto do painel anexada                                             | Juliana    | Sim   |
+| 08  | `08-denuncia-registrada.png`  | Denúncia registrada, situação pendente                                                  | Carlos     | Sim   |
+| 09  | `09-abastecimento.png`        | Abastecimento, preenchido                                                               | Rafael     | Sim   |
+| 10  | `10-troca-de-oleo.png`        | Troca de óleo, preenchida                                                               | Rafael     | Sim   |
+| 11  | `11-manutencao.png`           | Manutenção, preenchida                                                                  | Rafael     | Sim   |
+| 12  | `12-historico-rotas.png`      | Histórico, módulo Rotas, com um card com denúncia aprovada                              | Rafael     | Sim   |
+| 13  | `13-historico-servicos.png`   | Histórico, módulo Abastecimentos (card com o lápis de edição)                           | Rafael     | Sim   |
+| 14  | `14-edicao-registro.png`      | Edição de um registro próprio                                                           | Rafael     | Sim   |
+| 15  | `15-usuario.png`              | Aba Usuário                                                                             | Rafael     | Sim   |
+| 16  | `16-motoristas-lista.png`     | Gestão de motoristas, lista                                                             | Renata     | Sim   |
+| 17  | `17-motorista-detalhe.png`    | Edição do motorista                                                                     | Renata     | Sim   |
+| 18  | `18-veiculos-lista.png`       | Gestão de veículos, lista com as duas linhas de chips                                   | Renata     | Sim   |
+| 19  | `19-veiculo-detalhe.png`      | Edição do veículo ("Km atual" só para leitura)                                          | Renata     | Sim   |
+| 20  | `20-revisao-lista.png`        | Revisão de denúncias, lista                                                             | Renata     | Sim   |
+| 21  | `21-revisao-detalhe.png`      | Detalhe da denúncia pendente, com a foto e a barra "Aprovar" e "Reprovar"               | Renata     | Sim   |
+| 22  | `22-revisao-confirmacao.png`  | Diálogo de confirmação de "Aprovar"                                                     | Renata     | Sim   |
+| 23  | `23-encerramento-lista.png`   | Encerramento de rotas, lista                                                            | Renata     | Sim   |
+| 24  | `24-encerramento-detalhe.png` | Detalhe da rota aberta, com o aviso "Encerrar sem retorno"                              | Renata     | Sim   |
+| 25  | `25-relatorio-financeiro.png` | Relatórios, financeiro, com os gráficos                                                 | Renata     | Sim   |
+| 26  | `26-relatorio-km.png`         | Relatórios, km rodados                                                                  | Renata     | Sim   |
+| 27  | `27-relatorio-denuncias.png`  | Relatórios, denúncias                                                                   | Renata     | Sim   |
+| 28  | `28-pdf-financeiro.png`       | Primeira página do PDF financeiro aberto (captura do PDF, não da folha de compartilhar) | Renata     | Sim   |
 
 Com os dados fictícios, a tela 05 mostra três veículos "Indisponível"; a 12 traz o card com "Denúncia aprovada"; a 21 traz a foto do painel.
 
@@ -60,7 +60,7 @@ Plano e descrição do banco fictício que alimenta as capturas de tela do TCC (
 
 Plano e descrição do banco fictício que alimenta as capturas de tela do TCC (e a apresentação). O objetivo é que cada tela tenha o que mostrar: listas com volume suficiente para rolar e filtrar, os três estados de uma denúncia, rotas abertas, encerrada e finalizadas, veículos de todos os tipos (um inativo), um motorista inativo e seis meses de custos para os gráficos dos relatórios.
 
-Os dados são criados pelo script [`backend/seed/seed-demo.mjs`](../../../backend/seed/seed-demo.mjs). Ele passa pelos fluxos reais (a rota é aberta e finalizada, a denúncia é registrada e aprovada ou reprovada), então o servidor aplica todas as regras e correções de km, e os números das telas são os que o sistema de fato produziria. O script foi executado e conferido numa instância descartável do PocketBase; **não foi executado na produção**.
+Os dados são criados pelo script [`backend/seed/seed-demo.mjs`](../../../backend/seed/seed-demo.mjs). Ele passa pelos fluxos reais (a rota é aberta e finalizada, a denúncia é registrada e aprovada ou reprovada), então o servidor aplica todas as regras e correções de km, e os números das telas são os que o sistema de fato produziria. O script foi conferido primeiro numa instância descartável do PocketBase e depois executado na produção, em 9/11/2026, que é de onde saem as capturas.
 
 ### Receita rápida: deixar os dados de prontidão
 
@@ -74,7 +74,7 @@ npm run seed:reset    # apaga e cria de novo, com as datas contadas a partir de 
 ```
 
 - **Quando usar o `seed:reset`:** antes de uma apresentação (as datas são relativas ao dia da execução: sem isso, "há 3 dias" envelhece), depois de testes que sujaram os dados ou para voltar ao estado original.
-- **O que ele pergunta:** o e-mail e a senha do superadmin e a senha das contas de demonstração (nada é gravado). Num servidor que não é a máquina local, pede antes que você digite `sim`. Para não digitar, exporte `SU_EMAIL`, `SU_PASS` e `DEMO_PASSWORD` só naquele terminal, e use `-- --yes` para pular a confirmação (por exemplo `npm run seed:reset -- --yes`).
+- **O que ele pergunta:** o e-mail e a senha do superadmin e a senha das contas de demonstração (nada é gravado). Num servidor que não é a máquina local, pede antes que você digite `yes`. Para não digitar, exporte `SU_EMAIL`, `SU_PASS` e `DEMO_PASSWORD` só naquele terminal, e use `-- --yes` para pular a confirmação (por exemplo `npm run seed:reset -- --yes`).
 - **Outros ajustes:** `PB_URL` aponta para outro servidor (por exemplo `http://127.0.0.1:8090`), `DEMO_DOMAIN` muda o domínio dos e-mails (padrão `trace.com`) e `HOOKS_DIR` muda a pasta de hooks que o servidor observa.
 - **Como funciona:** o script copia um hook temporário (`backend/seed/seed_backdate.pb.js`, que só aceita superusuário) para `backend/pb_hooks`, espera o servidor carregá-lo e o **remove ao terminar, mesmo com erro ou Ctrl+C**, porque a data de criação é sempre do servidor (RNF05) e só o hook consegue datar os registros no passado. O PocketBase reinicia por alguns segundos quando o hook entra e sai: espere antes de abrir o app ou de rodar outro comando.
 - **O que ele nunca apaga:** o `--clean` e o `--reset` só removem os 7 e-mails exatos do elenco (`nome.sobrenome@trace.com`), os 8 veículos pelas placas da frota e os registros desses usuários. As contas de teste (`supervisor.a@trace.com.br` etc.) e qualquer outro dado ficam como estão. Se alguém criou registros de outro usuário num veículo de demonstração, esse veículo fica (o script avisa).
@@ -114,7 +114,7 @@ Os modelos estão escritos como o app os grava (primeira letra de cada palavra e
 
 Seis meses de uso, com datas relativas ao dia em que o script roda (a data de cada registro é ajustada no servidor por um hook temporário, porque a data de criação é sempre do servidor, RNF05).
 
-| Item                  | Quantidade (varia um pouco com o dia da execução) | Observação                                                                              |
+| Item                  | Quantidade planejada (varia um pouco com o dia da execução) | Observação                                                                              |
 | --------------------- | --------------------- | --------------------------------------------------------------------------------------- |
 | Rotas finalizadas     | 110                   | Pelo menos 13 por veículo; o Histórico passa de uma página (10 por página)              |
 | Rotas abertas         | 3                     | Carlos (hoje), Juliana (ontem à tarde) e Anderson (há 3 dias)                           |
@@ -124,6 +124,8 @@ Seis meses de uso, com datas relativas ao dia em que o script roda (a data de ca
 | Trocas de óleo        | 25                    |                                                                                         |
 | Manutenções           | 16                    |                                                                                         |
 | Custo total           | cerca de R$ 41 mil    | Abastecimento 43%, troca de óleo 19%, manutenção 38% (valores variam um pouco por data) |
+
+**Obtido na execução de 9/11 na produção:** 7 usuários, 8 veículos, 112 rotas, 13 denúncias, 47 abastecimentos, 25 trocas de óleo e 17 manutenções. Os números obtidos diferem um pouco dos planejados (por exemplo, 47 abastecimentos contra 57 e 17 manutenções contra 16), como o próprio plano avisa: a quantidade varia com o dia da execução.
 
 **Contadores esperados em Serviços (supervisor):** Encerramento de rotas **3** e Revisão de denúncias **2**. Para o motorista Carlos: "Aberta" no card Rota e "Pendente" no card Denúncia de km.
 
@@ -162,7 +164,7 @@ As fotos das denúncias são imagens geradas (um painel com o odômetro mostrand
 
 Decisão do autor: popular a **produção** (`pb.wizecode.com.br`), para o banco já ter o uso fictício que será mostrado no TCC e na apresentação. O volume é pequeno e realista (cerca de 110 rotas em seis meses, ou 4 a 5 por semana entre seis motoristas e oito veículos, mais 13 denúncias e cerca de 100 registros de serviço), e o app já aponta para a produção, então as capturas saem direto dela.
 
-Todos os comandos partem da raiz do checkout principal, `/home/gustavo/TCC-AppExpo`, e não de uma worktree: os arquivos do seed estão só nele. Durante o roteiro, **não troque de branch** nesse checkout, porque a pasta `backend/pb_hooks` dele é a que a produção monta.
+Todos os comandos partem da raiz do checkout principal do repositório, e não de uma worktree: os arquivos do seed estão só nele. Durante o roteiro, **não troque de branch** nesse checkout, porque a pasta `backend/pb_hooks` dele é a que a produção monta.
 
 #### Antes de começar
 

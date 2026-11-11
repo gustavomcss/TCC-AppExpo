@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { after, before, describe, test } from "node:test";
 import { login } from "./helpers/client.js";
+import { withUnsavableVehicles } from "./helpers/schema.js";
 import { createFactories } from "./helpers/factories.js";
 import { startPocketBase } from "./helpers/pocketbase.js";
 
@@ -174,9 +175,88 @@ describe("a route is created open (RF08)", () => {
         const negative = await session.post(PATH, departure(vehicle, { km_departure: -1 }));
         assert.equal(negative.status, 400);
 
-        const zero = await session.post(PATH, departure(vehicle, { km_departure: 0 }));
+        /* A new vehicle may be at 0 km, and the route then starts at 0 (RB03). */
+        const atZero = await make.vehicle({ odometer: 0 });
+        const zero = await session.post(PATH, departure(atZero, { km_departure: 0 }));
         assert.equal(zero.status, 200);
         assert.equal(zero.body.km_departure, 0);
+    });
+});
+
+describe("a route starts at the current km of the vehicle (RB03, RB09)", () => {
+    test("a departure km below or above the odometer is refused with km_departure_not_odometer, and no route is created", async () => {
+        const { session, vehicle, user } = await driverWithVehicle();
+
+        for (const km of [1, 999.99, 1000.01, 5000]) {
+            const response = await session.post(PATH, departure(vehicle, { km_departure: km }));
+
+            assert.equal(response.status, 400, String(km));
+            assert.equal(response.body.data.km_departure.code, "km_departure_not_odometer", String(km));
+        }
+
+        const stored = await admin.get(`${PATH}?filter=${encodeURIComponent(`user = "${user.id}"`)}`);
+        assert.equal(stored.body.totalItems, 0);
+    });
+
+    test("a low departure km cannot be used to lower the odometer with the finalization that follows", async () => {
+        const user = await make.user();
+        const session = await signIn(user);
+        const vehicle = await make.vehicle({ odometer: 50000 });
+
+        const response = await session.post(PATH, departure(vehicle, { km_departure: 1 }));
+
+        assert.equal(response.status, 400);
+        assert.equal((await readVehicle(vehicle)).odometer, 50000);
+    });
+
+    test("the odometer with decimals is accepted as it is", async () => {
+        const user = await make.user();
+        const session = await signIn(user);
+        const vehicle = await make.vehicle({ odometer: 1234.5 });
+
+        const response = await session.post(PATH, departure(vehicle, { km_departure: 1234.5 }));
+
+        assert.equal(response.status, 200, JSON.stringify(response.body));
+    });
+
+    test("a supervisor and the superuser are held to it too", async () => {
+        const vehicle = await make.vehicle({ odometer: 1000 });
+
+        const asSupervisorResponse = await asSupervisor.post(PATH, departure(vehicle, { km_departure: 10 }));
+        assert.equal(asSupervisorResponse.status, 400);
+        assert.equal(asSupervisorResponse.body.data.km_departure.code, "km_departure_not_odometer");
+
+        const asSuperuser = await admin.post(PATH, { ...departure(vehicle, { km_departure: 10 }), user: supervisor.id });
+        assert.equal(asSuperuser.status, 400);
+        assert.equal(asSuperuser.body.data.km_departure.code, "km_departure_not_odometer");
+    });
+
+    test("after the previous route is finalized, the next one starts at its return km", async () => {
+        const { session, vehicle } = await driverWithVehicle();
+        const first = await start(session, vehicle);
+        assert.equal((await finalize(session, first, { km_return: 1100 })).status, 200);
+
+        const stale = await session.post(PATH, departure(vehicle, { km_departure: 1000 }));
+        assert.equal(stale.status, 400);
+        assert.equal(stale.body.data.km_departure.code, "km_departure_not_odometer");
+
+        const next = await session.post(PATH, departure(vehicle, { km_departure: 1100 }));
+        assert.equal(next.status, 200, JSON.stringify(next.body));
+    });
+});
+
+describe("a vehicle that does not exist (RB12)", () => {
+    test("a missing or unknown vehicle is reported on `vehicle`, not as an empty refusal", async () => {
+        const user = await make.user();
+        const session = await signIn(user);
+
+        const missing = await session.post(PATH, { itinerary: "Downtown", km_departure: 1000, status: "aberta" });
+        assert.equal(missing.status, 400);
+        assert.ok(missing.body.data.vehicle?.code, JSON.stringify(missing.body));
+
+        const unknown = await session.post(PATH, { vehicle: "doesnotexist00", itinerary: "Downtown", km_departure: 1000, status: "aberta" });
+        assert.equal(unknown.status, 400);
+        assert.ok(unknown.body.data.vehicle?.code, JSON.stringify(unknown.body));
     });
 });
 
@@ -325,7 +405,7 @@ describe("the author finalizes the route once (RF09, RB03, RB13, RB17)", () => {
     test("the departure date is the server's: a value sent on update or create is ignored (RNF05)", async () => {
         const { session, vehicle } = await driverWithVehicle();
         const route = await start(session, vehicle, { date_departure: "2020-01-01 10:00:00.000Z" });
-        assert.ok(new Date(route.date_departure).getFullYear() >= 2026, route.date_departure);
+        assert.ok(Math.abs(new Date(route.date_departure).getTime() - Date.now()) < 60000, route.date_departure);
 
         await finalize(session, route, { date_departure: "2020-01-01 10:00:00.000Z" });
 
@@ -483,12 +563,8 @@ describe("the current km follows only finalized routes (RB03, RB15)", () => {
         const { session, vehicle } = await driverWithVehicle();
         const route = await start(session, vehicle);
 
-        /* A new required field makes every existing vehicle invalid, so saving the odometer fails. */
-        const collection = (await admin.get("/api/collections/vehicles")).body;
-        const patched = await admin.patch(`/api/collections/${collection.id}`, { fields: [...collection.fields, { type: "text", name: "must_have", required: true }] });
-        assert.equal(patched.status, 200);
-
-        const response = await finalize(session, route);
+        /* Every vehicle is invalid meanwhile, so saving the odometer fails. */
+        const response = await withUnsavableVehicles(admin, () => finalize(session, route));
 
         assert.equal(response.status, 400);
         const stored = await readRoute(route);

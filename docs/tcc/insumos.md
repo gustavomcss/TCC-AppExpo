@@ -1,24 +1,24 @@
 # Insumos para os capítulos de desenvolvimento e resultados do TCC
 
-Issue #43 (`[TCC] Insumos para os capítulos de desenvolvimento e resultados`). Este documento reúne o que os capítulos 5 e 6 vão precisar: onde estão as capturas de tela e os diagramas, o balanço do que foi implementado e do que ficou de fora (RF, RNF e RB) e o resumo dos resultados dos testes. Os números são de 7/11/2026. O balanço do processo, a ligação dos RF com ressalva às issues e a auditoria dos critérios de aceite estão em [balanco-final.md](balanco-final.md).
+Issue #43 (`[TCC] Insumos para os capítulos de desenvolvimento e resultados`). Este documento reúne o que os capítulos 5 e 6 vão precisar: onde estão as capturas de tela e os diagramas, o balanço do que foi implementado e do que ficou de fora (RF, RNF e RB) e o resumo dos resultados dos testes. Os números são de 10/11/2026 (os dos testes em aparelho, de 5 a 7/11). O balanço do processo, a ligação dos RF alterados ou reduzidos às issues e a auditoria dos critérios de aceite estão em [balanco-final.md](balanco-final.md).
 
 ## Como ler
 
 - Os resumos dos RF abaixo foram conferidos com o documento **TRACE – Requisitos** (versão de 13/10/2026), que não fica no repositório. A redação completa de cada RF está nele; as correções que o documento deve receber estão em [balanco-final.md](balanco-final.md), parte 5.
-- "Atendido" quer dizer que os critérios de aceite da issue foram marcados, a regra está no backend (RNF03) e a tela foi testada em aparelho. "Atendido com ressalva" tem uma decisão de projeto ou uma limitação, descrita na coluna de observação. "Parcial" é o que ficou de fora.
+- "Atendido" quer dizer que os critérios de aceite da issue foram marcados, a regra está no backend (RNF03) e a tela foi testada em aparelho. "Atendido com alteração" tem uma mudança de redação ou de comportamento em relação à versão 1.0, por decisão registrada, descrita na coluna de observação. "Reduzido" é o que a versão 1.0 pedia e foi entregue com menos, por decisão do autor (RF17, RF18, RF22 e RF23); nada ficou sem implementação. A comparação é sempre com a versão 1.0 dos Requisitos.
 - O detalhe de cada issue (decisões, achados, o que foi e não foi visto no aparelho) está no [historico-de-desenvolvimento.md](../historico-de-desenvolvimento.md) (antes, a seção "Estado atual" do CLAUDE.md).
 
 ## 1. Capturas de tela
 
-As capturas ficam em [capturas/](capturas/), uma pasta por sistema (`android/` e `ios/`), com a lista das telas, o nome de cada arquivo e os dados a preparar em [capturas/README.md](capturas/README.md). As capturas são feitas nos dois aparelhos: iPhone XS (iOS 18.7.11) e Galaxy S25 FE (Android 17). Os dados fictícios que as alimentam estão em [capturas/README.md](capturas/README.md#dados-de-demonstração).
+As capturas ficam em [capturas/](capturas/), uma pasta por sistema (`android/` e `ios/`), com a lista das telas, o nome de cada arquivo e os dados a preparar em [capturas/README.md](capturas/README.md). As capturas foram feitas nos dois aparelhos: iPhone XS (iOS 18.7.11) e Galaxy S25 FE (Android 17). Os dados fictícios que as alimentam estão em [capturas/README.md](capturas/README.md#dados-de-demonstração).
 
 **Situação:** as 28 capturas foram feitas nos dois aparelhos (iOS em `.png`, Android em `.jpg`), com os dados fictícios criados na produção em 9/11 (112 rotas, 13 denúncias, 47 abastecimentos, 25 trocas de óleo e 17 manutenções).
 
 ## 2. DER e DCU finais
 
-O DER e o DCU vêm dos documentos de origem, que ficam fora do repositório. Os arquivos exportados vão em [diagramas/](diagramas/), em PNG ou SVG, com o nome `der-final` e `dcu-final`. A comparação de cada diagrama com o entregue, com as correções a fazer antes de exportar, está em [balanco-final.md](balanco-final.md), partes 5.3 (DER) e 5.4 (DCU): o DER não muda de estrutura (só limites de tamanho, notas e a view), e o DCU ganha o ator Superadmin e notas de pré-condição.
+O DER e o DCU vêm dos documentos de origem, que ficam fora do repositório. Os arquivos exportados estão em [diagramas/](diagramas/), em PNG, com o nome `der-final` e `dcu-final`. A comparação de cada diagrama com o entregue está em [balanco-final.md](balanco-final.md), partes 5.3 (DER) e 5.4 (DCU): o DER não muda de estrutura (só limites de tamanho, notas e a view), e o DCU ganhou o ator Superadmin com o caso de uso "Gerenciar supervisor" (17 casos de uso no total).
 
-**Situação:** o autor ajustou os dois diagramas e os exportou em [diagramas/](diagramas/) (`der-final.png` e `dcu-final.png`); o que muda em relação aos originais está nas partes 5.3 e 5.4 de [balanco-final.md](balanco-final.md). Antes de exportar o DER, confira que ele bate com o que o backend tem hoje. As diferenças conhecidas entre o DER e o banco são só de nomes e de implementação:
+**Situação:** o autor ajustou os dois diagramas e os exportou em [diagramas/](diagramas/) (`der-final.png` e `dcu-final.png`); o que muda em relação aos originais está nas partes 5.3 e 5.4 de [balanco-final.md](balanco-final.md). O `der-final.png` foi conferido contra o esquema real das migrações em 10/11: entidades, campos, tipos, enums, chaves e relações são iguais. As diferenças conhecidas entre o DER e o banco são só de nomes e de implementação:
 
 | Ponto                    | No banco                                                                                                                                                 |
 | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -51,30 +51,30 @@ O DER e o DCU vêm dos documentos de origem, que ficam fora do repositório. Os 
 | RF14 | Denúncia de divergência de km                               | #27, #28       | Atendido              | Uma por rota, com foto do painel (RB11). Acréscimo à RB13: o retorno precisa passar também do km denunciado enquanto a denúncia está pendente.                                                   |
 | RF15 | Lista e revisão de denúncias                                | #29            | Atendido              | Aprovar e reprovar com confirmação; o supervisor pode revisar a própria (RB08). "Aprovar" fica inativo quando a RB14 recusaria.                                                                  |
 | RF16 | Correção de km ao aprovar a denúncia                        | #30            | Atendido              | Uma transação no servidor corrige a saída, o retorno da rota anterior e o km do veículo, ou nada (RB06, RB07, RB14).                                                                             |
-| RF17 | Histórico por módulo                                        | #33, #35       | Atendido com ressalva | Cinco módulos em chips, com busca, tipo de veículo e período. Não há a visão "Todos" (cada módulo é uma coleção) nem período com datas livres, só atalhos.                                        |
-| RF18 | Card da rota finalizada                                     | #34            | Atendido com ressalva | Sem a faixa colorida da issue: decisão de manter o app em escala de cinzas, com cor só em avisos e botões destrutivos.                                                                           |
-| RF19 | Indicador de denúncia no card da rota                       | #34            | Atendido com ressalva | O rodapé "Denúncia pendente, aprovada ou reprovada" tem o ícone cinza em qualquer situação, decisão provisória do Gustavo sobre a cor.                                                           |
+| RF17 | Histórico por módulo                                        | #33, #35       | Reduzido             | Cinco módulos em chips, com busca, tipo de veículo e período. Não há a visão "Todos" (cada módulo é uma coleção) nem período com datas livres, só atalhos.                                        |
+| RF18 | Card da rota finalizada                                     | #34            | Reduzido             | Sem a faixa colorida da issue: decisão de manter o app em escala de cinzas, com cor só em avisos e botões destrutivos.                                                                           |
+| RF19 | Indicador de denúncia no card da rota                       | #34            | Atendido com alteração | O rodapé "Denúncia pendente, aprovada ou reprovada" tem o ícone cinza em qualquer situação, decisão provisória do autor sobre a cor.                                                           |
 | RF20 | Navegação em três abas                                      | #10            | Atendido              | Histórico, Serviços e Usuário para os dois perfis; o app abre em Serviços.                                                                                                                       |
 | RF21 | Edição dos registros próprios de serviço                    | #31, #32       | Atendido              | Só o autor, e só valor, litros, tipo e descrição; veículo, km, autor e data ficam fixos (RB17).                                                                                                  |
-| RF22 | Relatório financeiro em PDF                                 | #36, #37       | Atendido com ressalva | O requisito original pedia filtro de veículo por placa, modelo e tipo; por decisão do autor (7/11) o filtro é só por tipo e o requisito foi reescrito. Além do pedido: dois gráficos (custo por veículo e por mês). A soma é feita no app, decisão do Gustavo. |
-| RF23 | Relatórios adicionais em PDF (opcional)                     | #38            | Atendido (opcional)   | Feitos 2 dos 3 candidatos: km rodados por veículo e denúncias por situação, veículo e motorista. Ficaram fora a última troca de óleo por veículo e a "utilização" (dias em rota).               |
+| RF22 | Relatório financeiro em PDF                                 | #36, #37       | Reduzido             | O requisito original pedia filtro de veículo por placa, modelo e tipo; por decisão do autor (7/11) o filtro é só por tipo e o requisito foi reescrito. Além do pedido: dois gráficos (custo por veículo e por mês). A soma é feita no app, decisão do autor. |
+| RF23 | Relatórios adicionais em PDF (opcional)                     | #38            | Reduzido (opcional)   | Feitos 2 dos 3 candidatos: km rodados por veículo e denúncias por situação, veículo e motorista. Ficaram fora a última troca de óleo por veículo e a "utilização" (dias em rota).               |
 
 ### 3.2 Requisitos não funcionais
 
 | RNF   | Resumo                                       | Issues        | Situação              | Observação                                                                                                                                                                                                  |
 | ----- | -------------------------------------------- | ------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| RNF01 | Android e iOS com uma base de código         | #1, #40, #41  | Atendido com ressalva | React Native com Expo, sem código por plataforma além de quatro arquivos com ramo por `Platform` (comportamento de sistema sem equivalente). O APK de Android sai do EAS Build. **O iOS roda pelo Expo Go (SDK 58); não há instalável**, porque exige o Apple Developer Program (US$ 99 por ano). |
+| RNF01 | Android e iOS com uma base de código         | #1, #40, #41  | Atendido com alteração | React Native com Expo, sem código por plataforma além de quatro arquivos com ramo por `Platform` (comportamento de sistema sem equivalente). O APK de Android sai do EAS Build. **O iOS roda pelo Expo Go (SDK 58); não há instalável**, porque exige o Apple Developer Program (US$ 99 por ano). |
 | RNF02 | Backend autogerenciado em HTTPS              | #2, #41       | Atendido              | PocketBase v0.40.5 em Docker (Coolify), com HTTPS pelo Cloudflare Tunnel, em `pb.wizecode.com.br`.                                                                                                         |
-| RNF03 | Regras de acesso e integridade no servidor   | #5 e as de backend | Atendido         | API Rules mais 8 hooks JS. Provado por 530 testes de API, sem passar pelo app.                                                                                                                             |
+| RNF03 | Regras de acesso e integridade no servidor   | #5 e as de backend | Atendido         | API Rules mais 8 hooks JS. Provado por 545 testes de API, sem passar pelo app.                                                                                                                             |
 | RNF04 | Sem credenciais no código nem senha no app   | #6, #41       | Atendido              | A URL vem de variável de ambiente; o app guarda só o token. Conferido por busca no código e no `.gitignore` antes do build.                                                                                |
 | RNF05 | Data de criação definida pelo servidor       | #3            | Atendido              | `created` é autodate; um `created` enviado no corpo é ignorado (testado nas três coleções de serviço).                                                                                                      |
 | RNF06 | Validação no app e no servidor               | #8            | Atendido              | React Hook Form + Zod no app, o servidor como garantia; o `code` do erro vira mensagem em português por campo.                                                                                              |
-| RNF07 | Esquema versionado e documentação técnica    | #4, #42       | Atendido com ressalva | 11 migrações commitadas e testadas (uma instância vazia reproduz o esquema). O README foi escrito e os comandos do backend foram conferidos; **falta uma pessoa nova rodar só pelo README** (tarefa aberta da #42). |
+| RNF07 | Esquema versionado e documentação técnica    | #4, #42       | Atendido com alteração | 11 migrações commitadas e testadas (uma instância vazia reproduz o esquema); os hooks e os índices também constam como estrutura versionada. O README foi escrito e os comandos do backend foram conferidos; **em 7/11 o cientista da computação Pedro Kourly, externo ao projeto, seguiu o README do começo ao fim, com o resultado esperado** (#42). |
 | RNF08 | Interface simples                            | #9, #40       | Atendido              | Telas de poucos campos: o maior formulário (abastecimento) tem 5; a tabela está na parte 8 de [testes-android-ios.md](../testes-android-ios.md). Fonte no tamanho máximo corta textos longos com reticências (limitação). |
 
 ### 3.3 Regras de negócio
 
-Cada regra tem cenário no [roteiro de testes](../roteiro-de-testes.md) (C01 a C21) com a prova na API e o resultado no app. As RB20 e RB21 nasceram durante o desenvolvimento e **ainda não estão no documento de Requisitos**; a RB13 ganhou um acréscimo (piso do retorno com denúncia pendente), decidido na #28.
+Cada regra tem cenário no [roteiro de testes](../roteiro-de-testes.md) (C01 a C21) com a prova na API e o resultado no app. As RB20 e RB21 nasceram durante o desenvolvimento: não existiam no documento de Requisitos de 13/10 e **constam da versão 2.0** ([requisitos-final.md](../requisitos-final.md)); a RB13 ganhou um acréscimo (piso do retorno com denúncia pendente), decidido na #28.
 
 | RB   | Regra (resumo)                                                       | Issues         | API | App | Observação                                                                                                           |
 | ---- | -------------------------------------------------------------------- | -------------- | --- | --- | -------------------------------------------------------------------------------------------------------------------- |
@@ -97,8 +97,8 @@ Cada regra tem cenário no [roteiro de testes](../roteiro-de-testes.md) (C01 a C
 | RB17 | Nada é excluído pelo app; só o autor edita campos não sensíveis      | #18, #31, #32  | OK  | OK  | O app exclui apenas motorista e veículo sem registros vinculados (RB12, RB18).                                       |
 | RB18 | Usuário inativo não acessa; desativar e excluir têm bloqueios        | #7, #14, #15   | OK  | OK  | Token antigo de usuário desativado perde o acesso.                                                                   |
 | RB19 | Quem altera o quê nos usuários                                       | #11 a #14      | OK  | OK  | O app só cria usuários com cargo `motorista`.                                                                        |
-| RB20 | Placa antiga e Mercosul equivalente são a mesma placa                | #8, #16, #17   | OK  | OK  | Nova, fora do documento de Requisitos.                                                                               |
-| RB21 | Rota com denúncia pendente não é encerrada                           | #28, #30       | OK  | OK  | Nova, fora do documento de Requisitos. Executado no app em 4/11 (C21).                                               |
+| RB20 | Placa antiga e Mercosul equivalente são a mesma placa                | #8, #16, #17   | OK  | OK  | Nova na versão 2.0 do documento de Requisitos.                                                                          |
+| RB21 | Rota com denúncia pendente não é encerrada                           | #28, #30       | OK  | OK  | Nova na versão 2.0 do documento de Requisitos. Executado no app em 4/11 (C21).                                               |
 
 ### 3.4 O que ficou de fora e limitações
 
@@ -112,7 +112,7 @@ Cada regra tem cenário no [roteiro de testes](../roteiro-de-testes.md) (C01 a C
 | Com a fonte do sistema no máximo, placeholders e títulos longos são abreviados com reticências. O app segue a fonte do sistema.                              | #40      |
 | Só dois aparelhos testados (iPhone XS e Galaxy S25 FE, no Expo Go); sem telas mais estreitas, outras versões de sistema nem iPad. O app é só claro e em retrato. | #40      |
 | Não há auto-cadastro nem criação de supervisor pelo app: supervisores e mudança de cargo são do superadmin, direto no PocketBase.                            | RB19     |
-| Os dados de demonstração para a apresentação (contas e veículos) precisam ser criados: não há auto-cadastro e só existe uma rota aberta por motorista e veículo. | #41      |
+| Os dados de demonstração (contas, veículos, rotas e registros) foram criados na produção em 9/11 com `backend/seed`, porque não há auto-cadastro e só existe uma rota aberta por motorista e veículo. São fictícios (o script grava datas retroativas por um hook temporário) e as figuras devem ser legendadas como "dados de demonstração". | #41, #43 |
 
 ## 4. Resultados dos testes
 
@@ -120,7 +120,7 @@ Os detalhes estão em [roteiro-de-testes.md](../roteiro-de-testes.md) (regras de
 
 ### 4.1 Testes de API do backend
 
-`npm test` em `backend/`, rodado em 7/11/2026 contra instâncias descartáveis do PocketBase v0.40.5 (nunca a produção): **530 testes, 530 passaram, 0 falharam** (116 suítes, cerca de 20 s). Eram 510 em 4/11; 1 teste é da busca por pedaço da placa (#40) e 19 são das consultas paginadas de Encerramento e Revisão (10/11).
+`npm test` em `backend/`, rodado em 10/11/2026 contra instâncias descartáveis do PocketBase v0.40.5 (nunca a produção): **545 testes, 545 passaram, 0 falharam** (120 suítes, cerca de 21 s). Eram 510 em 4/11; 1 teste é da busca por pedaço da placa (#40), 19 são das consultas paginadas de Encerramento e Revisão e 9 são dos limites das fotos (todos de 10/11).
 
 | Arquivo                             | Testes | O que prova                                                                           |
 | ----------------------------------- | ------ | ------------------------------------------------------------------------------------- |
@@ -133,7 +133,7 @@ Os detalhes estão em [roteiro-de-testes.md](../roteiro-de-testes.md) (regras de
 | `vehicle-form.test.js`              | 48     | Cadastro de veículo, placa e placa equivalente                                        |
 | `vehicle-management.test.js`        | 25     | Edição, inativação e exclusão de veículo                                              |
 | `vehicle-availability.test.js`      | 9      | View de veículos com rota aberta                                                      |
-| `route-rules.test.js`               | 34     | Saída, retorno, encerramento, km do veículo, uma rota aberta por veículo e motorista |
+| `route-rules.test.js`               | 40     | Saída (km de saída igual ao km atual), retorno, encerramento, km do veículo, uma rota aberta por veículo e motorista |
 | `service-records.test.js`           | 57     | Criação de abastecimento, óleo e manutenção                                           |
 | `service-record-edit.test.js`       | 56     | Edição só do autor e campos fixos                                                     |
 | `complaint-rules.test.js`           | 47     | Criação e revisão de denúncia; piso do retorno                                        |
@@ -142,25 +142,26 @@ Os detalhes estão em [roteiro-de-testes.md](../roteiro-de-testes.md) (regras de
 | `report-queries.test.js`            | 12     | Consultas do relatório financeiro                                                     |
 | `extra-report-queries.test.js`      | 19     | Consultas dos relatórios de km e de denúncias                                         |
 | `admin-list-queries.test.js`        | 19     | Consultas paginadas de Encerramento de rotas e Revisão de denúncias                  |
-| **Total**                           | **530** |                                                                                      |
+| `photo-limits.test.js`              | 9      | Fotos: 10 MB na denúncia e 5 MB no perfil; só JPEG, PNG e WebP                       |
+| **Total**                           | **545** |                                                                                      |
 
 ### 4.2 Regras de negócio e fluxo ponta a ponta (#39)
 
-Os 21 cenários passaram na API e no app. O resultado do app vem dos testes manuais de cada issue, e o C07 e o C21 foram executados no app em 4/11.
+Os 21 cenários passaram na API e no app. O resultado do app vem dos testes manuais que o autor fez em produção a cada issue (`npm test`, requisições diretas com `curl` e verificação no app), e o C07 e o C21 foram executados no app em 4/11 e o C14, em 7/11.
 
-| Grupo                          | Cenários     | API (4/11, 510 testes) | App                        |
+| Grupo                          | Cenários     | API (10/11, 545 testes) | App                        |
 | ------------------------------ | ------------ | ---------------------- | -------------------------- |
 | Rotas e km do veículo          | C01 a C05, C13, C15 | OK              | OK                         |
-| Denúncias e correção de km     | C06 a C08, C11, C14, C21 | OK         | OK (C14 só pela API)       |
+| Denúncias e correção de km     | C06 a C08, C11, C14, C21 | OK         | OK (C14 visto no app em 7/11) |
 | Veículos e registros           | C09, C10, C12, C16, C17, C20 | OK     | OK                         |
 | Usuários                       | C18, C19     | OK                     | OK                         |
 | Fluxo ponta a ponta            | E1 a E9      | n/a                    | OK (E9 no iPhone, os PDFs também no Android) |
 
-Nenhuma falha de regra encontrada; nenhuma issue de bug aberta.
+Nenhuma falha de regra de negócio encontrada; nenhuma issue de bug aberta. Os defeitos de interface achados estão na parte 4.3.
 
 ### 4.3 Android e iOS (#40)
 
-Passada de 5 a 7/11/2026, nos mesmos passos e ao mesmo tempo, no iPhone XS (iOS 18.7.11) e no Galaxy S25 FE (Android), os dois no Expo Go (SDK 58).
+Passada de 5 a 7/11/2026, conduzida pelo autor, nos mesmos passos e ao mesmo tempo, no iPhone XS (iOS 18.7.11) e no Galaxy S25 FE (Android), os dois no Expo Go (SDK 58).
 
 | Fases                                                                  | Testes     | iPhone XS          | S25 FE             |
 | ---------------------------------------------------------------------- | ---------- | ------------------ | ------------------ |

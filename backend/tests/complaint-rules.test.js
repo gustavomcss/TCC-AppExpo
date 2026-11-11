@@ -481,7 +481,7 @@ describe("a complaint changes only by the review of a supervisor (RB17, RB08)", 
         ];
         for (const body of attempts) {
             const response = await session.patch(`${PATH}/${complaint.id}`, body);
-            assert.ok([403, 404].includes(response.status), JSON.stringify(response.body));
+            assert.equal(response.status, 404, JSON.stringify(response.body));
         }
 
         const stored = await readComplaint(complaint);
@@ -498,7 +498,7 @@ describe("a complaint changes only by the review of a supervisor (RB17, RB08)", 
 
         const response = await review(stranger, complaint, { status: "aprovada" });
 
-        assert.ok([403, 404].includes(response.status), JSON.stringify(response.body));
+        assert.equal(response.status, 404, JSON.stringify(response.body));
         assert.equal((await readComplaint(complaint)).status, "pendente");
     });
 
@@ -551,7 +551,7 @@ describe("a complaint changes only by the review of a supervisor (RB17, RB08)", 
 
         const response = await review(asSupervisor, complaint, { status: "aprovada", reviewed: "2001-01-01 00:00:00.000Z" });
 
-        assert.ok([400, 403, 404].includes(response.status), JSON.stringify(response.body));
+        assert.equal(response.status, 404, JSON.stringify(response.body));
         const stored = await readComplaint(complaint);
         assert.equal(stored.status, "pendente");
         assert.equal(stored.reviewed, "");
@@ -579,7 +579,7 @@ describe("a complaint changes only by the review of a supervisor (RB17, RB08)", 
 
             const response = await review(asSupervisor, complaint, body());
 
-            assert.ok([400, 403, 404].includes(response.status), `${field}: ${JSON.stringify(response.body)}`);
+            assert.equal(response.status, 404, `${field}: ${JSON.stringify(response.body)}`);
             const stored = await readComplaint(complaint);
             assert.equal(stored.status, "pendente", field);
             assert.equal(stored.km_complaint, 990, field);
@@ -605,7 +605,7 @@ describe("a complaint changes only by the review of a supervisor (RB17, RB08)", 
 
         for (const body of [{ km_complaint: 995 }, { status: "pendente" }, { status: "arquivada" }, {}]) {
             const response = await review(asSupervisor, complaint, body);
-            assert.ok([400, 403, 404].includes(response.status), JSON.stringify(body) + JSON.stringify(response.body));
+            assert.equal(response.status, 404, JSON.stringify(body) + JSON.stringify(response.body));
         }
 
         const stored = await readComplaint(complaint);
@@ -621,7 +621,7 @@ describe("a complaint changes only by the review of a supervisor (RB17, RB08)", 
 
         for (const body of [{ status: "aprovada" }, { status: "reprovada" }, { km_complaint: 995 }]) {
             const response = await review(asSupervisor, complaint, body);
-            assert.ok([400, 403, 404].includes(response.status), JSON.stringify(body) + JSON.stringify(response.body));
+            assert.equal(response.status, 404, JSON.stringify(body) + JSON.stringify(response.body));
         }
 
         const stored = await readComplaint(complaint);
@@ -650,7 +650,7 @@ describe("a complaint changes only by the review of a supervisor (RB17, RB08)", 
 
         const response = await review(asInactive, complaint, { status: "aprovada" });
 
-        assert.ok([401, 403, 404].includes(response.status), JSON.stringify(response.body));
+        assert.equal(response.status, 404, JSON.stringify(response.body));
         assert.equal((await readComplaint(complaint)).status, "pendente");
     });
 
@@ -660,7 +660,7 @@ describe("a complaint changes only by the review of a supervisor (RB17, RB08)", 
 
         for (const client of [session, asSupervisor]) {
             const response = await client.delete(`${PATH}/${complaint.id}`);
-            assert.ok([403, 404].includes(response.status), JSON.stringify(response.body));
+            assert.equal(response.status, 403, JSON.stringify(response.body));
         }
         assert.equal((await admin.get(`${PATH}/${complaint.id}`)).status, 200);
     });

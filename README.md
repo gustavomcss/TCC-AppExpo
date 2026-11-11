@@ -15,7 +15,7 @@ O superadmin é o superuser do PocketBase: fica fora do app, no painel `/_/`, e 
 
 ## Requisitos
 
-- Node.js 20.19.4 ou mais novo e npm (o app). Os testes do backend pedem Node 22 ou mais novo.
+- Node.js 20.19.4 ou mais novo e npm (o app). Os testes do backend pedem Node 22.18 ou mais novo (a partir dessa versão o Node executa arquivos `.ts` sem configuração, e um teste importa um módulo TypeScript do app).
 - App **Expo Go** no celular, compatível com o **SDK 58** (o SDK do projeto):
     - iOS: a versão atual da App Store.
     - Android: a versão atual da Play Store; se ela estiver em outro SDK, baixe a do SDK 58 em [expo.dev/go](https://expo.dev/go).
@@ -122,7 +122,7 @@ Para gerar uma nova versão, aumente `android.versionCode` (e, se quiser, `versi
 
 ### iOS
 
-Não há instalável para iOS: ele exige o Apple Developer Program (US$ 99 por ano), que o projeto não tem. O iOS é entregue pelo **Expo Go (SDK 58)**: a pessoa clona o repositório, copia `frontend/.env.example` para `frontend/.env` (já aponta para a produção), roda `npm start` (de fora da rede do computador, `npm start -- --tunnel`) e abre o QR code no Expo Go. O servidor de desenvolvimento precisa ficar ligado enquanto o app é usado, e o app mostra o ícone e o nome do TRACE só dentro do Expo Go, não na tela inicial. Uma publicação por EAS Update não resolve: desde maio de 2026 o Expo Go só abre atualizações de projetos que o usuário possui. Com a conta paga, o caminho seria `eas build --platform ios --profile production` (o `bundleIdentifier` já está em `app.json`).
+Não há instalável para iOS: ele exige o Apple Developer Program (US$ 99 por ano, segundo a [página do programa](https://developer.apple.com/programs/whats-included/)), que o projeto não tem. O iOS é entregue pelo **Expo Go (SDK 58)**: a pessoa clona o repositório, copia `frontend/.env.example` para `frontend/.env` (já aponta para a produção), roda `npm start` (de fora da rede do computador, `npm start -- --tunnel`) e abre o QR code no Expo Go. O servidor de desenvolvimento precisa ficar ligado enquanto o app é usado, e o app mostra o ícone e o nome do TRACE só dentro do Expo Go, não na tela inicial. Uma publicação por EAS Update não resolve: desde maio de 2026 o Expo Go só abre atualizações de projetos que o usuário possui ou que pertencem a uma organização da qual ele faz parte ([changelog do Expo](https://expo.dev/changelog/expo-go-loading-changes-may-2026)). Com a conta paga, o caminho seria `eas build --platform ios --profile production` (o `bundleIdentifier` já está em `app.json`).
 
 Android e iOS usam o mesmo backend de produção, então os dados criados num aparelho aparecem no outro depois de recarregar a tela. Como não há auto-cadastro e cada motorista e cada veículo só podem ter uma rota aberta, use contas e veículos de demonstração separados.
 
@@ -142,7 +142,7 @@ Rodam dentro de `frontend/`.
 
 ## Testes
 
-Os testes de API do backend sobem um PocketBase descartável (nunca falam com a produção), aplicam as migrações e exercitam cada API Rule e cada hook. Sem dependências para instalar; precisam de Node 22 ou mais novo:
+Os testes de API do backend sobem um PocketBase descartável (nunca falam com a produção), aplicam as migrações e exercitam cada API Rule e cada hook. Sem dependências para instalar; precisam de Node 22.18 ou mais novo:
 
 ```bash
 cd backend
@@ -167,7 +167,7 @@ backend/                 PocketBase
   pb_hooks/              hooks JS (autor, decimais, veículos, placas, rotas, denúncias, registros, usuários)
   tests/                 testes de API (npm test)
   seed/                  dados de demonstração para os relatórios
-docs/                    roteiro de testes, testes em Android e iOS e insumos do TCC (docs/tcc)
+docs/                    requisitos, planejamento, roteiro de testes, testes em Android e iOS e insumos do TCC (docs/tcc)
 ```
 
 ## Documentação
@@ -175,10 +175,17 @@ docs/                    roteiro de testes, testes em Android e iOS e insumos do
 - [backend/README.md](backend/README.md): instância de produção, rodar o PocketBase localmente, migrações, **resumo das API Rules e dos hooks por coleção**, regras detalhadas e testes do backend.
 - [docs/README.md](docs/README.md): mapa da documentação, com o que é cada arquivo e os números de referência.
 - [docs/requisitos-final.md](docs/requisitos-final.md): especificação de requisitos (RF, RNF e RB) conforme implementado, com limitações e rastreabilidade.
+- [docs/planejamento-final.md](docs/planejamento-final.md): o planejamento de issues como foi executado (datas reais, desvios e matriz de rastreabilidade).
 - [docs/roteiro-de-testes.md](docs/roteiro-de-testes.md): roteiro de testes das regras de negócio e dos fluxos críticos.
-- [docs/testes-android-ios.md](docs/testes-android-ios.md): testes de usabilidade em Android e iOS.
-- [docs/tcc/balanco-final.md](docs/tcc/balanco-final.md): balanço do desenvolvimento, RF com ressalva ligados às issues e auditoria dos critérios de aceite.
+- [docs/testes-android-ios.md](docs/testes-android-ios.md): testes funcionais e de interface em Android e iOS (dois aparelhos, conduzidos pelo autor).
+- [docs/tcc/balanco-final.md](docs/tcc/balanco-final.md): balanço do desenvolvimento, RF alterados ou reduzidos ligados às issues e auditoria dos critérios de aceite.
 - [docs/tcc/insumos.md](docs/tcc/insumos.md): insumos para os capítulos 5 e 6 do TCC (atendimento aos requisitos, resultados dos testes, capturas de tela e diagramas).
+
+## Uso de IA generativa no desenvolvimento
+
+O levantamento de requisitos, o planejamento (43 issues em 6 milestones, com tarefas e critérios de aceite), a escolha da arquitetura e a definição das regras de negócio são do autor, resultado de semanas de levantamento e planejamento, e foram fechados antes de a codificação começar (documentos de 13/10/2026). A ferramenta de IA também serviu de apoio de escrita para registrar esse planejamento nos documentos. Na implementação, o autor usou o **Claude Code** (Anthropic) como agente de escrita de código: o código do aplicativo e do backend, os testes de API e a redação dos documentos técnicos foram produzidos pela ferramenta, sob a direção do autor, uma issue por vez e a partir do plano. Cada entrega foi revisada pelo autor contra as tarefas e os critérios de aceite da issue, testada em aparelho (Android e iOS) e conferida por requisições diretas à API, antes de a issue ser fechada. As decisões de produto e de escopo (por exemplo, o que ficou fora do RF22 e do RF23) são do autor.
+
+O arquivo [CLAUDE.md](CLAUDE.md) é o contexto de trabalho que o autor mantém para a ferramenta (stack, regras de negócio, princípios de código e fluxo de trabalho), e os commits trazem o trailer `Co-Authored-By` da ferramenta.
 
 ## Licença
 

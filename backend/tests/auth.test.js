@@ -70,7 +70,7 @@ describe("a stored session", () => {
         assert.equal(change.status, 200);
 
         const response = await createClient(pb.url, body.token).post("/api/collections/users/auth-refresh");
-        assert.ok([401, 403].includes(response.status), `status ${response.status}`);
+        assert.equal(response.status, 401, `status ${response.status}`);
     });
 
     test("is rejected when the token is invalid or missing", async () => {

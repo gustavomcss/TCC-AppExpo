@@ -303,7 +303,7 @@ function monthlyChart(
     const xs = months.map((_, index) => left + index * step);
 
     /* The line of each service is the sum of it and the services listed before it, in cents. */
-    const edges = services.map(({ value }, index) =>
+    const edges = services.map((_, index) =>
         months.map((month) => {
             const cents = services
                 .slice(0, index + 1)

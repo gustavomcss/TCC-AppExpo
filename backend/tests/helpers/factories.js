@@ -57,8 +57,21 @@ export function createFactories(admin) {
         vehicle: (overrides = {}) =>
             create("vehicles", { plate: nextPlate(), type: "carro", model: "Gol", odometer: 1000, active: true, ...overrides }),
 
-        route: ({ user, vehicle, ...overrides }) =>
-            create("routes", { user: user.id, vehicle: vehicle.id, status: "aberta", itinerary: "Downtown", km_departure: 1000, ...overrides }),
+        /**
+         * Creates a route. The server only opens a route at the current km of the vehicle (RB03), so
+         * an open route first puts the vehicle at the departure km, as the return of the previous
+         * route would have left it. The superuser may write the odometer; the app never does (RB09).
+         */
+        async route({ user, vehicle, ...overrides }) {
+            const data = { user: user.id, vehicle: vehicle.id, status: "aberta", itinerary: "Downtown", km_departure: 1000, ...overrides };
+            if (data.status === "aberta" && typeof data.km_departure === "number") {
+                const current = await admin.get(`/api/collections/vehicles/records/${vehicle.id}`);
+                if (current.body.odometer !== data.km_departure) {
+                    await admin.patch(`/api/collections/vehicles/records/${vehicle.id}`, { odometer: data.km_departure });
+                }
+            }
+            return create("routes", data);
+        },
 
         /** Creates a complaint through multipart, because it carries a photo. */
         async complaint(fields) {

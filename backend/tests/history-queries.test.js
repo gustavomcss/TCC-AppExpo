@@ -173,7 +173,8 @@ describe("who reads what in each module (RF17)", () => {
     test("a request without a session lists nothing", async () => {
         const anonymous = await list(createAnonymous(), "fuels");
 
-        assert.ok(anonymous.status === 403 || anonymous.body.totalItems === 0, JSON.stringify(anonymous.body));
+        assert.equal(anonymous.status, 200, JSON.stringify(anonymous.body));
+        assert.equal(anonymous.body.totalItems, 0, JSON.stringify(anonymous.body));
     });
 });
 
@@ -204,11 +205,11 @@ describe("the vehicle filters, in the service modules and through the route of a
     test("by part of the plate: the last four characters, or a piece that crosses the hyphen", async () => {
         const plate = scenario.moto.plate;
         const pieces = [
-            plate.slice(4), // 0A00
+            plate.slice(4) /* 0A00 */,
             plate.slice(4).toLowerCase(),
-            plate.slice(2, 6), // the hyphen in the middle
+            plate.slice(2, 6) /* the hyphen in the middle */,
             plate.slice(2, 6).replace("-", "").toLowerCase(),
-            plate.slice(0, 5).replace("-", ""), // the three letters and the first digit
+            plate.slice(0, 5).replace("-", "") /* the three letters and the first digit */,
         ];
 
         for (const typed of pieces) {

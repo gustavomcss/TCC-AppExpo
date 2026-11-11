@@ -239,14 +239,14 @@ describe("user rules that hold at every stage (RB19)", () => {
             role: "supervisor",
             active: true,
         });
-        assert.ok([400, 403].includes(response.status), `status ${response.status}`);
+        assert.equal(response.status, 400, `status ${response.status}`);
     });
 
     test("a driver cannot change their own role", async () => {
         const driver = await make.user();
         const asDriver = await login(pb.url, "users", driver.email, driver.password);
         const response = await asDriver.patch(`/api/collections/users/records/${driver.id}`, { role: "supervisor" });
-        assert.ok([400, 403, 404].includes(response.status), `status ${response.status}`);
+        assert.equal(response.status, 404, `status ${response.status}`);
         assert.equal((await admin.get(`/api/collections/users/records/${driver.id}`)).body.role, "motorista");
     });
 });

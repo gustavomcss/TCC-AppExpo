@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { after, before, describe, test } from "node:test";
+import { loadAppModule } from "./helpers/app-modules.js";
 import { login } from "./helpers/client.js";
 import { createFactories } from "./helpers/factories.js";
 import { startPocketBase } from "./helpers/pocketbase.js";
@@ -11,7 +12,10 @@ import { startPocketBase } from "./helpers/pocketbase.js";
  * `expand` are sent as they are here, so these tests prove that the server runs them and returns
  * what the grouping needs, that what comes back adds up to what the scenario created and to what
  * the history lists, that inactive vehicles still come (RB12), that the km follow a correction by
- * an approved complaint (RB06), and that the API rules still decide who reads what.
+ * an approved complaint (RB06), and that the API rules still decide who reads what. The sums are
+ * not copied: `buildKmReport` and `buildComplaintReport` are loaded from the app
+ * (src/services/kmTotals.ts and complaintTotals.ts), so a change in how the app adds up breaks
+ * these tests.
  */
 
 const ROUTES = "/api/collections/routes/records";
@@ -30,9 +34,13 @@ let admin;
 let make;
 let asSupervisor;
 let scenario;
+let buildKmReport;
+let buildComplaintReport;
 
 /** Starts the instance, signs in a supervisor and builds the scenario. */
 before(async () => {
+    ({ buildKmReport } = await loadAppModule("services/kmTotals.ts"));
+    ({ buildComplaintReport } = await loadAppModule("services/complaintTotals.ts"));
     pb = await startPocketBase();
     admin = pb.admin;
     make = createFactories(admin);
@@ -86,20 +94,16 @@ async function readKm(session, extra = "") {
     return response.body.items;
 }
 
-/** Adds the km of the routes by vehicle id, in hundredths, like `buildKmReport`. */
+/** Adds the km of the routes with the app's `buildKmReport`, reshaped by vehicle id and in hundredths. */
 function kmReport(routes) {
+    const built = buildKmReport(routes.map((route) => ({ vehicle: route.expand.vehicle, kmDeparture: route.km_departure, kmReturn: route.km_return })));
     const byVehicle = {};
-    let general = 0;
 
-    for (const route of routes) {
-        const driven = Math.round(route.km_return * 100) - Math.round(route.km_departure * 100);
-        const line = (byVehicle[route.vehicle] ??= { plate: route.expand.vehicle.plate, routes: 0, hundredths: 0 });
-        line.routes += 1;
-        line.hundredths += driven;
-        general += driven;
+    for (const line of built.vehicles) {
+        byVehicle[line.vehicle.id] = { plate: line.vehicle.plate, routes: line.routes, hundredths: Math.round(line.km * 100) };
     }
 
-    return { byVehicle, general };
+    return { byVehicle, general: Math.round(built.km * 100) };
 }
 
 /** Reads the complaints the way the complaints report does: filtered, expanded to the route, with only the fields it needs. */
@@ -111,22 +115,22 @@ async function readComplaints(session, filter = "") {
     return response.body.items;
 }
 
-/** Counts the complaints by situation, by vehicle id and by driver id, like `buildComplaintReport`. */
+/** Counts the complaints with the app's `buildComplaintReport`, reshaped by vehicle id and by driver id. */
 function complaintReport(items) {
-    const counts = { pendente: 0, aprovada: 0, reprovada: 0 };
+    const built = buildComplaintReport(
+        items.map((item) => ({ status: item.status, vehicle: item.expand.route_current.expand.vehicle, driver: item.expand.route_current.expand.user })),
+    );
     const byVehicle = {};
     const byDriver = {};
 
-    for (const item of items) {
-        const route = item.expand.route_current;
-        const vehicle = (byVehicle[route.expand.vehicle.id] ??= { plate: route.expand.vehicle.plate, pendente: 0, aprovada: 0, reprovada: 0 });
-        const driver = (byDriver[route.expand.user.id] ??= { name: route.expand.user.name, pendente: 0, aprovada: 0, reprovada: 0 });
-        counts[item.status] += 1;
-        vehicle[item.status] += 1;
-        driver[item.status] += 1;
+    for (const line of built.vehicles) {
+        byVehicle[line.vehicle.id] = { plate: line.vehicle.plate, ...line.counts };
+    }
+    for (const line of built.drivers) {
+        byDriver[line.driver.id] = { name: line.driver.name, ...line.counts };
     }
 
-    return { counts, byVehicle, byDriver };
+    return { counts: built.counts, byVehicle, byDriver };
 }
 
 /*

@@ -102,7 +102,7 @@ describe("a session opened before the deactivation loses access (RB18)", () => {
 
         await setActive(user, false);
         const response = await session.post("/api/collections/users/auth-refresh");
-        assert.ok([400, 401, 403].includes(response.status), `status ${response.status}`);
+        assert.equal(response.status, 403, `status ${response.status}`);
         assert.equal(response.body.token, undefined);
     });
 
@@ -117,30 +117,42 @@ describe("a session opened before the deactivation loses access (RB18)", () => {
             assert.ok(baseline.body.items.some((item) => item.id === own.route.id));
 
             await setActive(user, false);
+
+            /*
+             * An open route of the user's own, made by the superuser because a user with an open route
+             * cannot be deactivated (RB18): a complaint filed on it is then refused by the rule, and not
+             * because the route is closed.
+             */
+            const openRoute = await make.route({ user, vehicle: await make.vehicle() });
             const records = { users: user, vehicles: vehicle, routes: own.route, complaints: own.complaint, fuels: own.fuel, oils: own.oil, repairs: own.repair };
 
             for (const collection of COLLECTIONS) {
                 const list = await session.get(`/api/collections/${collection}/records?perPage=200`);
-                assert.ok(list.status === 403 || (list.status === 200 && list.body.items.length === 0), `${collection} list: ${list.status}`);
+                assert.equal(list.status, 200, `${collection} list: ${list.status}`);
+                assert.equal(list.body.items.length, 0, `${collection} list leaked records`);
 
                 const view = await session.get(`/api/collections/${collection}/records/${records[collection].id}`);
-                assert.ok([403, 404].includes(view.status), `${collection} view: ${view.status}`);
+                assert.equal(view.status, 404, `${collection} view: ${view.status}`);
             }
 
             const route = await session.post("/api/collections/routes/records", { vehicle: vehicle.id, status: "aberta", itinerary: "Downtown", km_departure: 1000 });
             const fuel = await session.post("/api/collections/fuels/records", { vehicle: vehicle.id, km_fuel: 1010, type: "etanol", liters: 30, cost: 180 });
             const oil = await session.post("/api/collections/oils/records", { vehicle: vehicle.id, km_oil: 1010, type: "5W30", cost: 250 });
             const repair = await session.post("/api/collections/repairs/records", { vehicle: vehicle.id, km_repair: 1010, description: "Brakes", cost: 400 });
-            const complaint = await session.post("/api/collections/complaints/records", complaintForm({ route_current: own.route.id }));
+            const complaint = await session.post("/api/collections/complaints/records", complaintForm({ route_current: openRoute.id }));
             for (const [name, response] of Object.entries({ route, fuel, oil, repair, complaint })) {
-                assert.ok([400, 403].includes(response.status), `create ${name}: ${response.status}`);
+                /* A rule that refuses a create answers 400 with no field data; any field in `data` would mean a validation or a hook refused it, not the rule. */
+                assert.equal(response.status, 400, `create ${name}: ${response.status}`);
+                assert.deepEqual(response.body.data, {}, `create ${name}: ${JSON.stringify(response.body)}`);
             }
 
             /* Nothing was written, and the user's own records are intact. */
             for (const collection of ["routes", "fuels", "oils", "repairs"]) {
                 const total = await admin.get(`/api/collections/${collection}/records?filter=${encodeURIComponent(`user = "${user.id}"`)}`);
-                assert.equal(total.body.totalItems, 1, `${collection} count`);
+                assert.equal(total.body.totalItems, collection === "routes" ? 2 : 1, `${collection} count`);
             }
+            const complaints = await admin.get(`/api/collections/complaints/records?filter=${encodeURIComponent(`route_current = "${openRoute.id}"`)}`);
+            assert.equal(complaints.body.totalItems, 0, "the complaint on the open route was not created");
         });
     }
 
@@ -151,14 +163,14 @@ describe("a session opened before the deactivation loses access (RB18)", () => {
         await setActive(supervisor, false);
 
         const create = await session.post("/api/collections/vehicles/records", { plate: "INA-0001", type: "carro", model: "Gol", odometer: 1, active: true });
-        assert.ok([400, 403].includes(create.status), `create: ${create.status}`);
+        assert.equal(create.status, 400, `create: ${create.status}`);
 
         const edit = await session.patch(`/api/collections/vehicles/records/${target.id}`, { model: "Hacked" });
-        assert.ok([403, 404].includes(edit.status), `edit: ${edit.status}`);
+        assert.equal(edit.status, 404, `edit: ${edit.status}`);
         assert.equal((await admin.get(`/api/collections/vehicles/records/${target.id}`)).body.model, target.model);
 
         const remove = await session.delete(`/api/collections/vehicles/records/${target.id}`);
-        assert.ok([403, 404].includes(remove.status), `delete: ${remove.status}`);
+        assert.equal(remove.status, 404, `delete: ${remove.status}`);
         assert.equal((await admin.get(`/api/collections/vehicles/records/${target.id}`)).status, 200);
     });
 
@@ -169,7 +181,7 @@ describe("a session opened before the deactivation loses access (RB18)", () => {
         assert.equal((await session.get(`/api/collections/users/records/${other.id}`)).status, 200);
 
         await setActive(supervisor, false);
-        assert.ok([403, 404].includes((await session.get(`/api/collections/users/records/${other.id}`)).status));
+        assert.equal((await session.get(`/api/collections/users/records/${other.id}`)).status, 404);
     });
 
     test("the same token works again if the user is reactivated", async () => {
@@ -184,7 +196,8 @@ describe("a session opened before the deactivation loses access (RB18)", () => {
 
     test("an anonymous request still gets nothing, as before", async () => {
         const response = await createClient(pb.url).get("/api/collections/routes/records");
-        assert.ok(response.status === 403 || (response.status === 200 && response.body.items.length === 0));
+        assert.equal(response.status, 200);
+        assert.equal(response.body.items.length, 0);
     });
 });
 
