@@ -1,6 +1,6 @@
 # Histórico de desenvolvimento do TRACE
 
-Registro, issue por issue, do que foi feito, das decisões tomadas e do que foi visto no aparelho. Era a seção "Estado atual" do [CLAUDE.md](../CLAUDE.md) e foi movida para cá em 10/11/2026, sem alterar o texto das entradas (a única correção é a das entradas que diziam que os documentos finais tinham PDF: os PDFs foram removidos e continuam na tag `docs-completos-2026-11-10`), para o CLAUDE.md, que é lido inteiro por todo chat novo, ficar leve. A entrada mais recente vem primeiro. **Atualize este arquivo a cada merge** (data e uma linha por issue), de preferência na própria PR da issue, antes do merge; o resumo do estado geral fica no CLAUDE.md.
+Registro, issue por issue, do que foi feito, das decisões tomadas e do que foi visto no aparelho. Era a seção "Estado atual" do [CLAUDE.md](../CLAUDE.md) e foi movida para cá em 10/11/2026, sem alterar o texto das entradas (a única correção é a das entradas que diziam que os documentos finais tinham PDF: os PDFs foram removidos e continuam no commit `2ad7d19`), para o CLAUDE.md, que é lido inteiro por todo chat novo, ficar leve. A entrada mais recente vem primeiro. **Atualize este arquivo a cada merge** (data e uma linha por issue), de preferência na própria PR da issue, antes do merge; o resumo do estado geral fica no CLAUDE.md.
 
 ## Entradas (de 10/11/2026 para trás)
 
