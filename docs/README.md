@@ -38,7 +38,7 @@ Onde está cada coisa e qual é a fonte da verdade de cada assunto. O ponto de p
 | [capturas/](tcc/capturas/README.md) | 28 capturas em `ios/` e 28 em `android/`, a lista de telas e, no mesmo arquivo, o plano e a receita dos dados de demonstração |
 | [diagramas/](tcc/diagramas/) | `der-final.png` e `dcu-final.png` (o que mudou em relação aos originais está nas partes 5.3 e 5.4 do balanço) |
 
-**Conjunto completo de documentos antes da consolidação de 10/11/2026** (com os PDFs, o guia de ajustes dos diagramas e o arquivo separado dos dados de demonstração): tag `docs-completos-2026-11-10` (`git show docs-completos-2026-11-10:<caminho>`).
+**Conjunto completo de documentos antes da consolidação de 10/11/2026** (com os PDFs, o guia de ajustes dos diagramas e o arquivo separado dos dados de demonstração): commit `2ad7d19` (`git show 2ad7d19:<caminho>`).
 
 ## Fora do repositório
 
