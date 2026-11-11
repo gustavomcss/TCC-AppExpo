@@ -12,7 +12,7 @@
         },
         "android": {
             "package": "com.tccapp.trace",
-            "versionCode": 1,
+            "versionCode": 2,
             "adaptiveIcon": {
                 "backgroundColor": "#202020",
                 "foregroundImage": "./assets/android-icon-foreground.png",
