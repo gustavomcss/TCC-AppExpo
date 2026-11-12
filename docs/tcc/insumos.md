@@ -16,7 +16,7 @@ As capturas ficam em [capturas/](capturas/), uma pasta por sistema (`android/` e
 
 ## 2. DER e DCU finais
 
-O DER e o DCU vêm dos documentos de origem, que ficam fora do repositório. Os arquivos exportados estão em [diagramas/](diagramas/), em PNG, com o nome `der-final` e `dcu-final`. A comparação de cada diagrama com o entregue está em [balanco-final.md](balanco-final.md), partes 5.3 (DER) e 5.4 (DCU): o DER não muda de estrutura (só limites de tamanho, notas e a view), e o DCU ganhou o ator Superadmin com o caso de uso "Gerenciar supervisor" (17 casos de uso no total).
+O DER e o DCU vêm dos documentos de origem, que ficam fora do repositório. Os arquivos exportados estão em [diagramas/](diagramas/), em PNG, com o nome `der-final` e `dcu-final`. A comparação de cada diagrama com o entregue está em [balanco-final.md](balanco-final.md), partes 5.3 (DER) e 5.4 (DCU): o DER não muda de estrutura (só limites de tamanho e o tipo dos campos de arquivo; as notas e a view ficam descritas no balanço, não no diagrama), e o DCU ganhou o ator Superadmin com o caso de uso "Gerenciar supervisor" (17 casos de uso no total).
 
 **Situação:** o autor ajustou os dois diagramas e os exportou em [diagramas/](diagramas/) (`der-final.png` e `dcu-final.png`); o que muda em relação aos originais está nas partes 5.3 e 5.4 de [balanco-final.md](balanco-final.md). O `der-final.png` foi conferido contra o esquema real das migrações em 10/11: entidades, campos, tipos, enums, chaves e relações são iguais. As diferenças conhecidas entre o DER e o banco são só de nomes e de implementação:
 
