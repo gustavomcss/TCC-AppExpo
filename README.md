@@ -101,7 +101,7 @@ Valores comuns:
 
 ## Build de distribuição (Android)
 
-O instalável do Android (`.apk`) é gerado na nuvem pelo **EAS Build**, com o perfil `production` de `frontend/eas.json`. O perfil já traz a URL do PocketBase de produção (`https://pb.wizecode.com.br`, HTTPS) em `EXPO_PUBLIC_POCKETBASE_URL`, então o `.env` local não entra no build. Essa URL é pública; senhas e tokens não existem no pacote nem no repositório (o app guarda só o token de sessão, no aparelho). A chave de assinatura (keystore) fica guardada na conta do Expo, nunca no repositório.
+O instalável do Android (`.apk`) é gerado na nuvem pelo **Expo Build**, com o perfil `production` de `frontend/eas.json`. O perfil já traz a URL do PocketBase de produção (`https://pb.wizecode.com.br`, HTTPS) em `EXPO_PUBLIC_POCKETBASE_URL`, então o `.env` local não entra no build. Essa URL é pública; senhas e tokens não existem no pacote nem no repositório (o app guarda só o token de sessão, no aparelho). A chave de assinatura (keystore) fica guardada na conta do Expo, nunca no repositório.
 
 Requisitos: conta gratuita em [expo.dev](https://expo.dev) e um aparelho Android.
 

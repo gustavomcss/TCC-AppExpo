@@ -122,7 +122,7 @@ A coluna "Fechada" traz a data em que a issue foi fechada. "Tam." é o tamanho e
 | ----- | -------------------------------------------------------------------- | -------------------------------- | ---- | ------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | I-39  | [Testes] Testes das regras de negócio e dos fluxos críticos          | RB01 a RB21; RNF03, RNF05, RNF06 | G    | 4/11          | 21 cenários (RB01 a RB21), fluxo ponta a ponta (E1 a E9) e 510 testes de API na época (539 em 10/11). Nenhuma falha encontrada. |
 | I-40  | [RNF01, RNF08] Testes em Android e iOS e ajustes de usabilidade      | RF20; RNF01, RNF08               | M    | 7/11          | iPhone XS e Galaxy S25 FE (Android 17), 18 testes, todos aprovados. Teclado, capitalização e barra de status corrigidos.      |
-| I-41  | [RNF01, RNF02] Build de distribuição e configuração de produção     | RNF01, RNF02, RNF04              | M    | 7/11          | APK pelo EAS Build. iOS pelo Expo Go (decisão registrada).                                                                   |
+| I-41  | [RNF01, RNF02] Build de distribuição e configuração de produção     | RNF01, RNF02, RNF04              | M    | 7/11          | APK pelo Expo Build. iOS pelo Expo Go (decisão registrada).                                                                  |
 | I-42  | [RNF07] Documentação técnica e README                                | RNF02, RNF03, RNF07              | M    | 7/11          | README, `backend/README.md` e resumo de regras e hooks. Em 7/11, o cientista da computação Pedro Kourly, externo ao projeto, seguiu o README do início ao fim, com o resultado esperado. |
 | I-43  | [TCC] Insumos para os capítulos de desenvolvimento e resultados      | RNF01, RNF08                     | P    | 10/11         | Balanço, requisitos finais, este planejamento, script de dados de demonstração, 56 capturas (iOS e Android) e DER e DCU finais.  |
 
@@ -218,7 +218,7 @@ Riscos **não previstos** que apareceram: teclado cobrindo campos nos dois siste
 | 2. Política de senha: mínimo de 8 caracteres                            | Mantida.                                                                                                            |
 | 3. Placa única (UK); a chave primária é o `id`                          | Mantida e ampliada pela RB20 (placa equivalente).                                                                    |
 | 4. Campos decimais 8,2 (até 999.999,99)                                 | Mantida, no aplicativo e no servidor.                                                                               |
-| 5. Entrega no iOS: parcial, testes pelo Expo Go                         | Confirmada: sem instalável para iOS. O APK do Android foi gerado no EAS Build (I-41).                                |
+| 5. Entrega no iOS: parcial, testes pelo Expo Go                         | Confirmada: sem instalável para iOS. O APK do Android foi gerado no Expo Build (I-41).                               |
 | 6. Onde agregar o relatório financeiro (em aberto)                      | **Decidida:** no aplicativo (I-36). Sem endpoint nem migração.                                                      |
 | 7. Tamanhos e datas como estão                                          | Os tamanhos ficaram como referência. As datas não se mantiveram: ver a seção 2.                                      |
 
@@ -248,5 +248,5 @@ O plano previa, faltando tempo, cortar nesta ordem: I-38 (opcional, cerca de 4,5
 | I-37                          | PDF com período, filtros, data e totais                 | Mais gráficos, fonte embutida e numeração de páginas                                                |
 | I-38                          | De um a três relatórios                                 | Dois relatórios; a utilização e a última troca de óleo ficaram de fora                              |
 | I-39                          | RB01 a RB19                                             | RB01 a RB21 e 545 testes de API                                                                     |
-| I-41                          | "O instalável para Android existe desde o MVP"          | O APK foi gerado de novo no EAS Build                                                               |
+| I-41                          | "O instalável para Android existe desde o MVP"          | O APK foi gerado de novo no Expo Build                                                              |
 | I-23, I-29 (10/11)            | Listas lidas por inteiro                                | Carregam de 10 em 10, com busca e filtros no servidor                                                |
