@@ -83,8 +83,8 @@ onRecordCreate((e) => {
  * its return km to the odometer, so with a free departure km a direct request could open a route
  * at any km and lower the odometer without going through the complaint of a km deviation, which is
  * the audited path (RB06, RB14). The app already sends the current km. A km that differs is
- * reported on `km_departure` with `km_departure_not_odometer`. It is checked at validation, after
- * the decimal places (decimal_fields.pb.js), so a km with three decimals is still reported as such.
+ * reported on `km_departure` with `km_departure_not_odometer`. It is checked at validation and skipped
+ * for a km with more than two decimals, which decimal_fields.pb.js reports as such in either hook order.
  * A vehicle that does not exist is left to the relation validation.
  *
  * A finalized route has a return km greater than the departure km (RB13). Checked on every save of
@@ -102,8 +102,14 @@ onRecordValidate((e) => {
             /* Missing or unknown vehicle: the required relation field reports it. */
         }
 
-        /* Both values have two decimals at most (RB16), so half a cent apart is a different km. */
-        if (vehicle && Math.abs(e.record.getFloat("km_departure") - vehicle.getFloat("odometer")) >= 0.005) {
+        /*
+         * A km with more than two decimals (RB16) is left to decimal_fields.pb.js, whichever of the two
+         * hooks runs first (PocketBase does not guarantee the order of hooks from different files).
+         * Both values then have two decimals at most, so half a cent apart is a different km.
+         */
+        const cents = e.record.getFloat("km_departure") * 100;
+        const hasValidDecimals = Math.abs(cents - Math.round(cents)) <= 1e-6;
+        if (vehicle && hasValidDecimals && Math.abs(e.record.getFloat("km_departure") - vehicle.getFloat("odometer")) >= 0.005) {
             throw new BadRequestError("Failed to validate record.", {
                 km_departure: new ValidationError("km_departure_not_odometer", "The departure km must be the current km of the vehicle."),
             });
