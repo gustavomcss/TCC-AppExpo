@@ -17,7 +17,7 @@ Legenda do resultado: **OK** = passou, **Falhou** = comportamento diferente do e
 | ---------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | Execução da API  | 4/11/2026 (primeira) e 10/11/2026 (final), `npm test` em `backend/`, Node 22.18+, PocketBase v0.40.5 descartável por arquivo de teste |
 | Resultado da API | 4/11: 510 testes, 510 passaram (113 suítes). **10/11: 545 testes, 545 passaram, 0 falharam** (120 suítes, cerca de 21 s)       |
-| Execução do app  | Expo Go no iPhone XS do autor (SDK 57 até 23/10, SDK 58 depois); no Android, o Galaxy S25 FE do autor, do início ao fim; sempre apontando para `pb.wizecode.com.br` |
+| Execução do app  | Expo Go no iPhone XS do autor (SDK 57 até 23/10, SDK 58 depois); no Android, o Galaxy S25 FE (Android 17), do início ao fim; sempre apontando para `pb.wizecode.com.br` |
 | Contas do app    | `motorista.a`, `motorista.b`, `supervisor.a` e `supervisor.b` (`@trace.com.br`, contas de teste do desenvolvimento, já removidas da produção)                      |
 | Dados do app     | Veículos descartáveis (placas `ZZZ-...`) em cada issue, apagados pelo painel depois                                           |
 
